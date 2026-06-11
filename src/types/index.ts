@@ -1,0 +1,279 @@
+export type UserRole = 'student' | 'property_owner' | 'mess_owner' | 'admin'
+
+export type PropertyType = 'pg' | 'hostel' | 'flat' | 'shared_room' | 'private_room'
+
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
+
+export type MessStatus = 'open' | 'busy' | 'closed'
+
+export type SubscriptionStatus = 'active' | 'expired' | 'cancelled' | 'pending'
+
+export type TokenStatus = 'valid' | 'consumed' | 'expired'
+
+export type NotificationType =
+  | 'subscription_expiring'
+  | 'menu_updated'
+  | 'message_received'
+  | 'new_review'
+  | 'attendance_recorded'
+  | 'payment_due'
+  | 'listing_approved'
+
+export interface Profile {
+  id: string
+  email: string
+  full_name: string
+  avatar_url?: string
+  phone?: string
+  role: UserRole
+  college?: string
+  branch?: string
+  gender?: 'male' | 'female' | 'other'
+  bio?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Property {
+  id: string
+  owner_id: string
+  title: string
+  description: string
+  property_type: PropertyType
+  rent: number
+  deposit: number
+  address: string
+  city: string
+  state: string
+  pincode: string
+  latitude?: number
+  longitude?: number
+  contact_phone: string
+  contact_email?: string
+  availability: boolean
+  gender_preference: 'male' | 'female' | 'any'
+  total_rooms?: number
+  available_rooms?: number
+  verified: boolean
+  featured: boolean
+  rating: number
+  review_count: number
+  images: string[]
+  amenities: PropertyAmenity
+  created_at: string
+  updated_at: string
+  profiles?: Profile
+}
+
+export interface PropertyAmenity {
+  wifi: boolean
+  ac: boolean
+  laundry: boolean
+  water: boolean
+  electricity: boolean
+  cctv: boolean
+  security: boolean
+  parking: boolean
+  attached_bathroom: boolean
+  study_table: boolean
+  furnished: boolean
+  gym?: boolean
+  tv?: boolean
+  kitchen?: boolean
+}
+
+export interface Mess {
+  id: string
+  owner_id: string
+  name: string
+  description: string
+  address: string
+  city: string
+  state: string
+  latitude?: number
+  longitude?: number
+  contact_phone: string
+  contact_email?: string
+  monthly_charge: number
+  per_meal_charge?: number
+  status: MessStatus
+  verified: boolean
+  featured: boolean
+  rating: number
+  review_count: number
+  photos: string[]
+  meal_types: MealType[]
+  created_at: string
+  updated_at: string
+  profiles?: Profile
+}
+
+export interface MessPlan {
+  id: string
+  mess_id: string
+  name: string
+  description: string
+  price: number
+  duration_days: number
+  meal_types: MealType[]
+  is_custom: boolean
+  active: boolean
+  created_at: string
+}
+
+export interface MessMenu {
+  id: string
+  mess_id: string
+  date: string
+  meal_type: MealType
+  items: string[]
+  updated_at: string
+}
+
+export interface Subscription {
+  id: string
+  student_id: string
+  mess_id: string
+  plan_id: string
+  status: SubscriptionStatus
+  start_date: string
+  end_date: string
+  amount_paid: number
+  payment_status: 'paid' | 'pending' | 'failed'
+  created_at: string
+  messes?: Mess
+  mess_plans?: MessPlan
+  profiles?: Profile
+}
+
+export interface MealAttendance {
+  id: string
+  subscription_id: string
+  student_id: string
+  mess_id: string
+  date: string
+  meal_type: MealType
+  qr_code_id: string
+  location_verified: boolean
+  marked_at: string
+  token_id?: string
+}
+
+export interface DailyQRCode {
+  id: string
+  mess_id: string
+  date: string
+  meal_type: MealType
+  qr_data: string
+  expires_at: string
+  created_at: string
+}
+
+export interface MealToken {
+  id: string
+  attendance_id: string
+  student_id: string
+  mess_id: string
+  meal_type: MealType
+  token_code: string
+  status: TokenStatus
+  valid_until: string
+  consumed_at?: string
+  created_at: string
+}
+
+export interface ChatRoom {
+  id: string
+  student_id: string
+  owner_id: string
+  property_id?: string
+  mess_id?: string
+  created_at: string
+  last_message?: string
+  last_message_at?: string
+  student?: Profile
+  owner?: Profile
+}
+
+export interface Message {
+  id: string
+  room_id: string
+  sender_id: string
+  content: string
+  message_type: 'text' | 'image'
+  image_url?: string
+  read: boolean
+  created_at: string
+  sender?: Profile
+}
+
+export interface Review {
+  id: string
+  reviewer_id: string
+  property_id?: string
+  mess_id?: string
+  rating: number
+  comment: string
+  photos?: string[]
+  created_at: string
+  profiles?: Profile
+}
+
+export interface RoommateProfile {
+  id: string
+  student_id: string
+  budget_min: number
+  budget_max: number
+  city: string
+  college: string
+  branch: string
+  gender: 'male' | 'female' | 'other'
+  food_preference: 'veg' | 'non-veg' | 'both'
+  smoking: boolean
+  sleep_schedule: 'early_bird' | 'night_owl' | 'flexible'
+  looking_for: 'flat' | 'pg' | 'hostel' | 'any'
+  description?: string
+  active: boolean
+  created_at: string
+  profiles?: Profile
+}
+
+export interface CommunityPost {
+  id: string
+  author_id: string
+  title: string
+  content: string
+  category: 'notes' | 'books' | 'cycles' | 'bikes' | 'events' | 'announcements' | 'general'
+  images?: string[]
+  price?: number
+  likes: number
+  comment_count: number
+  created_at: string
+  profiles?: Profile
+}
+
+export interface Notification {
+  id: string
+  user_id: string
+  type: NotificationType
+  title: string
+  message: string
+  read: boolean
+  action_url?: string
+  created_at: string
+}
+
+export interface SearchFilters {
+  query?: string
+  property_type?: PropertyType
+  min_rent?: number
+  max_rent?: number
+  city?: string
+  gender?: 'male' | 'female' | 'any'
+  amenities?: Partial<PropertyAmenity>
+  min_rating?: number
+  available_only?: boolean
+  lat?: number
+  lng?: number
+  radius?: number
+}

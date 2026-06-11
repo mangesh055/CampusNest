@@ -1,0 +1,159 @@
+import React from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import {
+  LayoutDashboard, Home, Building2, Utensils, Users, MessageCircle,
+  Bell, Heart, Search, Settings, BarChart2, QrCode, Calendar,
+  CreditCard, FileText, Shield, LogOut, ChevronRight, Star
+} from 'lucide-react'
+import { cn, getInitials } from '../../lib/utils'
+import { useAuthStore } from '../../store/authStore'
+
+const studentLinks = [
+  { label: 'Overview', path: '/dashboard/student', icon: LayoutDashboard },
+  { label: 'My Subscription', path: '/dashboard/student/subscription', icon: CreditCard },
+  { label: 'Attendance', path: '/dashboard/student/attendance', icon: Calendar },
+  { label: 'Scan QR', path: '/dashboard/student/scan', icon: QrCode },
+  { label: 'Favorites', path: '/favorites', icon: Heart },
+  { label: 'Messages', path: '/chat', icon: MessageCircle },
+  { label: 'Reviews', path: '/dashboard/student/reviews', icon: Star },
+  { label: 'Settings', path: '/settings', icon: Settings },
+]
+
+const ownerLinks = [
+  { label: 'Overview', path: '/dashboard/owner', icon: LayoutDashboard },
+  { label: 'My Listings', path: '/dashboard/owner/listings', icon: Building2 },
+  { label: 'Inquiries', path: '/dashboard/owner/inquiries', icon: MessageCircle },
+  { label: 'Analytics', path: '/dashboard/owner/analytics', icon: BarChart2 },
+  { label: 'Reviews', path: '/dashboard/owner/reviews', icon: Star },
+  { label: 'Settings', path: '/settings', icon: Settings },
+]
+
+const messOwnerLinks = [
+  { label: 'Overview', path: '/dashboard/mess', icon: LayoutDashboard },
+  { label: 'Menu Manager', path: '/dashboard/mess/menu', icon: Utensils },
+  { label: 'Plans Manager', path: '/dashboard/mess/plans', icon: CreditCard },
+  { label: 'Subscribers', path: '/dashboard/mess/subscribers', icon: Users },
+  { label: 'Attendance', path: '/dashboard/mess/attendance', icon: Calendar },
+  { label: 'QR Generator', path: '/dashboard/mess/qr', icon: QrCode },
+  { label: 'Analytics', path: '/dashboard/mess/analytics', icon: BarChart2 },
+  { label: 'Payments', path: '/dashboard/mess/payments', icon: CreditCard },
+  { label: 'Reports', path: '/dashboard/mess/reports', icon: FileText },
+  { label: 'Settings', path: '/settings', icon: Settings },
+]
+
+const adminLinks = [
+  { label: 'Overview', path: '/dashboard/admin', icon: LayoutDashboard },
+  { label: 'Users', path: '/dashboard/admin/users', icon: Users },
+  { label: 'Properties', path: '/dashboard/admin/properties', icon: Building2 },
+  { label: 'Messes', path: '/dashboard/admin/messes', icon: Utensils },
+  { label: 'Analytics', path: '/dashboard/admin/analytics', icon: BarChart2 },
+  { label: 'Reports', path: '/dashboard/admin/reports', icon: FileText },
+  { label: 'Settings', path: '/settings', icon: Settings },
+]
+
+export default function Sidebar() {
+  const location = useLocation()
+  const { profile, signOut } = useAuthStore()
+
+  const links = profile?.role === 'student' ? studentLinks
+    : profile?.role === 'property_owner' ? ownerLinks
+    : profile?.role === 'mess_owner' ? messOwnerLinks
+    : adminLinks
+
+  const roleLabel = profile?.role?.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())
+
+  return (
+    <aside className="w-64 h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col">
+      {/* Logo */}
+      <div className="p-6 border-b border-slate-200 dark:border-slate-800">
+        <Link to="/" className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
+            <Building2 className="w-4 h-4 text-white" />
+          </div>
+          <span className="text-lg font-display font-bold">
+            <span className="gradient-text">Campus</span>
+            <span className="text-slate-900 dark:text-white">Nest</span>
+          </span>
+        </Link>
+      </div>
+
+      {/* Profile Summary */}
+      {profile && (
+        <div className="p-4 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+              {getInitials(profile.full_name || 'User')}
+            </div>
+            <div className="overflow-hidden">
+              <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{profile.full_name}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{roleLabel}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Navigation */}
+      <nav className="flex-1 p-3 overflow-y-auto">
+        <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-600 uppercase tracking-wider px-4 mb-2">Navigation</p>
+        <ul className="space-y-1">
+          {links.map(({ label, path, icon: Icon }) => {
+            const isActive = location.pathname === path
+            return (
+              <li key={path}>
+                <Link
+                  to={path}
+                  className={cn('sidebar-item', isActive && 'active')}
+                >
+                  <Icon className={cn('w-4 h-4', isActive ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400')} />
+                  <span className="text-sm">{label}</span>
+                  {isActive && (
+                    <ChevronRight className="w-3 h-3 ml-auto text-brand-500" />
+                  )}
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+
+        {/* Quick Links */}
+        <div className="mt-6">
+          <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-600 uppercase tracking-wider px-4 mb-2">Quick Access</p>
+          <ul className="space-y-1">
+            <li>
+              <Link to="/" className="sidebar-item text-sm">
+                <Home className="w-4 h-4 text-slate-400" />
+                <span className="text-sm">Home</span>
+              </Link>
+            </li>
+            <li>
+              <Link to="/chat" className="sidebar-item relative">
+                <MessageCircle className="w-4 h-4 text-slate-400" />
+                <span className="text-sm">Messages</span>
+                <span className="ml-auto bg-brand-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">2</span>
+              </Link>
+            </li>
+            <li>
+              <Link to="/notifications" className="sidebar-item">
+                <Bell className="w-4 h-4 text-slate-400" />
+                <span className="text-sm">Notifications</span>
+                <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">3</span>
+              </Link>
+            </li>
+          </ul>
+        </div>
+      </nav>
+
+      {/* Sign Out */}
+      <div className="p-3 border-t border-slate-200 dark:border-slate-800">
+        <button
+          onClick={signOut}
+          className="w-full sidebar-item text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+        >
+          <LogOut className="w-4 h-4" />
+          <span className="text-sm">Sign Out</span>
+        </button>
+      </div>
+    </aside>
+  )
+}
