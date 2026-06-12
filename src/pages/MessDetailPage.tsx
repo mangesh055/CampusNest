@@ -6,6 +6,7 @@ import { mockMesses, mockPlans } from '../data/mockData'
 import { formatCurrency, mealTypeLabels, messStatusConfig } from '../lib/utils'
 import { cn } from '../lib/utils'
 import type { MealType } from '../types'
+import { useAuthStore } from '../store/authStore'
 
 type Tab = 'dine' | 'photos' | 'menu' | 'review'
 
@@ -26,6 +27,28 @@ export default function MessDetailPage() {
   const { id } = useParams()
   const [activeTab, setActiveTab] = useState<Tab>('dine')
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
+  const { profile } = useAuthStore()
+
+  const [newReview, setNewReview] = useState('')
+  const [newRating, setNewRating] = useState(0)
+  const [reviewsList, setReviewsList] = useState(mockReviews)
+
+  const handleAddReview = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newReview.trim() || newRating === 0) return
+
+    const newR = {
+      id: Date.now().toString(),
+      name: profile?.full_name || 'Anonymous',
+      rating: newRating,
+      comment: newReview,
+      date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    }
+
+    setReviewsList([newR, ...reviewsList])
+    setNewReview('')
+    setNewRating(0)
+  }
 
   const allMesses = (() => {
     const base = [...mockMesses]
@@ -59,7 +82,11 @@ export default function MessDetailPage() {
   const displayPlans = (() => {
     if (mess.owner_id) {
       const s = localStorage.getItem(`campusnest-mess-plans-${mess.owner_id}`)
-      if (s) { const p = JSON.parse(s).filter((x: any) => x.active); if (p.length) return p }
+      if (s) { 
+        const p = JSON.parse(s).filter((x: any) => x.active)
+        return p 
+      }
+      return [] // Dynamic messes shouldn't show fake fallback plans
     }
     const mf = mockPlans.filter(p => p.mess_id === mess.id)
     if (mf.length) return mf
@@ -357,9 +384,41 @@ export default function MessDetailPage() {
                       </div>
                     </div>
 
+                    {/* Add Review Form */}
+                    <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                      <h4 className="font-bold text-slate-900 dark:text-white mb-3 text-sm">Write a Review</h4>
+                      <form onSubmit={handleAddReview} className="space-y-3">
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map(s => (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => setNewRating(s)}
+                              className="focus:outline-none transition-transform hover:scale-110"
+                            >
+                              <Star className={cn('w-6 h-6', s <= newRating ? 'text-amber-400 fill-amber-400' : 'text-slate-300 dark:text-slate-600')} />
+                            </button>
+                          ))}
+                        </div>
+                        <textarea
+                          placeholder="Share your experience..."
+                          className="input-field w-full min-h-[80px] text-sm resize-none"
+                          value={newReview}
+                          onChange={(e) => setNewReview(e.target.value)}
+                        />
+                        <button 
+                          type="submit" 
+                          disabled={!newReview.trim() || newRating === 0}
+                          className="btn-primary w-full text-sm py-2 disabled:opacity-50"
+                        >
+                          Submit Review
+                        </button>
+                      </form>
+                    </div>
+
                     {/* Review cards */}
                     <div className="space-y-4">
-                      {mockReviews.map(r => (
+                      {reviewsList.map(r => (
                         <div key={r.id} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex items-center gap-2.5">

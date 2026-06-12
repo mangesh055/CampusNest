@@ -9,6 +9,7 @@ import AuthPage from './pages/AuthPage'
 import ChatPage from './pages/ChatPage'
 import RoommatesPage from './pages/RoommatesPage'
 import CommunityPage from './pages/CommunityPage'
+import NotificationsPage from './pages/NotificationsPage'
 
 // Dashboard pages
 import DashboardLayout from './components/layout/DashboardLayout'
@@ -17,6 +18,9 @@ import QRScanPage from './pages/dashboard/QRScanPage'
 import OwnerDashboard from './pages/dashboard/OwnerDashboard'
 import MessOwnerDashboard from './pages/dashboard/MessOwnerDashboard'
 import AdminDashboard from './pages/dashboard/AdminDashboard'
+
+import SettingsPage from './pages/dashboard/SettingsPage'
+import ProfilePage from './pages/dashboard/ProfilePage'
 
 // Layouts
 import PublicLayout from './components/layout/PublicLayout'
@@ -106,6 +110,7 @@ export default function App() {
           <Route path="/roommates" element={<RoommatesPage />} />
           <Route path="/community" element={<CommunityPage />} />
           <Route path="/favorites" element={<PropertiesPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
         </Route>
 
         {/* Dashboard Redirect Handler */}
@@ -130,12 +135,15 @@ export default function App() {
           <Route path="mess/analytics" element={<MessOwnerDashboard />} />
           <Route path="mess/payments" element={<MessOwnerDashboard />} />
           <Route path="mess/reports" element={<MessOwnerDashboard />} />
+          <Route path="mess/settings" element={<MessOwnerDashboard />} />
           
           <Route path="admin" element={<AdminDashboard />} />
           <Route path="admin/users" element={<AdminDashboard />} />
           <Route path="admin/properties" element={<AdminDashboard />} />
           <Route path="admin/messes" element={<AdminDashboard />} />
           <Route path="admin/reports" element={<AdminDashboard />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="profile" element={<ProfilePage />} />
         </Route>
 
         {/* Catch All Redirect */}

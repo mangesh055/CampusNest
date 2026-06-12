@@ -8,6 +8,8 @@ import {
 } from 'lucide-react'
 import { cn, getInitials } from '../../lib/utils'
 import { useAuthStore } from '../../store/authStore'
+import { useNotificationStore } from '../../store/notificationStore'
+import { supabase } from '../../lib/supabase'
 
 const navLinks = [
   { label: 'Home', path: '/', icon: Home },
@@ -29,12 +31,51 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const { profile, signOut } = useAuthStore()
+  const { unreadCount, init } = useNotificationStore()
+
+  // Mess Status State (for Mess Owners only)
+  const [myMess, setMyMess] = useState<any>(null)
 
   useEffect(() => {
+    if (profile?.role === 'mess_owner') {
+      const saved = localStorage.getItem(`campusnest-mess-profile-${profile.id}`)
+      if (saved) setMyMess(JSON.parse(saved))
+      
+      const fetchMess = async () => {
+        try {
+          const { data } = await supabase.from('messes').select('*').eq('owner_id', profile.id).single()
+          if (data) {
+            setMyMess(data)
+            localStorage.setItem(`campusnest-mess-profile-${profile.id}`, JSON.stringify(data))
+          }
+        } catch (e) {
+          console.warn('Failed to fetch mess profile for navbar', e)
+        }
+      }
+      fetchMess()
+    }
+  }, [profile])
+
+  const toggleMessStatus = async () => {
+    if (!myMess || !profile) return
+    const newStatus = myMess.status === 'open' ? 'closed' : 'open'
+    const updated = { ...myMess, status: newStatus }
+    setMyMess(updated)
+    localStorage.setItem(`campusnest-mess-profile-${profile.id}`, JSON.stringify(updated))
+    
+    try {
+      await supabase.from('messes').update({ status: newStatus }).eq('id', myMess.id)
+    } catch (e) {
+      console.warn('Failed to update status', e)
+    }
+  }
+
+  useEffect(() => {
+    init()
     const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+  }, [init])
 
   useEffect(() => {
     setMenuOpen(false)
@@ -109,10 +150,40 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
 
             {profile ? (
               <>
+                {/* Mess Status Toggle (Only for mess owners) */}
+                {profile.role === 'mess_owner' && myMess && (
+                  <div className="hidden md:flex p-0.5 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 mr-2 items-center">
+                    <button
+                      onClick={() => { if (myMess.status !== 'open') toggleMessStatus() }}
+                      className={cn(
+                        'px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all',
+                        myMess.status === 'open' 
+                          ? 'bg-white dark:bg-slate-700 text-emerald-600 shadow-sm' 
+                          : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                      )}
+                    >
+                      OPEN
+                    </button>
+                    <button
+                      onClick={() => { if (myMess.status === 'closed') return; toggleMessStatus() }}
+                      className={cn(
+                        'px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all',
+                        myMess.status === 'closed' 
+                          ? 'bg-white dark:bg-slate-700 text-red-600 shadow-sm' 
+                          : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                      )}
+                    >
+                      CLOSED
+                    </button>
+                  </div>
+                )}
+
                 {/* Notifications */}
                 <Link to="/notifications" className="relative btn-ghost p-2 rounded-xl">
                   <Bell className="w-4 h-4" />
-                  <span className="notif-dot text-[9px]">3</span>
+                  {unreadCount > 0 && (
+                    <span className="notif-dot text-[9px]">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                  )}
                 </Link>
 
                 {/* Favorites */}
@@ -155,10 +226,10 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
                           <Link to={getDashboardPath()} className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors">
                             <LayoutDashboard className="w-4 h-4" /> Dashboard
                           </Link>
-                          <Link to="/profile" className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors">
+                          <Link to="/dashboard/profile" className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors">
                             <User className="w-4 h-4" /> Profile
                           </Link>
-                          <Link to="/settings" className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors">
+                          <Link to="/dashboard/settings" className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors">
                             <Settings className="w-4 h-4" /> Settings
                           </Link>
                           {profile.role === 'admin' && (

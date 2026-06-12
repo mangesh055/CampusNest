@@ -60,6 +60,7 @@ export interface Property {
   review_count: number
   images: string[]
   amenities: PropertyAmenity
+  google_maps_url?: string
   created_at: string
   updated_at: string
   profiles?: Profile
@@ -103,6 +104,7 @@ export interface Mess {
   review_count: number
   photos: string[]
   meal_types: MealType[]
+  google_maps_url?: string
   created_at: string
   updated_at: string
   profiles?: Profile

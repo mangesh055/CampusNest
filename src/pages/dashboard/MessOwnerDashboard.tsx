@@ -8,23 +8,8 @@ import { useAuthStore } from '../../store/authStore'
 import { supabase } from '../../lib/supabase'
 import QRCode from 'qrcode'
 import { cn } from '../../lib/utils'
-import MapComponent from '../../components/map/MapComponent'
 
-const weeklyData = [
-  { day: 'Mon', breakfast: 18, lunch: 32, dinner: 28 },
-  { day: 'Tue', breakfast: 22, lunch: 35, dinner: 30 },
-  { day: 'Wed', breakfast: 15, lunch: 28, dinner: 25 },
-  { day: 'Thu', breakfast: 20, lunch: 33, dinner: 29 },
-  { day: 'Fri', breakfast: 25, lunch: 40, dinner: 35 },
-  { day: 'Sat', breakfast: 30, lunch: 45, dinner: 40 },
-  { day: 'Sun', breakfast: 28, lunch: 42, dinner: 38 },
-]
-
-const pieData = [
-  { name: 'Breakfast', value: 158, color: '#f59e0b' },
-  { name: 'Lunch', value: 255, color: '#6366f1' },
-  { name: 'Dinner', value: 225, color: '#8b5cf6' },
-]
+// Removed static weeklyData and pieData
 
 const initialSubscribers = [
   { id: 'sub-1', name: 'Rahul Sharma', email: 'rahul@example.com', plan: 'Full Day', expiry: '2026-06-18', paid: true, attendance: '85%' },
@@ -44,6 +29,30 @@ const defaultMenu = {
 export default function MessOwnerDashboard() {
   const location = useLocation()
   const { profile } = useAuthStore()
+
+  // ----------------------------------------------------
+  // DETERMINE SUBVIEW ROUTE
+  // ----------------------------------------------------
+  const path = location.pathname
+  const view = path.endsWith('/menu') 
+    ? 'menu' 
+    : path.endsWith('/plans')
+      ? 'plans'
+      : path.endsWith('/subscribers') 
+        ? 'subscribers' 
+        : path.endsWith('/attendance')
+          ? 'attendance'
+          : path.endsWith('/qr')
+            ? 'qr'
+            : path.endsWith('/analytics')
+              ? 'analytics'
+              : path.endsWith('/payments')
+                ? 'payments'
+                : path.endsWith('/reports')
+                  ? 'reports'
+                  : path.endsWith('/settings')
+                    ? 'settings'
+                    : 'overview'
 
   // Onboarding Mess Profile state
   const [myMess, setMyMess] = useState<any | null>(() => {
@@ -78,7 +87,34 @@ export default function MessOwnerDashboard() {
   const [selectedMealTypes, setSelectedMealTypes] = useState<string[]>(['breakfast', 'lunch', 'dinner'])
   const [latitude, setLatitude] = useState(18.5204)
   const [longitude, setLongitude] = useState(73.8567)
+  const [googleMapsUrl, setGoogleMapsUrl] = useState('')
+  const [photos, setPhotos] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Image Upload Handlers
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files) return
+    
+    Array.from(files).forEach(file => {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPhotos(prev => [...prev, reader.result as string])
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const handleAddImageUrl = () => {
+    const url = prompt('Enter image URL:')
+    if (url) {
+      setPhotos(prev => [...prev, url])
+    }
+  }
+
+  const removePhoto = (index: number) => {
+    setPhotos(prev => prev.filter((_, i) => i !== index))
+  }
 
   // QR States
   const [qrUrl, setQrUrl] = useState('')
@@ -117,11 +153,34 @@ export default function MessOwnerDashboard() {
     if (!profile) return []
     const saved = localStorage.getItem(`campusnest-mess-scans-${profile.id}`)
     if (saved) return JSON.parse(saved)
-    return [
-      { id: 'scan-1', studentName: 'Rahul Sharma', time: '08:42 AM', meal: 'breakfast', gpsStatus: 'Verified (12m)', status: 'success' },
-      { id: 'scan-2', studentName: 'Priya Patel', time: '01:15 PM', meal: 'lunch', gpsStatus: 'Verified (5m)', status: 'success' },
-      { id: 'scan-3', studentName: 'Sneha Joshi', time: '01:30 PM', meal: 'lunch', gpsStatus: 'Verified (24m)', status: 'success' },
-    ]
+    
+    // Generate some mock history for the past 7 days to populate the dynamic charts
+    const today = new Date()
+    const mockScans = []
+    
+    // Today's scans
+    const todayStr = today.toISOString().split('T')[0]
+    mockScans.push({ id: `scan-t1`, studentName: 'Rahul Sharma', time: '08:42 AM', date: todayStr, meal: 'breakfast', gpsStatus: 'Verified (12m)', status: 'success' })
+    mockScans.push({ id: `scan-t2`, studentName: 'Priya Patel', time: '01:15 PM', date: todayStr, meal: 'lunch', gpsStatus: 'Verified (5m)', status: 'success' })
+    mockScans.push({ id: `scan-t3`, studentName: 'Sneha Joshi', time: '01:30 PM', date: todayStr, meal: 'lunch', gpsStatus: 'Verified (24m)', status: 'success' })
+    
+    // Historical scans for the past 6 days
+    for (let i = 1; i <= 6; i++) {
+      const pastDate = new Date(today)
+      pastDate.setDate(today.getDate() - i)
+      const dateStr = pastDate.toISOString().split('T')[0]
+      
+      // Randomly generate 15-30 scans per day for the chart
+      const numBreakfast = Math.floor(Math.random() * 15) + 10
+      const numLunch = Math.floor(Math.random() * 20) + 15
+      const numDinner = Math.floor(Math.random() * 20) + 10
+      
+      for(let j=0; j<numBreakfast; j++) mockScans.push({ id: `hist-b-${i}-${j}`, date: dateStr, meal: 'breakfast', status: 'success' })
+      for(let j=0; j<numLunch; j++) mockScans.push({ id: `hist-l-${i}-${j}`, date: dateStr, meal: 'lunch', status: 'success' })
+      for(let j=0; j<numDinner; j++) mockScans.push({ id: `hist-d-${i}-${j}`, date: dateStr, meal: 'dinner', status: 'success' })
+    }
+    
+    return mockScans
   })
 
   // Transactions Log State (scoped by owner ID)
@@ -164,6 +223,33 @@ export default function MessOwnerDashboard() {
   const [planModalOpen, setPlanModalOpen] = useState(false)
   const [editingPlan, setEditingPlan] = useState<any | null>(null)
   const [planForm, setPlanForm] = useState({ name: '', description: '', price: '', duration_days: '30', meal_types: [] as string[] })
+
+  // Payment Settings State (UPI, Phone, Payment Methods)
+  const [paymentSettings, setPaymentSettings] = useState<any>(() => {
+    if (!profile) return { upi_id: '', phone_number: '', upi_enabled: true, cash_enabled: true, card_enabled: false }
+    const saved = localStorage.getItem(`campusnest-mess-payment-settings-${profile.id}`)
+    if (saved) return JSON.parse(saved)
+    return {
+      upi_id: '',
+      phone_number: '',
+      upi_enabled: true,
+      cash_enabled: true,
+      card_enabled: false
+    }
+  })
+
+  // Payment Details Modal State
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false)
+  const [tempPaymentSettings, setTempPaymentSettings] = useState(paymentSettings)
+
+  // Cash Collection Modal State
+  const [cashTopupModalOpen, setCashTopupModalOpen] = useState(false)
+  const [cashTopupForm, setCashTopupForm] = useState({ studentName: '', amount: '', method: 'Cash' })
+
+  // Payment QR State
+  const [selectedPlanForQR, setSelectedPlanForQR] = useState<any | null>(null)
+  const [paymentQRUrl, setPaymentQRUrl] = useState('')
+  const [paymentQRModalOpen, setPaymentQRModalOpen] = useState(false)
 
   useEffect(() => {
     if (profile) {
@@ -223,6 +309,23 @@ export default function MessOwnerDashboard() {
     }
   }, [myMess])
 
+  // Populate form when editing
+  useEffect(() => {
+    if (view === 'settings' && myMess) {
+      setMessName(myMess.name || '')
+      setDescription(myMess.description || '')
+      setAddress(myMess.address || '')
+      setContactPhone(myMess.contact_phone || '')
+      setMonthlyCharge(String(myMess.monthly_charge || '3200'))
+      setPerMealCharge(String(myMess.per_meal_charge || '110'))
+      setSelectedMealTypes(myMess.meal_types || ['breakfast', 'lunch', 'dinner'])
+      setLatitude(myMess.latitude || 18.5204)
+      setLongitude(myMess.longitude || 73.8567)
+      setGoogleMapsUrl(myMess.google_maps_url || '')
+      setPhotos(myMess.photos || [])
+    }
+  }, [view, myMess])
+
   // Handle Mess Onboarding Submission
   const handleSetupSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -234,32 +337,37 @@ export default function MessOwnerDashboard() {
 
     setIsSubmitting(true)
     const newMess = {
-      id: `mess-${Date.now()}`,
+      id: myMess ? myMess.id : `mess-${Date.now()}`,
       owner_id: profile.id,
       name: messName,
       description: description,
       address: address,
-      city: 'Pune',
-      state: 'Maharashtra',
+      city: myMess?.city || 'Pune',
+      state: myMess?.state || 'Maharashtra',
       latitude: latitude,
       longitude: longitude,
+      google_maps_url: googleMapsUrl,
       contact_phone: contactPhone,
       monthly_charge: Number(monthlyCharge),
       per_meal_charge: Number(perMealCharge),
-      status: 'open',
-      verified: false,
-      featured: false,
-      rating: 5.0,
-      review_count: 0,
+      status: myMess?.status || 'open',
+      verified: myMess?.verified || false,
+      featured: myMess?.featured || false,
+      rating: myMess?.rating || 5.0,
+      review_count: myMess?.review_count || 0,
       meal_types: selectedMealTypes,
-      photos: ['https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600'],
-      created_at: new Date().toISOString(),
+      photos: photos.length > 0 ? photos : ['https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600'],
+      created_at: myMess?.created_at || new Date().toISOString(),
       updated_at: new Date().toISOString()
     }
 
     // Try saving to database
     try {
-      await supabase.from('messes').insert([newMess])
+      if (myMess) {
+        await supabase.from('messes').update(newMess).eq('id', myMess.id)
+      } else {
+        await supabase.from('messes').insert([newMess])
+      }
     } catch (dbError) {
       console.warn('Database save skipped/failed. Storing locally instead.')
     }
@@ -272,6 +380,10 @@ export default function MessOwnerDashboard() {
       setActiveMenuCategory(selectedMealTypes[0] as any)
     }
     setIsSubmitting(false)
+    if (view === 'settings') {
+      setBannerMsg('Mess profile updated successfully!')
+      setTimeout(() => setBannerMsg(''), 3000)
+    }
   }
 
   // Generate QR for daily scanner
@@ -287,6 +399,24 @@ export default function MessOwnerDashboard() {
   const handlePrintQR = () => {
     setBannerMsg('Preparing high-resolution QR Poster PDF for printing...')
     setTimeout(() => setBannerMsg(''), 4000)
+  }
+
+  const toggleMessStatus = async () => {
+    if (!myMess || !profile) return
+    const newStatus = myMess.status === 'open' ? 'closed' : 'open'
+    const updatedMess = { ...myMess, status: newStatus }
+    
+    setMyMess(updatedMess)
+    localStorage.setItem(`campusnest-mess-profile-${profile.id}`, JSON.stringify(updatedMess))
+    
+    try {
+      await supabase.from('messes').update({ status: newStatus }).eq('id', myMess.id)
+    } catch (e) {
+      console.warn('DB update failed, using local.')
+    }
+    
+    setBannerMsg(`Mess status changed to ${newStatus.toUpperCase()}`)
+    setTimeout(() => setBannerMsg(''), 3000)
   }
 
   // Subscriber actions
@@ -444,6 +574,68 @@ export default function MessOwnerDashboard() {
     }))
   }
 
+  const handleSavePaymentSettings = (e: React.FormEvent) => {
+    e.preventDefault()
+    setPaymentSettings(tempPaymentSettings)
+    if (profile) {
+      localStorage.setItem(`campusnest-mess-payment-settings-${profile.id}`, JSON.stringify(tempPaymentSettings))
+    }
+    setPaymentModalOpen(false)
+    setBannerMsg('Payment settings updated successfully!')
+    setTimeout(() => setBannerMsg(''), 3000)
+  }
+
+  const handleGeneratePaymentQR = async (plan: any) => {
+    if (!paymentSettings.upi_id) {
+      alert('Please configure your UPI ID in Payment Settings first.')
+      return
+    }
+    setSelectedPlanForQR(plan)
+    const upiUri = `upi://pay?pa=${paymentSettings.upi_id}&pn=${encodeURIComponent(myMess.name)}&am=${plan.price}&cu=INR&tn=Plan+${encodeURIComponent(plan.name)}`
+    try {
+      const url = await QRCode.toDataURL(upiUri, { width: 300, margin: 2 })
+      setPaymentQRUrl(url)
+      setPaymentQRModalOpen(true)
+    } catch (err) {
+      console.error('Failed to generate QR', err)
+    }
+  }
+
+  const handleCashTopupSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const sub = subscribers.find((s: any) => s.name === cashTopupForm.studentName || s.id === cashTopupForm.studentName)
+    if (!sub) {
+      alert('Student not found.')
+      return
+    }
+    
+    setSubscribers(prev => prev.map((s: any) => {
+      if (s.id === sub.id) {
+        const curDate = new Date(s.expiry)
+        const now = new Date()
+        const baseDate = curDate > now ? curDate : now
+        baseDate.setDate(baseDate.getDate() + 30) // Assuming 30 day topup
+        return { ...s, paid: true, expiry: baseDate.toISOString().split('T')[0] }
+      }
+      return s
+    }))
+    
+    const newTxn = {
+      id: `TXN-${Math.floor(Math.random() * 8999 + 1000)}`,
+      studentName: sub.name,
+      amount: Number(cashTopupForm.amount),
+      date: new Date().toISOString().split('T')[0],
+      method: cashTopupForm.method,
+      status: 'Completed'
+    }
+    setTransactions(prev => [newTxn, ...prev])
+    
+    setCashTopupModalOpen(false)
+    setCashTopupForm({ studentName: '', amount: '', method: 'Cash' })
+    setBannerMsg(`Manual top-up for ${sub.name} successful!`)
+    setTimeout(() => setBannerMsg(''), 3000)
+  }
+
   // ----------------------------------------------------
   // RENDER ONBOARDING WIZARD IF PROFILE LACKS MESS
   // ----------------------------------------------------
@@ -508,19 +700,62 @@ export default function MessOwnerDashboard() {
             </div>
 
             <div className="space-y-1.5 col-span-2">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Mark Location on Map</label>
-              <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
-                <MapComponent
-                  center={[latitude, longitude]}
-                  zoom={14}
-                  height="200px"
-                  interactivePicker={true}
-                  onLocationSelect={(lat, lng) => {
-                    setLatitude(lat)
-                    setLongitude(lng)
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">GPS Coordinates</label>
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (navigator.geolocation) {
+                      navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                          setLatitude(pos.coords.latitude)
+                          setLongitude(pos.coords.longitude)
+                          setGoogleMapsUrl(`https://www.google.com/maps/search/?api=1&query=${pos.coords.latitude},${pos.coords.longitude}`)
+                        },
+                        (err) => alert('Unable to retrieve your location. Please ensure location permissions are granted.'),
+                        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                      )
+                    } else {
+                      alert('Geolocation is not supported by your browser.')
+                    }
                   }}
-                />
+                  className="btn-secondary whitespace-nowrap"
+                >
+                  <MapPin className="w-4 h-4 mr-2" />
+                  Auto-Detect My Location
+                </button>
+                <div className="flex gap-4 w-full">
+                  <input type="text" readOnly value={latitude} className="input-field bg-slate-50 opacity-70 text-xs py-2" placeholder="Latitude" />
+                  <input type="text" readOnly value={longitude} className="input-field bg-slate-50 opacity-70 text-xs py-2" placeholder="Longitude" />
+                </div>
               </div>
+              <p className="text-[10px] text-slate-500 mt-1 mb-3">Click the button while physically at your mess to set the geofence for student attendance.</p>
+              
+              {/* Free Google Maps Embed Preview */}
+              <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 mt-2">
+                <iframe 
+                  width="100%" 
+                  height="250" 
+                  style={{ border: 0 }}
+                  loading="lazy" 
+                  allowFullScreen 
+                  src={`https://www.google.com/maps?q=${latitude},${longitude}&output=embed`}
+                ></iframe>
+                <div className="p-2 text-center text-xs font-semibold text-slate-500 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
+                  Live Preview of Auto-Detected Coordinates
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1.5 col-span-2">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Direct Google Maps Link (Optional)</label>
+              <input
+                type="url"
+                value={googleMapsUrl}
+                onChange={e => setGoogleMapsUrl(e.target.value)}
+                placeholder="https://maps.app.goo.gl/..."
+                className="input-field text-xs"
+              />
             </div>
 
             <div className="space-y-1.5">
@@ -543,6 +778,40 @@ export default function MessOwnerDashboard() {
                 className="input-field"
                 required
               />
+            </div>
+
+            {/* Photos Upload */}
+            <div className="col-span-2 space-y-1.5 mt-2">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Mess Photos (Banner / Gallery)</label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+                {photos.map((img, i) => (
+                  <div key={i} className="relative aspect-video rounded-lg overflow-hidden group">
+                    <img src={img} alt={`Preview ${i}`} className="w-full h-full object-cover" />
+                    <button 
+                      type="button" 
+                      onClick={() => removePhoto(i)}
+                      className="absolute top-1 right-1 bg-red-500/80 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <label className="flex-1 cursor-pointer bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-3 flex flex-col items-center justify-center transition-colors">
+                  <Plus className="w-5 h-5 text-slate-400 mb-1" />
+                  <span className="text-xs text-slate-500 font-medium">Upload Local Image</span>
+                  <input type="file" multiple accept="image/*" onChange={handleFileUpload} className="hidden" />
+                </label>
+                <button 
+                  type="button" 
+                  onClick={handleAddImageUrl}
+                  className="flex-1 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-3 flex flex-col items-center justify-center transition-colors"
+                >
+                  <Plus className="w-5 h-5 text-slate-400 mb-1" />
+                  <span className="text-xs text-slate-500 font-medium">Add via Link</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -594,27 +863,8 @@ export default function MessOwnerDashboard() {
   }
 
   // ----------------------------------------------------
-  // DETERMINE SUBVIEW ROUTE
+  // RENDER SUBVIEWS
   // ----------------------------------------------------
-  const path = location.pathname
-  const view = path.endsWith('/menu') 
-    ? 'menu' 
-    : path.endsWith('/plans')
-      ? 'plans'
-      : path.endsWith('/subscribers') 
-        ? 'subscribers' 
-        : path.endsWith('/attendance')
-          ? 'attendance'
-          : path.endsWith('/qr')
-            ? 'qr'
-            : path.endsWith('/analytics')
-              ? 'analytics'
-              : path.endsWith('/payments')
-                ? 'payments'
-                : path.endsWith('/reports')
-                  ? 'reports'
-                  : 'overview'
-
   // Helper Banner Notification
   const renderBanner = () => {
     if (!bannerMsg) return null
@@ -629,12 +879,37 @@ export default function MessOwnerDashboard() {
 
   // 1. Overview View
   if (view === 'overview') {
+    const todayStr = new Date().toISOString().split('T')[0]
+    const todaysScans = scans.filter(s => s.date === todayStr)
+
     const stats = [
       { label: 'Total Subscribers', value: subscribers.length.toString(), icon: '👥', color: 'from-brand-400 to-brand-600', sub: subscribers.length > 0 ? '+1 active today' : 'No users registered' },
-      { label: "Today's Attendance", value: scans.length.toString(), icon: '✅', color: 'from-emerald-400 to-emerald-600', sub: scans.length > 0 ? `${scans.length} checks logged` : 'No logs yet' },
+      { label: "Today's Attendance", value: todaysScans.length.toString(), icon: '✅', color: 'from-emerald-400 to-emerald-600', sub: todaysScans.length > 0 ? `${todaysScans.length} checks logged` : 'No logs yet' },
       { label: 'Monthly Revenue', value: formatCurrency(subscribers.filter((s: any) => s.paid).length * myMess.monthly_charge), icon: '💰', color: 'from-amber-400 to-amber-600', sub: 'Calculated from active' },
       { label: 'Unpaid Accounts', value: subscribers.filter((s: any) => !s.paid).length.toString(), icon: '⚠️', color: 'from-red-400 to-red-600', sub: 'Requires notification' },
     ]
+
+    // Dynamic Pie Data for today
+    const dynamicPieData = [
+      { name: 'Breakfast', value: todaysScans.filter(s => s.meal === 'breakfast').length, color: '#f59e0b' },
+      { name: 'Lunch', value: todaysScans.filter(s => s.meal === 'lunch').length, color: '#6366f1' },
+      { name: 'Dinner', value: todaysScans.filter(s => s.meal === 'dinner').length, color: '#8b5cf6' },
+    ].filter(d => d.value > 0) // Only show meals that have at least 1 scan
+
+    // Dynamic Weekly Data for the last 7 days
+    const dynamicWeeklyData = Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date()
+      d.setDate(d.getDate() - (6 - i)) // 6 days ago up to today
+      const dateStr = d.toISOString().split('T')[0]
+      const dayStr = d.toLocaleDateString('en-US', { weekday: 'short' })
+      const dayScans = scans.filter(s => s.date === dateStr)
+      return {
+        day: dayStr,
+        breakfast: dayScans.filter(s => s.meal === 'breakfast').length,
+        lunch: dayScans.filter(s => s.meal === 'lunch').length,
+        dinner: dayScans.filter(s => s.meal === 'dinner').length,
+      }
+    })
 
     return (
       <div className="p-6 space-y-6">
@@ -642,12 +917,17 @@ export default function MessOwnerDashboard() {
 
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-2xl font-display font-bold text-slate-900 dark:text-white">{myMess.name}</h1>
+            <h1 className="text-2xl font-display font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              {myMess.name}
+              <Link to="/dashboard/mess/settings" className="text-slate-400 hover:text-brand-500" title="Edit Profile">
+                <Edit2 className="w-5 h-5" />
+              </Link>
+            </h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">📍 {myMess.address} | Owner Dashboard</p>
           </div>
-          <div className="flex gap-2">
-            <Link to="/dashboard/mess/menu" className="btn-secondary text-sm">Update Menu</Link>
-            <button onClick={handleSimulateScan} className="btn-secondary text-xs flex items-center gap-1">
+          <div className="flex gap-2 items-center flex-wrap justify-end">
+            <Link to="/dashboard/mess/menu" className="btn-secondary text-sm hidden md:flex">Update Menu</Link>
+            <button onClick={handleSimulateScan} className="btn-secondary text-xs hidden lg:flex items-center gap-1">
               ⚡ Scan Simulator
             </button>
             <Link to="/dashboard/mess/qr" className="btn-primary text-sm flex items-center gap-1">
@@ -703,7 +983,7 @@ export default function MessOwnerDashboard() {
             </h3>
             <div className="space-y-4">
               {myMess.meal_types.map((meal: string) => {
-                const count = scans.filter((s: any) => s.meal === meal).length
+                const count = todaysScans.filter((s: any) => s.meal === meal).length
                 return (
                   <div key={meal}>
                     <div className="flex justify-between items-center mb-1">
@@ -729,14 +1009,18 @@ export default function MessOwnerDashboard() {
               <TrendingUp className="w-4 h-4 text-brand-500" /> Meal Attendance Rate
             </h3>
             <ResponsiveContainer width="100%" height={160}>
-              <PieChart>
-                <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
-                  {pieData.map((entry, index) => (
-                    <Cell key={index} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
+              {dynamicPieData.length > 0 ? (
+                <PieChart>
+                  <Pie data={dynamicPieData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
+                    {dynamicPieData.map((entry, index) => (
+                      <Cell key={index} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-xs text-slate-400 italic">No attendance yet today</div>
+              )}
             </ResponsiveContainer>
           </div>
         </div>
@@ -747,8 +1031,8 @@ export default function MessOwnerDashboard() {
             <BarChart2 className="w-4 h-4 text-brand-500" /> Weekly Scans Breakdown
           </h3>
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={weeklyData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <BarChart data={dynamicWeeklyData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" dark:stroke="#334155" />
               <XAxis dataKey="day" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
@@ -932,6 +1216,9 @@ export default function MessOwnerDashboard() {
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Manage active plans and approve payments for {myMess.name}</p>
           </div>
           <div className="flex gap-2">
+            <button onClick={() => setCashTopupModalOpen(true)} className="btn-primary text-xs flex items-center gap-1.5">
+              <Plus className="w-4 h-4" /> Manual Top-up
+            </button>
             <button onClick={addDemoSubscriber} className="btn-secondary text-xs flex items-center gap-1.5">
               <Plus className="w-4 h-4" /> Add Test Student
             </button>
@@ -1034,6 +1321,67 @@ export default function MessOwnerDashboard() {
             </div>
           )}
         </div>
+
+        {/* Cash Top-up Modal */}
+        <AnimatePresence>
+          {cashTopupModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setCashTopupModalOpen(false)}
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              />
+              <motion.div
+                initial={{ scale: 0.95, y: 15, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 0.95, y: 15, opacity: 0 }}
+                className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-glass overflow-hidden z-10 flex flex-col"
+              >
+                <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-display font-bold text-slate-900 dark:text-white">
+                      💵 Manual Cash Top-up
+                    </h3>
+                  </div>
+                  <button onClick={() => setCashTopupModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <form onSubmit={handleCashTopupSubmit} className="p-6 space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Student Name / ID</label>
+                    <input
+                      type="text"
+                      required
+                      value={cashTopupForm.studentName}
+                      onChange={e => setCashTopupForm((f: any) => ({ ...f, studentName: e.target.value }))}
+                      className="input-field"
+                      placeholder="Enter student name..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Amount Collected (₹)</label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      value={cashTopupForm.amount}
+                      onChange={e => setCashTopupForm((f: any) => ({ ...f, amount: e.target.value }))}
+                      className="input-field"
+                      placeholder="e.g. 3500"
+                    />
+                  </div>
+                  <div className="pt-2 flex gap-3">
+                    <button type="button" onClick={() => setCashTopupModalOpen(false)} className="btn-secondary flex-1 text-sm">Cancel</button>
+                    <button type="submit" className="btn-primary flex-1 text-sm">Top-up Plan</button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     )
   }
@@ -1143,7 +1491,13 @@ export default function MessOwnerDashboard() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex-wrap">
+                  <button
+                    onClick={() => handleGeneratePaymentQR(plan)}
+                    className="flex-1 btn-primary py-1.5 text-xs flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white"
+                  >
+                    <QrCode className="w-3.5 h-3.5" /> Pay QR
+                  </button>
                   <button
                     onClick={() => openEditPlan(plan)}
                     className="flex-1 btn-secondary py-1.5 text-xs flex items-center justify-center gap-1.5"
@@ -1293,6 +1647,56 @@ export default function MessOwnerDashboard() {
                     </button>
                   </div>
                 </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Payment QR Modal */}
+        <AnimatePresence>
+          {paymentQRModalOpen && selectedPlanForQR && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setPaymentQRModalOpen(false)}
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              />
+              <motion.div
+                initial={{ scale: 0.95, y: 15, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 0.95, y: 15, opacity: 0 }}
+                className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-glass overflow-hidden z-10 flex flex-col text-center"
+              >
+                <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                  <h3 className="text-lg font-display font-bold text-slate-900 dark:text-white">
+                    Scan to Pay
+                  </h3>
+                  <button onClick={() => setPaymentQRModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="p-6 space-y-4">
+                  <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    {selectedPlanForQR.name}
+                  </p>
+                  <p className="text-2xl font-extrabold text-brand-600">
+                    {formatCurrency(selectedPlanForQR.price)}
+                  </p>
+                  <div className="bg-white p-2 rounded-xl inline-block border-2 border-slate-100">
+                    {paymentQRUrl ? (
+                      <img src={paymentQRUrl} alt="Payment QR Code" className="w-48 h-48 mx-auto" />
+                    ) : (
+                      <div className="w-48 h-48 flex items-center justify-center bg-slate-50 text-slate-400 text-xs">
+                        Generating QR...
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    UPI ID: {paymentSettings.upi_id}
+                  </p>
+                </div>
               </motion.div>
             </div>
           )}
@@ -1483,7 +1887,15 @@ export default function MessOwnerDashboard() {
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Audit subscription receipts and approve pending Cash payouts</p>
           </div>
-          <Link to="/dashboard/mess" className="btn-secondary text-sm">Back</Link>
+          <div className="flex gap-2">
+            <button onClick={() => {
+              setTempPaymentSettings(paymentSettings)
+              setPaymentModalOpen(true)
+            }} className="btn-primary text-sm flex items-center gap-1.5">
+              <Plus className="w-4 h-4" /> Payment Settings
+            </button>
+            <Link to="/dashboard/mess" className="btn-secondary text-sm">Back</Link>
+          </div>
         </div>
 
         {/* Ledger */}
@@ -1532,6 +1944,83 @@ export default function MessOwnerDashboard() {
             </table>
           </div>
         </div>
+
+        {/* Payment Settings Modal */}
+        <AnimatePresence>
+          {paymentModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setPaymentModalOpen(false)}
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              />
+              <motion.div
+                initial={{ scale: 0.95, y: 15, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 0.95, y: 15, opacity: 0 }}
+                className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl shadow-glass overflow-hidden z-10 flex flex-col max-h-[90vh]"
+              >
+                <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-display font-bold text-slate-900 dark:text-white">
+                      ⚙️ Payment Settings
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">Configure UPI and Cash options</p>
+                  </div>
+                  <button onClick={() => setPaymentModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSavePaymentSettings} className="p-6 space-y-5">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">UPI ID</label>
+                    <input
+                      type="text"
+                      value={tempPaymentSettings.upi_id}
+                      onChange={e => setTempPaymentSettings((f: any) => ({ ...f, upi_id: e.target.value }))}
+                      placeholder="e.g. yourname@upi"
+                      className="input-field"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Phone Number (GPay/PhonePe)</label>
+                    <input
+                      type="tel"
+                      value={tempPaymentSettings.phone_number}
+                      onChange={e => setTempPaymentSettings((f: any) => ({ ...f, phone_number: e.target.value }))}
+                      placeholder="e.g. 9876543210"
+                      className="input-field"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      id="cashEnabled"
+                      checked={tempPaymentSettings.cash_enabled}
+                      onChange={e => setTempPaymentSettings((f: any) => ({ ...f, cash_enabled: e.target.checked }))}
+                      className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500"
+                    />
+                    <label htmlFor="cashEnabled" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Enable Cash Payments (Manual Collection)
+                    </label>
+                  </div>
+                  
+                  <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex gap-3">
+                    <button type="button" onClick={() => setPaymentModalOpen(false)} className="btn-secondary flex-1 justify-center text-sm">
+                      Cancel
+                    </button>
+                    <button type="submit" className="btn-primary flex-1 justify-center text-sm">
+                      Save Settings
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     )
   }
@@ -1572,6 +2061,230 @@ export default function MessOwnerDashboard() {
             </div>
           </div>
         </div>
+      </div>
+    )
+  }
+
+  // 9. Settings / Edit Profile View
+  if (view === 'settings') {
+    return (
+      <div className="p-6 max-w-4xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-display font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Building className="w-6 h-6 text-brand-500" /> Mess Profile Settings
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Update your mess details, location, and photos</p>
+          </div>
+          <Link to="/dashboard/mess" className="btn-secondary text-sm">Back to Overview</Link>
+        </div>
+        <AnimatePresence>{bannerMsg && renderBanner()}</AnimatePresence>
+
+        <form onSubmit={handleSetupSubmit} className="card p-8 space-y-6 shadow-glass border-slate-200 dark:border-slate-800">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-1.5 col-span-2">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Mess Service Name</label>
+              <input
+                type="text"
+                value={messName}
+                onChange={e => setMessName(e.target.value)}
+                placeholder="e.g. Sri Sai Deluxe Mess / Maa Ki Rasoi"
+                className="input-field"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5 col-span-2">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Description</label>
+              <textarea
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                placeholder="Tell students about your menu, food quality, hygiene standards, etc."
+                className="input-field min-h-24 resize-none"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Contact Phone</label>
+              <input
+                type="tel"
+                value={contactPhone}
+                onChange={e => setContactPhone(e.target.value)}
+                placeholder="e.g. +91 9876543210"
+                className="input-field"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5 col-span-2">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Kitchen Address</label>
+              <input
+                type="text"
+                value={address}
+                onChange={e => setAddress(e.target.value)}
+                placeholder="e.g. Kothrud, near MIT Gate, Pune"
+                className="input-field"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5 col-span-2">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">GPS Coordinates</label>
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (navigator.geolocation) {
+                      navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                          setLatitude(pos.coords.latitude)
+                          setLongitude(pos.coords.longitude)
+                          setGoogleMapsUrl(`https://www.google.com/maps/search/?api=1&query=${pos.coords.latitude},${pos.coords.longitude}`)
+                        },
+                        (err) => alert('Unable to retrieve your location. Please ensure location permissions are granted.'),
+                        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                      )
+                    } else {
+                      alert('Geolocation is not supported by your browser.')
+                    }
+                  }}
+                  className="btn-secondary whitespace-nowrap"
+                >
+                  <MapPin className="w-4 h-4 mr-2" />
+                  Auto-Detect My Location
+                </button>
+                <div className="flex gap-4 w-full">
+                  <input type="text" readOnly value={latitude} className="input-field bg-slate-50 opacity-70 text-xs py-2" placeholder="Latitude" />
+                  <input type="text" readOnly value={longitude} className="input-field bg-slate-50 opacity-70 text-xs py-2" placeholder="Longitude" />
+                </div>
+              </div>
+              <p className="text-[10px] text-slate-500 mt-1 mb-3">Click the button while physically at your mess to set the geofence for student attendance.</p>
+              
+              <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 mt-2">
+                <iframe 
+                  width="100%" 
+                  height="250" 
+                  style={{ border: 0 }}
+                  loading="lazy" 
+                  allowFullScreen 
+                  src={`https://www.google.com/maps?q=${latitude},${longitude}&output=embed`}
+                ></iframe>
+                <div className="p-2 text-center text-xs font-semibold text-slate-500 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
+                  Live Preview of Auto-Detected Coordinates
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1.5 col-span-2">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Direct Google Maps Link (Optional)</label>
+              <input
+                type="url"
+                value={googleMapsUrl}
+                onChange={e => setGoogleMapsUrl(e.target.value)}
+                placeholder="https://maps.app.goo.gl/..."
+                className="input-field text-xs"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Monthly Subscription Charge (₹)</label>
+              <input
+                type="number"
+                value={monthlyCharge}
+                onChange={e => setMonthlyCharge(e.target.value)}
+                className="input-field"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Single Meal Cost (₹)</label>
+              <input
+                type="number"
+                value={perMealCharge}
+                onChange={e => setPerMealCharge(e.target.value)}
+                className="input-field"
+                required
+              />
+            </div>
+
+            <div className="col-span-2 space-y-1.5 mt-2">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Mess Photos (Banner / Gallery)</label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+                {photos.map((img, i) => (
+                  <div key={i} className="relative aspect-video rounded-lg overflow-hidden group">
+                    <img src={img} alt={`Preview ${i}`} className="w-full h-full object-cover" />
+                    <button 
+                      type="button" 
+                      onClick={() => removePhoto(i)}
+                      className="absolute top-1 right-1 bg-red-500/80 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <label className="flex-1 cursor-pointer bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-3 flex flex-col items-center justify-center transition-colors">
+                  <Plus className="w-5 h-5 text-slate-400 mb-1" />
+                  <span className="text-xs text-slate-500 font-medium">Upload Local Image</span>
+                  <input type="file" multiple accept="image/*" onChange={handleFileUpload} className="hidden" />
+                </label>
+                <button 
+                  type="button" 
+                  onClick={handleAddImageUrl}
+                  className="flex-1 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-3 flex flex-col items-center justify-center transition-colors"
+                >
+                  <Plus className="w-5 h-5 text-slate-400 mb-1" />
+                  <span className="text-xs text-slate-500 font-medium">Add via Link</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2 border-t pt-4">
+            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Meals Provided</label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {(['breakfast', 'lunch', 'dinner', 'snack'] as const).map(type => {
+                const selected = selectedMealTypes.includes(type)
+                return (
+                  <button
+                    type="button"
+                    key={type}
+                    onClick={() => {
+                      setSelectedMealTypes(prev =>
+                        prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+                      )
+                    }}
+                    className={cn(
+                      'p-3 rounded-2xl border text-xs font-bold capitalize transition-all text-center',
+                      selected
+                        ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-950/20 text-brand-600 dark:text-brand-400'
+                        : 'border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-slate-50'
+                    )}
+                  >
+                    {type}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="btn-primary w-full justify-center py-3 text-sm flex items-center gap-2"
+          >
+            {isSubmitting ? (
+              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <Building className="w-4 h-4" /> Save Profile Details
+              </>
+            )}
+          </button>
+        </form>
       </div>
     )
   }

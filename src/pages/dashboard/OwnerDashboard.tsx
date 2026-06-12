@@ -9,7 +9,6 @@ import { usePropertyStore } from '../../store/propertyStore'
 import { useAuthStore } from '../../store/authStore'
 import { formatCurrency } from '../../lib/utils'
 import type { Property, PropertyType } from '../../types'
-import MapComponent from '../../components/map/MapComponent'
 
 const viewsData = [
   { day: 'Mon', views: 24 }, { day: 'Tue', views: 38 }, { day: 'Wed', views: 52 },
@@ -35,11 +34,12 @@ export default function OwnerDashboard() {
     pincode: '',
     latitude: '18.5204',
     longitude: '73.8567',
+    google_maps_url: '',
     contact_phone: '+91 98765 43210',
     gender_preference: 'any' as 'male' | 'female' | 'any',
     total_rooms: '10',
     available_rooms: '5',
-    imageUrl: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600',
+    images: ['https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600'] as string[],
     amenities: {
       wifi: true,
       ac: false,
@@ -64,6 +64,36 @@ export default function OwnerDashboard() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files) return
+    
+    Array.from(files).forEach(file => {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setFormData(prev => ({
+          ...prev,
+          images: [...prev.images, reader.result as string]
+        }))
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const handleAddImageUrl = () => {
+    const url = prompt('Enter image URL:')
+    if (url) {
+      setFormData(prev => ({ ...prev, images: [...prev.images, url] }))
+    }
+  }
+
+  const removeImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }))
   }
 
   const handleAmenityChange = (key: keyof typeof formData.amenities) => {
@@ -92,11 +122,12 @@ export default function OwnerDashboard() {
       pincode: formData.pincode || '411038',
       latitude: Number(formData.latitude) || 18.5204,
       longitude: Number(formData.longitude) || 73.8567,
+      google_maps_url: formData.google_maps_url,
       contact_phone: formData.contact_phone,
       gender_preference: formData.gender_preference,
       total_rooms: Number(formData.total_rooms) || 10,
       available_rooms: Number(formData.available_rooms) || 5,
-      images: [formData.imageUrl],
+      images: formData.images,
       amenities: formData.amenities,
       availability: true,
       featured: false,
@@ -117,11 +148,12 @@ export default function OwnerDashboard() {
       pincode: '',
       latitude: '18.5204',
       longitude: '73.8567',
+      google_maps_url: '',
       contact_phone: '+91 98765 43210',
       gender_preference: 'any',
       total_rooms: '10',
       available_rooms: '5',
-      imageUrl: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600',
+      images: ['https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600'],
       amenities: {
         wifi: true,
         ac: false,
@@ -475,11 +507,36 @@ export default function OwnerDashboard() {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-1">Cover Image URL</label>
-                      <input 
-                        type="url" name="imageUrl" value={formData.imageUrl} onChange={handleInputChange}
-                        placeholder="https://images.unsplash.com/..." className="input-field text-xs" 
-                      />
+                      <label className="block text-xs font-semibold text-slate-500 mb-2">Property Images</label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+                        {formData.images.map((img, i) => (
+                          <div key={i} className="relative aspect-video rounded-lg overflow-hidden group">
+                            <img src={img} alt={`Preview ${i}`} className="w-full h-full object-cover" />
+                            <button 
+                              type="button" 
+                              onClick={() => removeImage(i)}
+                              className="absolute top-1 right-1 bg-red-500/80 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <label className="flex-1 cursor-pointer bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-3 flex flex-col items-center justify-center transition-colors">
+                          <Plus className="w-5 h-5 text-slate-400 mb-1" />
+                          <span className="text-xs text-slate-500 font-medium">Upload Local Image</span>
+                          <input type="file" multiple accept="image/*" onChange={handleFileUpload} className="hidden" />
+                        </label>
+                        <button 
+                          type="button" 
+                          onClick={handleAddImageUrl}
+                          className="flex-1 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-3 flex flex-col items-center justify-center transition-colors"
+                        >
+                          <Plus className="w-5 h-5 text-slate-400 mb-1" />
+                          <span className="text-xs text-slate-500 font-medium">Add via Link</span>
+                        </button>
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -511,21 +568,50 @@ export default function OwnerDashboard() {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="block text-xs font-semibold text-slate-500 mb-1">Mark Location on Map</label>
-                      <MapComponent
-                        center={[Number(formData.latitude) || 18.5204, Number(formData.longitude) || 73.8567]}
-                        zoom={14}
-                        height="200px"
-                        interactivePicker={true}
-                        onLocationSelect={(lat, lng) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            latitude: lat.toString(),
-                            longitude: lng.toString()
-                          }))
-                        }}
-                      />
+                    <div className="space-y-1.5 col-span-2">
+                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">GPS Coordinates</label>
+                      <div className="flex items-center gap-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (navigator.geolocation) {
+                              navigator.geolocation.getCurrentPosition(
+                                (pos) => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    latitude: pos.coords.latitude.toString(),
+                                    longitude: pos.coords.longitude.toString(),
+                                    google_maps_url: `https://www.google.com/maps/search/?api=1&query=${pos.coords.latitude},${pos.coords.longitude}`
+                                  }))
+                                },
+                                (err) => alert('Unable to retrieve your location. Please ensure location permissions are granted.'),
+                                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                              )
+                            } else {
+                              alert('Geolocation is not supported by your browser.')
+                            }
+                          }}
+                          className="btn-secondary whitespace-nowrap text-xs"
+                        >
+                          <MapPin className="w-4 h-4 mr-2" />
+                          Auto-Detect Location
+                        </button>
+                      </div>
+                      
+                      {/* Free Google Maps Embed Preview */}
+                      <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 mt-2">
+                        <iframe 
+                          width="100%" 
+                          height="200" 
+                          style={{ border: 0 }}
+                          loading="lazy" 
+                          allowFullScreen 
+                          src={`https://www.google.com/maps?q=${formData.latitude},${formData.longitude}&output=embed`}
+                        ></iframe>
+                        <div className="p-2 text-center text-[10px] font-semibold text-slate-500 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
+                          Live Preview of Auto-Detected Coordinates
+                        </div>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-100 dark:border-slate-800">
@@ -537,6 +623,14 @@ export default function OwnerDashboard() {
                         <label className="block text-[10px] font-semibold text-slate-400 mb-1">Longitude (for OSM map)</label>
                         <input type="text" name="longitude" value={formData.longitude} onChange={handleInputChange} className="input-field py-1 text-xs" />
                       </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">Direct Google Maps Link (Optional)</label>
+                      <input 
+                        type="url" name="google_maps_url" value={formData.google_maps_url} onChange={handleInputChange}
+                        placeholder="https://maps.app.goo.gl/..." className="input-field text-xs" 
+                      />
                     </div>
 
                     <div>

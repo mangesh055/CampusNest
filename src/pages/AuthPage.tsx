@@ -72,6 +72,17 @@ export default function AuthPage() {
       })
       if (error) throw error
       
+      if (data.user) {
+        // Manually insert into profiles table since there might be no trigger
+        await supabase.from('profiles').upsert({
+          id: data.user.id,
+          full_name: form.fullName,
+          phone: form.phone,
+          role: selectedRole,
+          email: form.email,
+        })
+      }
+      
       if (data.session) {
         setUser(data.user)
         setSession(data.session)

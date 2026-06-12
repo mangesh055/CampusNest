@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { Send, Phone, Video, Info, Search, Circle, Smile, Image, Paperclip } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Send, Phone, Video, Info, Search, Circle, Smile, Image, Paperclip, MessageSquare } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { getInitials } from '../lib/utils'
 import { mockMesses } from '../data/mockData'
@@ -55,9 +55,19 @@ const initialChats: ChatChannel[] = [
 export default function ChatPage() {
   const { user } = useAuthStore()
   const [searchParams] = useSearchParams()
-  const targetOwner = searchParams.get('owner')
-  const [chats, setChats] = useState<ChatChannel[]>(initialChats)
-  const [activeChatId, setActiveChatId] = useState('c1')
+  
+  const [chats, setChats] = useState<ChatChannel[]>(() => {
+    const saved = localStorage.getItem('campusnest-chats')
+    if (saved) return JSON.parse(saved)
+    return initialChats
+  })
+  
+  const [activeChatId, setActiveChatId] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+
+  useEffect(() => {
+    localStorage.setItem('campusnest-chats', JSON.stringify(chats))
+  }, [chats])
 
   useEffect(() => {
     const ownerId = searchParams.get('owner')
@@ -118,20 +128,29 @@ export default function ChatPage() {
       } else {
         setActiveChatId(ownerId)
       }
+    } else if (chats.length > 0 && !activeChatId) {
+      setActiveChatId(chats[0].id)
     }
   }, [searchParams])
 
   const [inputMsg, setInputMsg] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const activeChat = chats.find(c => c.id === activeChatId) || chats[0]
+  const activeChat = chats.find(c => c.id === activeChatId)
+
+  const prevChatIdRef = useRef<string | null>(null)
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [activeChat?.messages])
+    if (activeChat) {
+      if (prevChatIdRef.current === activeChat.id) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      }
+      prevChatIdRef.current = activeChat.id
+    }
+  }, [activeChat?.id, activeChat?.messages.length])
 
   const sendMessage = () => {
-    if (!inputMsg.trim()) return
+    if (!inputMsg.trim() || !activeChatId) return
     const newMsg: Message = {
       id: Date.now().toString(),
       sender_id: 'user',
@@ -164,6 +183,7 @@ export default function ChatPage() {
           return {
             ...chat,
             lastMessage: replyMsg.text,
+            unread: activeChatId !== chat.id, // Only mark unread if not currently viewing
             messages: [...chat.messages, replyMsg]
           }
         }
@@ -172,99 +192,180 @@ export default function ChatPage() {
     }, 1500)
   }
 
+  const filteredChats = chats.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.role.toLowerCase().includes(searchTerm.toLowerCase()))
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pt-20 flex">
-      <div className="max-w-6xl w-full mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden flex h-[calc(100vh-120px)] shadow-lg">
+    <div className="h-screen bg-slate-50 dark:bg-slate-950 pt-16 flex overflow-hidden">
+      <div className="w-full h-full bg-white dark:bg-slate-900 flex border-t border-slate-200 dark:border-slate-800">
         {/* Contacts Sidebar */}
-        <div className="w-80 border-r border-slate-200 dark:border-slate-800 flex flex-col bg-slate-50/50 dark:bg-slate-900">
-          <div className="p-4 border-b border-slate-200 dark:border-slate-800">
-            <h2 className="font-display font-bold text-lg text-slate-900 dark:white mb-3">Chats</h2>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input type="text" placeholder="Search contacts..." className="input-field pl-9 py-1.5 text-sm" />
+        <div className="w-[350px] border-r border-slate-200 dark:border-slate-800 flex flex-col bg-white dark:bg-[#111b21] h-full">
+          <div className="p-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#202c33] flex items-center justify-between">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold">
+              {getInitials(user?.email || 'User')}
+            </div>
+            <div className="flex items-center gap-3 text-slate-500 dark:text-[#aebac1]">
+              <button className="p-2 hover:bg-slate-200 dark:hover:bg-[#2a3942] rounded-full transition-colors"><Circle className="w-5 h-5" /></button>
+              <button className="p-2 hover:bg-slate-200 dark:hover:bg-[#2a3942] rounded-full transition-colors"><MessageSquare className="w-5 h-5" /></button>
+              <button className="p-2 hover:bg-slate-200 dark:hover:bg-[#2a3942] rounded-full transition-colors"><Info className="w-5 h-5" /></button>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-            {chats.map(chat => (
+          <div className="p-2 bg-white dark:bg-[#111b21]">
+            <div className="relative flex items-center bg-slate-100 dark:bg-[#202c33] rounded-lg px-3 py-1.5">
+              <Search className="w-4 h-4 text-slate-500 dark:text-[#aebac1] mr-3" />
+              <input 
+                type="text" 
+                placeholder="Search or start new chat" 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1 bg-transparent border-none focus:ring-0 text-sm text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-[#8696a0]" 
+              />
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto custom-scrollbar bg-white dark:bg-[#111b21]">
+            {filteredChats.map(chat => (
               <button
                 key={chat.id}
                 onClick={() => {
                   setActiveChatId(chat.id)
                   setChats(p => p.map(c => c.id === chat.id ? { ...c, unread: false } : c))
                 }}
-                className={`w-full p-4 flex items-start gap-3 text-left transition-colors ${activeChatId === chat.id ? 'bg-brand-50 dark:bg-brand-950/20 border-l-4 border-brand-500' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                className={`w-full flex items-center gap-3 px-3 py-3 text-left transition-colors ${activeChatId === chat.id ? 'bg-slate-100 dark:bg-[#2a3942]' : 'hover:bg-slate-50 dark:hover:bg-[#202c33]'}`}
               >
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold flex-shrink-0 relative">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold flex-shrink-0 relative">
                   {getInitials(chat.name)}
-                  <Circle className="absolute bottom-0 right-0 w-2.5 h-2.5 fill-emerald-500 stroke-white" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-baseline">
-                    <p className="font-semibold text-sm text-slate-900 dark:text-white truncate">{chat.name}</p>
-                    {chat.unread && <span className="w-2 h-2 rounded-full bg-brand-500" />}
+                <div className="flex-1 min-w-0 border-b border-slate-100 dark:border-slate-800/50 pb-3 -mb-3">
+                  <div className="flex justify-between items-baseline mb-0.5">
+                    <p className={`font-medium text-base truncate ${chat.unread ? 'text-slate-900 dark:text-white font-semibold' : 'text-slate-900 dark:text-[#e9edef]'}`}>{chat.name}</p>
+                    <p className={`text-xs ${chat.unread ? 'text-emerald-500 dark:text-emerald-400 font-semibold' : 'text-slate-500 dark:text-[#8696a0]'}`}>10:06 AM</p>
                   </div>
-                  <p className="text-xs text-slate-400 font-medium mb-1">{chat.role}</p>
-                  <p className="text-xs text-slate-500 truncate">{chat.lastMessage}</p>
+                  <div className="flex justify-between items-center">
+                    <p className={`text-sm truncate ${chat.unread ? 'text-slate-900 dark:text-white font-semibold' : 'text-slate-500 dark:text-[#8696a0]'}`}>{chat.lastMessage}</p>
+                    {chat.unread && (
+                      <div className="w-5 h-5 rounded-full bg-emerald-500 dark:bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold">1</div>
+                    )}
+                  </div>
                 </div>
               </button>
             ))}
+            {filteredChats.length === 0 && (
+              <div className="p-6 text-center text-slate-500 text-sm">
+                No chats found.
+              </div>
+            )}
           </div>
         </div>
 
         {/* Message Window */}
-        <div className="flex-1 flex flex-col bg-white dark:bg-slate-900">
-          {/* Header */}
-          <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold">
-                {getInitials(activeChat.name)}
-              </div>
-              <div>
-                <p className="font-semibold text-slate-900 dark:text-white">{activeChat.name}</p>
-                <p className="text-xs text-emerald-500 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Online
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 text-slate-500">
-              <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"><Phone className="w-4 h-4" /></button>
-              <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"><Video className="w-4 h-4" /></button>
-              <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"><Info className="w-4 h-4" /></button>
-            </div>
-          </div>
-
-          {/* Messages */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-slate-50/30 dark:bg-slate-950/20">
-            {activeChat.messages.map(msg => {
-              const isMe = msg.sender_id === 'user'
-              return (
-                <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[70%] p-3 rounded-2xl text-sm ${isMe ? 'bg-brand-500 text-white rounded-tr-none' : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-none'}`}>
-                    <p>{msg.text}</p>
-                    <p className={`text-[10px] text-right mt-1 opacity-70`}>{msg.timestamp}</p>
+        <div className="flex-1 flex flex-col relative bg-[#efeae2] dark:bg-[#0b141a]">
+          {/* Subtle Background Pattern overlay (optional CSS pattern effect) */}
+          <div className="absolute inset-0 opacity-40 dark:opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000000 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+          
+          {activeChat ? (
+            <>
+              {/* Header */}
+              <div className="px-4 py-2.5 border-b border-slate-200 dark:border-slate-800/50 bg-slate-50 dark:bg-[#202c33] flex items-center justify-between z-10 shadow-sm">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold">
+                    {getInitials(activeChat.name)}
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-slate-900 dark:text-[#e9edef] text-base leading-tight">{activeChat.name}</h3>
+                    <p className="text-xs text-slate-500 dark:text-[#8696a0]">
+                      {activeChat.role}
+                    </p>
                   </div>
                 </div>
-              )
-            })}
-            <div ref={messagesEndRef} />
-          </div>
+                <div className="flex items-center gap-3 text-slate-500 dark:text-[#aebac1]">
+                  <button className="p-2 hover:bg-slate-200 dark:hover:bg-[#2a3942] rounded-full transition-colors"><Video className="w-5 h-5" /></button>
+                  <button className="p-2 hover:bg-slate-200 dark:hover:bg-[#2a3942] rounded-full transition-colors"><Search className="w-5 h-5" /></button>
+                  <button className="p-2 hover:bg-slate-200 dark:hover:bg-[#2a3942] rounded-full transition-colors"><Info className="w-5 h-5" /></button>
+                </div>
+              </div>
 
-          {/* Input Footer */}
-          <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center gap-3">
-            <button className="p-2 text-slate-400 hover:text-slate-600 rounded-full"><Paperclip className="w-4 h-4" /></button>
-            <button className="p-2 text-slate-400 hover:text-slate-600 rounded-full"><Image className="w-4 h-4" /></button>
-            <input
-              type="text"
-              value={inputMsg}
-              onChange={e => setInputMsg(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && sendMessage()}
-              placeholder="Type your message..."
-              className="flex-1 input-field py-2"
-            />
-            <button onClick={sendMessage} className="p-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-xl shadow-glow">
-              <Send className="w-4 h-4" />
-            </button>
-          </div>
+              {/* Messages */}
+              <div className="flex-1 p-6 overflow-y-auto space-y-2 custom-scrollbar z-10 flex flex-col">
+                <div className="text-center my-4">
+                  <span className="bg-[#ffeecd] dark:bg-[#182229] text-slate-700 dark:text-[#ffd279] text-xs px-3 py-1.5 rounded-lg shadow-sm">
+                    Messages are end-to-end encrypted. No one outside of this chat, not even CampusNest, can read or listen to them.
+                  </span>
+                </div>
+                {activeChat.messages.map((msg, idx) => {
+                  const isMe = msg.sender_id === 'user'
+                  const prevMsg = idx > 0 ? activeChat.messages[idx - 1] : null
+                  const showTail = !prevMsg || prevMsg.sender_id !== msg.sender_id
+                  
+                  return (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.1 }}
+                      key={msg.id} 
+                      className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${showTail ? 'mt-2' : 'mt-0.5'}`}
+                    >
+                      <div className={`relative max-w-[65%] px-3 py-1.5 shadow-sm text-sm ${
+                        isMe 
+                          ? 'bg-[#d9fdd3] dark:bg-[#005c4b] text-[#111b21] dark:text-[#e9edef] rounded-lg ' + (showTail ? 'rounded-tr-none' : '')
+                          : 'bg-white dark:bg-[#202c33] text-[#111b21] dark:text-[#e9edef] rounded-lg ' + (showTail ? 'rounded-tl-none' : '')
+                      }`}>
+                        {/* WhatsApp Bubble Tail */}
+                        {showTail && (
+                          <div className={`absolute top-0 w-3 h-3 ${isMe ? '-right-2 bg-[#d9fdd3] dark:bg-[#005c4b]' : '-left-2 bg-white dark:bg-[#202c33]'} `} style={{ clipPath: isMe ? 'polygon(0 0, 0% 100%, 100% 0)' : 'polygon(0 0, 100% 100%, 100% 0)' }}></div>
+                        )}
+                        <p className="leading-relaxed pr-10 whitespace-pre-wrap" style={{ wordBreak: 'break-word' }}>{msg.text}</p>
+                        <span className="text-[10px] text-slate-500 dark:text-[#8696a0] absolute bottom-1 right-2">
+                          {msg.timestamp.split(' ')[0]} {/* Simplified time */}
+                        </span>
+                      </div>
+                    </motion.div>
+                  )
+                })}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Input Footer */}
+              <div className="px-4 py-3 bg-slate-50 dark:bg-[#202c33] flex items-center gap-3 z-10">
+                <button className="text-slate-500 dark:text-[#aebac1] hover:text-slate-700 dark:hover:text-white transition-colors"><Smile className="w-6 h-6" /></button>
+                <button className="text-slate-500 dark:text-[#aebac1] hover:text-slate-700 dark:hover:text-white transition-colors"><Paperclip className="w-6 h-6" /></button>
+                <div className="flex-1 bg-white dark:bg-[#2a3942] rounded-lg flex items-center px-4 py-2 shadow-sm">
+                  <input
+                    type="text"
+                    value={inputMsg}
+                    onChange={e => setInputMsg(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && sendMessage()}
+                    placeholder="Type a message"
+                    className="flex-1 bg-transparent border-none focus:ring-0 text-sm text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-[#8696a0] p-0"
+                  />
+                </div>
+                {inputMsg.trim() ? (
+                  <button 
+                    onClick={sendMessage} 
+                    className="text-[#00a884] hover:text-[#008f6f] transition-colors"
+                  >
+                    <Send className="w-6 h-6" />
+                  </button>
+                ) : (
+                  <button className="text-slate-500 dark:text-[#aebac1] hover:text-slate-700 dark:hover:text-white transition-colors">
+                    <Circle className="w-6 h-6" /> {/* Placeholder for microphone */}
+                  </button>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-8 text-center border-b-[6px] border-[#00a884] bg-slate-50 dark:bg-[#222e35] z-10">
+              <div className="w-80 h-40 bg-slate-200 dark:bg-[#2a3942] rounded-2xl mb-8 flex flex-col items-center justify-center">
+                <MessageSquare className="w-12 h-12 text-slate-400 dark:text-[#8696a0]" />
+              </div>
+              <h2 className="text-3xl font-light text-[#41525d] dark:text-[#e9edef] mb-4">CampusNest Web</h2>
+              <p className="text-sm text-[#8696a0] max-w-md mx-auto leading-relaxed">
+                Send and receive messages without keeping your phone online.<br/>
+                Use CampusNest on up to 4 linked devices and 1 phone.
+              </p>
+              <p className="text-xs text-[#8696a0] absolute bottom-10 flex items-center gap-1">
+                <span className="w-2.5 h-2.5 bg-slate-400 dark:bg-[#8696a0] rounded-sm flex items-center justify-center"><span className="w-1 h-1 bg-white dark:bg-[#222e35] rounded-full"></span></span> End-to-end encrypted
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

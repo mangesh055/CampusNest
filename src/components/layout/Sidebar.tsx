@@ -17,7 +17,7 @@ const studentLinks = [
   { label: 'Favorites', path: '/favorites', icon: Heart },
   { label: 'Messages', path: '/chat', icon: MessageCircle },
   { label: 'Reviews', path: '/dashboard/student/reviews', icon: Star },
-  { label: 'Settings', path: '/settings', icon: Settings },
+  { label: 'Settings', path: '/dashboard/settings', icon: Settings },
 ]
 
 const ownerLinks = [
@@ -26,7 +26,7 @@ const ownerLinks = [
   { label: 'Inquiries', path: '/dashboard/owner/inquiries', icon: MessageCircle },
   { label: 'Analytics', path: '/dashboard/owner/analytics', icon: BarChart2 },
   { label: 'Reviews', path: '/dashboard/owner/reviews', icon: Star },
-  { label: 'Settings', path: '/settings', icon: Settings },
+  { label: 'Settings', path: '/dashboard/settings', icon: Settings },
 ]
 
 const messOwnerLinks = [
@@ -39,7 +39,7 @@ const messOwnerLinks = [
   { label: 'Analytics', path: '/dashboard/mess/analytics', icon: BarChart2 },
   { label: 'Payments', path: '/dashboard/mess/payments', icon: CreditCard },
   { label: 'Reports', path: '/dashboard/mess/reports', icon: FileText },
-  { label: 'Settings', path: '/settings', icon: Settings },
+  { label: 'Settings', path: '/dashboard/settings', icon: Settings },
 ]
 
 const adminLinks = [
@@ -49,7 +49,7 @@ const adminLinks = [
   { label: 'Messes', path: '/dashboard/admin/messes', icon: Utensils },
   { label: 'Analytics', path: '/dashboard/admin/analytics', icon: BarChart2 },
   { label: 'Reports', path: '/dashboard/admin/reports', icon: FileText },
-  { label: 'Settings', path: '/settings', icon: Settings },
+  { label: 'Settings', path: '/dashboard/settings', icon: Settings },
 ]
 
 export default function Sidebar() {

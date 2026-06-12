@@ -7,6 +7,7 @@ import { mockReviews } from '../data/mockData'
 import { usePropertyStore } from '../store/propertyStore'
 import { formatCurrency, propertyTypeLabels, formatDate, getInitials } from '../lib/utils'
 import { cn } from '../lib/utils'
+import { useAuthStore } from '../store/authStore'
 
 export default function PropertyDetailPage() {
   const { id } = useParams()
@@ -15,6 +16,30 @@ export default function PropertyDetailPage() {
   const reviews = mockReviews.filter(r => r.property_id === id)
   const [currentImage, setCurrentImage] = useState(0)
   const [favorited, setFavorited] = useState(false)
+  
+  const { profile } = useAuthStore()
+  const [reviewsList, setReviewsList] = useState(reviews)
+  const [newReview, setNewReview] = useState('')
+  const [newRating, setNewRating] = useState(0)
+
+  const handleAddReview = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newReview.trim() || newRating === 0) return
+
+    const newR = {
+      id: Date.now().toString(),
+      property_id: property.id,
+      user_id: profile?.id || 'anon',
+      rating: newRating,
+      comment: newReview,
+      created_at: new Date().toISOString(),
+      profiles: { full_name: profile?.full_name || 'Anonymous' }
+    }
+
+    setReviewsList([newR, ...reviewsList])
+    setNewReview('')
+    setNewRating(0)
+  }
 
   // Google Maps URL
   const googleMapsUrl = property.latitude && property.longitude
@@ -185,9 +210,41 @@ export default function PropertyDetailPage() {
                 </div>
               </div>
 
-              {reviews.length > 0 ? (
+              {/* Add Review Form */}
+              <div className="mb-6 p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                <h4 className="font-bold text-slate-900 dark:text-white mb-3 text-sm">Write a Review</h4>
+                <form onSubmit={handleAddReview} className="space-y-3">
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map(s => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setNewRating(s)}
+                        className="focus:outline-none transition-transform hover:scale-110"
+                      >
+                        <Star className={cn('w-6 h-6', s <= newRating ? 'text-amber-400 fill-amber-400' : 'text-slate-300 dark:text-slate-600')} />
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    placeholder="Share your experience..."
+                    className="input-field w-full min-h-[80px] text-sm resize-none"
+                    value={newReview}
+                    onChange={(e) => setNewReview(e.target.value)}
+                  />
+                  <button 
+                    type="submit" 
+                    disabled={!newReview.trim() || newRating === 0}
+                    className="btn-primary w-full text-sm py-2 disabled:opacity-50"
+                  >
+                    Submit Review
+                  </button>
+                </form>
+              </div>
+
+              {reviewsList.length > 0 ? (
                 <div className="space-y-4">
-                  {reviews.map(review => (
+                  {reviewsList.map(review => (
                     <div key={review.id} className="border-b border-slate-100 dark:border-slate-800 pb-4">
                       <div className="flex items-start gap-3">
                         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
