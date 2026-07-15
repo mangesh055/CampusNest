@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 import type { User, Session } from '@supabase/supabase-js'
 import type { Profile, UserRole } from '../types'
 import { supabase } from '../lib/supabase'
+import { clearLocalAuth, clearSupabaseAuthStorage } from '../lib/localAuth'
 
 interface AuthState {
   user: User | null
@@ -63,7 +64,13 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signOut: async () => {
-        await supabase.auth.signOut()
+        try {
+          await supabase.auth.signOut()
+        } catch {
+          // Ignore network/auth provider failures during sign out.
+        }
+        clearLocalAuth()
+        clearSupabaseAuthStorage()
         set({ user: null, session: null, profile: null })
       },
     }),

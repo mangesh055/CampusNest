@@ -198,6 +198,7 @@ export default function MessOwnerDashboard() {
 
   // Menu item inputs
   const [newItem, setNewItem] = useState('')
+  const [newItemPrice, setNewItemPrice] = useState('')
   const [activeMenuCategory, setActiveMenuCategory] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('lunch')
 
   // Search
@@ -514,11 +515,13 @@ export default function MessOwnerDashboard() {
   const addMenuItem = (e: React.FormEvent) => {
     e.preventDefault()
     if (!newItem.trim()) return
+    const finalItem = newItemPrice.trim() ? `${newItem.trim()} - ₹${newItemPrice.trim()}` : newItem.trim()
     setMenu((prev: any) => ({
       ...prev,
-      [activeMenuCategory]: [...(prev[activeMenuCategory] || []), newItem.trim()]
+      [activeMenuCategory]: [...(prev[activeMenuCategory] || []), finalItem]
     }))
     setNewItem('')
+    setNewItemPrice('')
   }
 
   // Plan CRUD actions
@@ -1182,9 +1185,16 @@ export default function MessOwnerDashboard() {
                 type="text"
                 value={newItem}
                 onChange={e => setNewItem(e.target.value)}
-                placeholder={`Add item to ${activeMenuCategory} (e.g. Masala Dosa, Kheer)...`}
+                placeholder={`Add item to ${activeMenuCategory} (e.g. Masala Dosa)...`}
                 className="input-field text-xs py-2 flex-1"
                 required
+              />
+              <input
+                type="number"
+                value={newItemPrice}
+                onChange={e => setNewItemPrice(e.target.value)}
+                placeholder="Price (₹)"
+                className="input-field text-xs py-2 w-24"
               />
               <button type="submit" className="btn-primary py-2 px-5 text-xs flex items-center gap-1">
                 <Plus className="w-4 h-4" /> Add Item

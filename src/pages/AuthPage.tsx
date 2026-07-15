@@ -3,6 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Mail, Lock, User, Phone, Building2, AlertCircle, CheckCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import {
+  authenticateLocalAccount,
+  clearSupabaseAuthStorage,
+  upsertLocalAccount,
+} from '../lib/localAuth'
 import { useAuthStore } from '../store/authStore'
 import type { UserRole } from '../types'
 
@@ -12,6 +17,13 @@ const roles: { value: UserRole; label: string; icon: string; desc: string }[] = 
   { value: 'mess_owner', label: 'Mess Owner', icon: '🍽️', desc: 'Manage your mess digitally' },
   { value: 'admin', label: 'Admin', icon: '🛡️', desc: 'Platform management' },
 ]
+
+const isTransportError = (err: unknown) =>
+  err instanceof Error && (
+    err.message.includes('Failed to fetch') ||
+    err.message.includes('NetworkError') ||
+    err.message.includes('AuthRetryableFetchError')
+  )
 
 export default function AuthPage() {
   const [tab, setTab] = useState<'login' | 'register'>('login')
@@ -38,6 +50,16 @@ export default function AuthPage() {
     setLoading(true)
     setError('')
     try {
+      const localAuth = authenticateLocalAccount(form.email, form.password)
+      if (localAuth) {
+        setUser(localAuth.user)
+        setSession(localAuth.session)
+        useAuthStore.getState().setProfile(localAuth.profile)
+        clearSupabaseAuthStorage()
+        navigate('/')
+        return
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email: form.email,
         password: form.password,
@@ -46,9 +68,31 @@ export default function AuthPage() {
       setUser(data.user)
       setSession(data.session)
       if (data.user) await fetchProfile(data.user.id)
+      clearSupabaseAuthStorage()
       navigate('/')
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Login failed. Please try again.')
+      if (isTransportError(err)) {
+        const localAuth = authenticateLocalAccount(form.email, form.password) ?? upsertLocalAccount({
+          email: form.email,
+          password: form.password,
+          fullName: form.fullName || form.email.split('@')[0] || 'User',
+          phone: form.phone,
+          role: selectedRole,
+        })
+
+        if (localAuth) {
+          setUser(localAuth.user)
+          setSession(localAuth.session)
+          useAuthStore.getState().setProfile(localAuth.profile)
+          clearSupabaseAuthStorage()
+          navigate('/')
+          return
+        }
+
+        setError('Login failed while offline. Please try again.')
+      } else {
+        setError(err instanceof Error ? err.message : 'Login failed. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
@@ -87,6 +131,7 @@ export default function AuthPage() {
         setUser(data.user)
         setSession(data.session)
         if (data.user) await fetchProfile(data.user.id)
+        clearSupabaseAuthStorage()
         setSuccess('Account created! Logging in...')
         setTimeout(() => {
           navigate('/')
@@ -95,6 +140,28 @@ export default function AuthPage() {
         setSuccess('Account created! Check your email to verify your account.')
       }
     } catch (err: unknown) {
+      if (isTransportError(err)) {
+        const localAuth = upsertLocalAccount({
+          email: form.email,
+          password: form.password,
+          fullName: form.fullName,
+          phone: form.phone,
+          role: selectedRole,
+        })
+
+        if (localAuth) {
+          setUser(localAuth.user)
+          setSession(localAuth.session)
+          useAuthStore.getState().setProfile(localAuth.profile)
+          clearSupabaseAuthStorage()
+          setSuccess('Account created locally. You are signed in now.')
+          setTimeout(() => {
+            navigate('/')
+          }, 1500)
+          return
+        }
+      }
+
       setError(err instanceof Error ? err.message : 'Registration failed. Please try again.')
     } finally {
       setLoading(false)

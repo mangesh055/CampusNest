@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Home, Building2, Utensils, Users, MessageCircle, Bell,
   Heart, Search, Menu, X, Sun, Moon, ChevronDown, LogOut,
-  Settings, User, LayoutDashboard, Shield, Star
+  Settings, User, LayoutDashboard, Shield, Star, QrCode
 } from 'lucide-react'
 import { cn, getInitials } from '../../lib/utils'
 import { useAuthStore } from '../../store/authStore'
@@ -190,6 +190,13 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
                 <Link to="/favorites" className="btn-ghost p-2 rounded-xl hidden sm:flex">
                   <Heart className="w-4 h-4" />
                 </Link>
+
+                {/* Scan Button (For Walk-ins / Students) */}
+                {profile.role !== 'admin' && (
+                  <Link to="/dashboard/student/scan" className="btn-secondary hidden sm:flex items-center gap-1.5 p-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300">
+                    <QrCode className="w-4 h-4" /> Scan QR
+                  </Link>
+                )}
 
                 {/* Profile Dropdown */}
                 <div className="relative">

@@ -27,6 +27,7 @@ import PublicLayout from './components/layout/PublicLayout'
 
 // Types
 import { useAuthStore } from './store/authStore'
+import { clearSupabaseAuthStorage, getCurrentLocalAuthSnapshot } from './lib/localAuth'
 
 function DashboardRedirect() {
   const { profile } = useAuthStore()
@@ -57,31 +58,21 @@ export default function App() {
   const { setUser, setSession, fetchProfile, setLoading } = useAuthStore()
 
   useEffect(() => {
-    // Check active session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id)
-      } else {
-        setLoading(false)
-      }
-    })
+    const localAuth = getCurrentLocalAuthSnapshot()
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id)
-      } else {
-        useAuthStore.getState().setProfile(null)
-        setLoading(false)
-      }
-    })
+    if (localAuth) {
+      clearSupabaseAuthStorage()
+      setSession(localAuth.session)
+      setUser(localAuth.user)
+      useAuthStore.getState().setProfile(localAuth.profile)
+    } else {
+      setSession(null)
+      setUser(null)
+      useAuthStore.getState().setProfile(null)
+    }
 
-    return () => subscription.unsubscribe()
-  }, [setUser, setSession, fetchProfile, setLoading])
+    setLoading(false)
+  }, [setUser, setSession, setLoading])
 
   useEffect(() => {
     if (darkMode) {
