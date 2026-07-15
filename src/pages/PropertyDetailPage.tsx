@@ -293,9 +293,6 @@ export default function PropertyDetailPage() {
                 </a>
               </div>
 
-              <Link to={`/chat?owner=${property.owner_id}&property=${property.id}`} className="btn-primary w-full justify-center">
-                💬 Chat with Owner
-              </Link>
               {property.contact_email && (
                 <a href={`mailto:${property.contact_email}`} className="btn-ghost w-full justify-center border border-slate-200 dark:border-slate-700">
                   <Mail className="w-4 h-4" /> Send Email

@@ -289,15 +289,6 @@
     @apply w-full h-full rounded-2xl overflow-hidden;
   }
 
-  /* Chat bubble */
-  .chat-bubble-sent {
-    @apply bg-brand-500 text-white rounded-2xl rounded-br-sm px-4 py-2 max-w-xs;
-  }
-
-  .chat-bubble-received {
-    @apply bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-2xl rounded-bl-sm px-4 py-2 max-w-xs border border-slate-200 dark:border-slate-700;
-  }
-
   /* QR container */
   .qr-container {
     @apply p-6 bg-white rounded-2xl border-4 border-brand-500 inline-block;

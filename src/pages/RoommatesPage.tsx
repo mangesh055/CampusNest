@@ -429,14 +429,6 @@ export default function RoommatesPage() {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      navigate(`/chat?user=${item.student_id}&name=${encodeURIComponent(item.profiles?.full_name || '')}`)
-                    }}
-                    className="btn-primary w-full justify-center gap-2 text-sm"
-                  >
-                    <MessageSquare className="w-4 h-4" /> Connect & Chat
-                  </button>
                 </motion.div>
               )
             })}

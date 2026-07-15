@@ -52,7 +52,7 @@ const initialPosts: (CommunityPost & { commentsList?: { author: string; content:
     },
     commentsList: [
       { author: 'Vikram Singh', content: 'Is the price negotiable?', date: '6 hours ago' },
-      { author: 'Amit Deshmukh', content: 'Yes, slightly. Check your chats.', date: '5 hours ago' }
+      { author: 'Amit Deshmukh', content: 'Yes, slightly. Check your messages.', date: '5 hours ago' }
     ]
   },
   {
@@ -374,16 +374,6 @@ export default function CommunityPage() {
                         <span>{post.comment_count} Comments</span>
                       </button>
 
-                      {post.author_id !== profile?.id && (
-                        <button
-                          onClick={() => {
-                            navigate(`/chat?user=${post.author_id}&name=${encodeURIComponent(post.profiles?.full_name || '')}`)
-                          }}
-                          className="ml-auto flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-300"
-                        >
-                          Chat Owner
-                        </button>
-                      )}
                     </div>
 
                     {/* Expanded Comments Panel */}
@@ -465,7 +455,7 @@ export default function CommunityPage() {
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1">Board Category</label>
                   <select value={form.category} onChange={e => setForm(prev => ({ ...prev, category: e.target.value as any }))} className="input-field text-sm">
-                    <option value="general">General Chat</option>
+                    <option value="general">General Discussion</option>
                     <option value="notes">Study Notes</option>
                     <option value="books">Textbooks</option>
                     <option value="cycles">Bicycles</option>

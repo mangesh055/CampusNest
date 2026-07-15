@@ -184,31 +184,6 @@ export interface MealToken {
   created_at: string
 }
 
-export interface ChatRoom {
-  id: string
-  student_id: string
-  owner_id: string
-  property_id?: string
-  mess_id?: string
-  created_at: string
-  last_message?: string
-  last_message_at?: string
-  student?: Profile
-  owner?: Profile
-}
-
-export interface Message {
-  id: string
-  room_id: string
-  sender_id: string
-  content: string
-  message_type: 'text' | 'image'
-  image_url?: string
-  read: boolean
-  created_at: string
-  sender?: Profile
-}
-
 export interface Review {
   id: string
   reviewer_id: string

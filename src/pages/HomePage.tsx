@@ -23,7 +23,6 @@ const features = [
   { icon: '🗺️', title: 'GPS Attendance', desc: 'Mark meal attendance with location verification & QR scanning' },
   { icon: '📱', title: 'Digital Tokens', desc: 'Get unique meal tokens after successful attendance marking' },
   { icon: '📊', title: 'Smart Analytics', desc: 'Track spending, meals consumed, and attendance patterns' },
-  { icon: '💬', title: 'Real-time Chat', desc: 'Chat directly with property and mess owners instantly' },
   { icon: '🔔', title: 'Smart Notifications', desc: 'Never miss a subscription renewal or menu update' },
   { icon: '🤖', title: 'AI Assistant', desc: 'Get personalized PG and mess recommendations using AI' },
 ]

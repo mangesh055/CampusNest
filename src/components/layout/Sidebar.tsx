@@ -15,7 +15,6 @@ const studentLinks = [
   { label: 'Attendance', path: '/dashboard/student/attendance', icon: Calendar },
   { label: 'Scan QR', path: '/dashboard/student/scan', icon: QrCode },
   { label: 'Favorites', path: '/favorites', icon: Heart },
-  { label: 'Messages', path: '/chat', icon: MessageCircle },
   { label: 'Reviews', path: '/dashboard/student/reviews', icon: Star },
   { label: 'Settings', path: '/dashboard/settings', icon: Settings },
 ]
@@ -124,13 +123,6 @@ export default function Sidebar() {
               <Link to="/" className="sidebar-item text-sm">
                 <Home className="w-4 h-4 text-slate-400" />
                 <span className="text-sm">Home</span>
-              </Link>
-            </li>
-            <li>
-              <Link to="/chat" className="sidebar-item relative">
-                <MessageCircle className="w-4 h-4 text-slate-400" />
-                <span className="text-sm">Messages</span>
-                <span className="ml-auto bg-brand-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">2</span>
               </Link>
             </li>
             <li>

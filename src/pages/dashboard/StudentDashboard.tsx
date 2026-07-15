@@ -416,7 +416,7 @@ export default function StudentDashboard() {
               </div>
             </div>
             <div className="text-[11px] text-slate-400 text-center border-t border-slate-100 dark:border-slate-800 pt-4 mt-4">
-              Need assistance? Connect with the Admin in chat.
+              Need assistance? Contact the Admin through support.
             </div>
           </div>
         </div>

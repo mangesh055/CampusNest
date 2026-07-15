@@ -441,9 +441,6 @@ export default function MessDetailPage() {
                       ))}
                     </div>
 
-                    <Link to={`/chat?owner=${mess.owner_id}&mess=${mess.id}`} className="btn-secondary w-full justify-center text-sm">
-                      💬 Chat with Owner
-                    </Link>
                   </div>
                 )}
 
