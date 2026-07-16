@@ -62,7 +62,7 @@ export default function MessPage() {
         <div className="flex flex-wrap gap-3 mb-8">
           <div>
             <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Status</label>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {(['' , 'open', 'busy', 'closed'] as const).map(s => (
                 <button key={s} onClick={() => setStatus(s)}
                   className={cn('px-3 py-1.5 rounded-xl text-xs font-medium border transition-all',
@@ -74,7 +74,7 @@ export default function MessPage() {
           </div>
           <div>
             <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Meals</label>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {[{v:'',l:'All Meals'},{v:'breakfast',l:'☀️ Breakfast'},{v:'lunch',l:'🌤 Lunch'},{v:'dinner',l:'🌙 Dinner'},{v:'snack',l:'🍪 Snack'}].map(m => (
                 <button key={m.v} onClick={() => setMealFilter(m.v)}
                   className={cn('px-3 py-1.5 rounded-xl text-xs font-medium border transition-all',

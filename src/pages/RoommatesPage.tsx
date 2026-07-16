@@ -229,7 +229,7 @@ export default function RoommatesPage() {
               className="input-field pl-10"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <select value={selectedGender} onChange={e => setSelectedGender(e.target.value)} className="input-field py-2 text-sm w-36">
               <option value="">Any Gender</option>
               <option value="male">Boys</option>

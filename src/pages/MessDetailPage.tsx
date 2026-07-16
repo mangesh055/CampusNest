@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MapPin, Star, Phone, CheckCircle, ChevronLeft, Navigation2, Clock, ShieldCheck, ExternalLink, User, Utensils, Image, MessageSquare, Info } from 'lucide-react'
+import { MapPin, Star, Phone, CheckCircle, ChevronLeft, Navigation2, Clock, ShieldCheck, ExternalLink, User, Utensils, Image, MessageSquare, Info, Trash2, X } from 'lucide-react'
 import { fetchMesses, fetchMessPlans, fetchReviews } from '../lib/platformData'
 import { formatCurrency, mealTypeLabels, messStatusConfig } from '../lib/utils'
 import { cn } from '../lib/utils'
@@ -27,6 +27,7 @@ export default function MessDetailPage() {
   const [newReview, setNewReview] = useState('')
   const [newRating, setNewRating] = useState(0)
   const [reviewsList, setReviewsList] = useState<any[]>([])
+  const [showAllReviews, setShowAllReviews] = useState(false)
   const [mess, setMess] = useState<any | null>(null)
   const [displayPlans, setDisplayPlans] = useState<any[]>([])
   const [todayMenu, setTodayMenu] = useState<Record<MealType, string[]>>({ breakfast: [], lunch: [], dinner: [], snack: [] })
@@ -428,7 +429,7 @@ export default function MessDetailPage() {
 
                     {/* Review cards */}
                     <div className="space-y-4">
-                      {reviewsList.map(r => (
+                      {reviewsList.slice(0, 3).map(r => (
                         <div key={r.id} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex items-center gap-2.5">
@@ -450,6 +451,15 @@ export default function MessDetailPage() {
                         </div>
                       ))}
                     </div>
+
+                    {reviewsList.length > 3 && (
+                      <button 
+                        onClick={() => setShowAllReviews(true)} 
+                        className="w-full py-3 mt-4 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                      >
+                        Show all {dynamicReviewCount} reviews
+                      </button>
+                    )}
 
                   </div>
                 )}
@@ -545,6 +555,71 @@ export default function MessDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Show All Reviews Modal */}
+      <AnimatePresence>
+        {showAllReviews && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 md:p-6"
+          >
+            <motion.div 
+              initial={{ y: 50, opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 20, opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden"
+            >
+              <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white dark:bg-slate-900 z-10">
+                <h3 className="font-display font-bold text-xl text-slate-900 dark:text-white flex items-center gap-2">
+                  <Star className="w-5 h-5 text-amber-400 star-filled" /> All Reviews ({dynamicReviewCount})
+                </h3>
+                <button 
+                  onClick={() => setShowAllReviews(false)} 
+                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-5 overflow-y-auto space-y-4">
+                {reviewsList.map(r => (
+                  <div key={r.id} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-indigo-600 flex items-center justify-center text-white text-sm font-bold">
+                          {(r.profiles?.full_name || r.full_name || 'A')[0]}
+                        </div>
+                        <div>
+                          <p className="font-bold text-sm text-slate-900 dark:text-white">{r.profiles?.full_name || r.full_name || 'Anonymous'}</p>
+                          <p className="text-xs text-slate-400">{new Date(r.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex gap-0.5">
+                          {[1,2,3,4,5].map(s => (
+                            <Star key={s} className={cn('w-3 h-3', s <= r.rating ? 'star-filled' : 'star-empty')} />
+                          ))}
+                        </div>
+                        {profile?.id && r.reviewer_id === profile.id && (
+                          <button
+                            onClick={() => handleDeleteReview(r.id)}
+                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                            title="Delete review"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{r.comment}</p>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

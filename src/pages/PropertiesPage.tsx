@@ -108,7 +108,7 @@ export default function PropertiesPage() {
               <div className="flex flex-wrap gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-2">Gender</label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {genderOptions.map(g => (
                       <button key={g.value} onClick={() => setGender(g.value)}
                         className={cn('px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',

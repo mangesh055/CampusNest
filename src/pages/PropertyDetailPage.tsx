@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { MapPin, Phone, Mail, Star, Heart, Share2, ChevronLeft, ChevronRight, CheckCircle, Navigation2, ExternalLink, ShieldCheck } from 'lucide-react'
+import { MapPin, Phone, Mail, Star, Heart, Share2, ChevronLeft, ChevronRight, CheckCircle, Navigation2, ExternalLink, ShieldCheck, Trash2, X } from 'lucide-react'
 
 import { usePropertyStore } from '../store/propertyStore'
 import { formatCurrency, propertyTypeLabels, formatDate, getInitials } from '../lib/utils'
@@ -30,6 +30,7 @@ export default function PropertyDetailPage() {
   
   const { profile } = useAuthStore()
   const [reviewsList, setReviewsList] = useState<ReviewRow[]>([])
+  const [showAllReviews, setShowAllReviews] = useState(false)
   const [newReview, setNewReview] = useState('')
   const [newRating, setNewRating] = useState(0)
 
@@ -58,6 +59,21 @@ export default function PropertyDetailPage() {
         Loading property details from Supabase...
       </div>
     )
+  }
+
+  const dynamicReviewCount = reviewsList.length
+  const dynamicRating = dynamicReviewCount > 0
+    ? (reviewsList.reduce((acc, curr) => acc + curr.rating, 0) / dynamicReviewCount).toFixed(1)
+    : (property?.rating || 0)
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!profile?.id) return
+    const { error } = await supabase.from('reviews').delete().eq('id', reviewId).eq('reviewer_id', profile.id)
+    if (error) {
+      console.error('Failed to delete review:', error)
+      return
+    }
+    setReviewsList(prev => prev.filter(r => r.id !== reviewId))
   }
 
   const handleAddReview = (e: React.FormEvent) => {
@@ -181,8 +197,8 @@ export default function PropertyDetailPage() {
                 <div className="text-right">
                   <div className="flex items-center gap-1 justify-end">
                     <Star className="w-4 h-4 star-filled" />
-                    <span className="font-bold text-slate-900 dark:text-white">{property.rating}</span>
-                    <span className="text-slate-400 text-sm">({property.review_count})</span>
+                    <span className="font-bold text-slate-900 dark:text-white">{dynamicRating}</span>
+                    <span className="text-slate-400 text-sm">({dynamicReviewCount})</span>
                   </div>
                   <span className={cn('badge mt-1', property.gender_preference === 'male' ? 'badge-blue' : property.gender_preference === 'female' ? 'bg-pink-100 text-pink-700' : 'badge-green')}>
                     {property.gender_preference === 'male' ? '👨 Boys Only' : property.gender_preference === 'female' ? '👩 Girls Only' : '👥 Any Gender'}
@@ -231,29 +247,32 @@ export default function PropertyDetailPage() {
             {/* Reviews */}
             <div className="card p-6">
               <h3 className="font-display font-bold text-slate-900 dark:text-white text-xl mb-6">
-                Reviews ({property.review_count})
+                Reviews ({dynamicReviewCount})
               </h3>
               {reviewsList.length > 0 && (
                 <div className="flex items-center gap-4 mb-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
                   <div className="text-center">
-                    <div className="text-5xl font-bold text-slate-900 dark:text-white">{property.rating}</div>
+                    <div className="text-5xl font-bold text-slate-900 dark:text-white">{dynamicRating}</div>
                     <div className="flex justify-center gap-0.5 my-1">
                       {[1,2,3,4,5].map(s => (
-                        <Star key={s} className={cn('w-4 h-4', s <= Math.floor(property.rating) ? 'star-filled' : 'star-empty')} />
+                        <Star key={s} className={cn('w-4 h-4', s <= Math.floor(Number(dynamicRating)) ? 'star-filled' : 'star-empty')} />
                       ))}
                     </div>
-                    <p className="text-xs text-slate-500">{property.review_count} reviews</p>
+                    <p className="text-xs text-slate-500">{dynamicReviewCount} reviews</p>
                   </div>
                   <div className="flex-1 space-y-2">
-                    {[5,4,3,2,1].map(star => (
+                    {[5,4,3,2,1].map(star => {
+                      const count = reviewsList.filter(r => r.rating === star).length;
+                      const percentage = dynamicReviewCount > 0 ? (count / dynamicReviewCount) * 100 : 0;
+                      return (
                       <div key={star} className="flex items-center gap-2">
                         <span className="text-xs text-slate-500 w-2">{star}</span>
                         <Star className="w-3 h-3 text-amber-400" />
                         <div className="flex-1 progress-bar">
-                          <div className="progress-fill" style={{ width: `${star === 5 ? 60 : star === 4 ? 25 : star === 3 ? 10 : star === 2 ? 3 : 2}%` }} />
+                          <div className="progress-fill" style={{ width: `${percentage}%` }} />
                         </div>
                       </div>
-                    ))}
+                    )})}
                   </div>
                 </div>
               )}
@@ -292,7 +311,7 @@ export default function PropertyDetailPage() {
 
               {reviewsList.length > 0 ? (
                 <div className="space-y-4">
-                  {reviewsList.map(review => (
+                  {reviewsList.slice(0, 3).map(review => (
                     <div key={review.id} className="border-b border-slate-100 dark:border-slate-800 pb-4">
                       <div className="flex items-start gap-3">
                         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
@@ -303,10 +322,21 @@ export default function PropertyDetailPage() {
                             <p className="font-semibold text-sm text-slate-900 dark:text-white">{review.profiles?.full_name || review.full_name || 'Anonymous'}</p>
                             <p className="text-xs text-slate-400">{formatDate(review.created_at)}</p>
                           </div>
-                          <div className="flex gap-0.5 my-1">
-                            {[1,2,3,4,5].map(s => (
-                              <Star key={s} className={cn('w-3 h-3', s <= review.rating ? 'star-filled' : 'star-empty')} />
-                            ))}
+                          <div className="flex items-center justify-between my-1">
+                            <div className="flex gap-0.5">
+                              {[1,2,3,4,5].map(s => (
+                                <Star key={s} className={cn('w-3 h-3', s <= review.rating ? 'star-filled' : 'star-empty')} />
+                              ))}
+                            </div>
+                            {profile?.id && review.reviewer_id === profile.id && (
+                              <button
+                                onClick={() => handleDeleteReview(review.id)}
+                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                title="Delete review"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                           <p className="text-sm text-slate-600 dark:text-slate-400">{review.comment}</p>
                         </div>
@@ -316,6 +346,15 @@ export default function PropertyDetailPage() {
                 </div>
               ) : (
                 <p className="text-slate-500 text-sm text-center py-4">No reviews yet. Be the first to review!</p>
+              )}
+
+              {reviewsList.length > 3 && (
+                <button 
+                  onClick={() => setShowAllReviews(true)} 
+                  className="w-full py-3 mt-4 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                >
+                  Show all {dynamicReviewCount} reviews
+                </button>
               )}
             </div>
           </div>
@@ -381,6 +420,59 @@ export default function PropertyDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Show All Reviews Modal */}
+      {showAllReviews && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 md:p-6">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white dark:bg-slate-900 z-10">
+              <h3 className="font-display font-bold text-xl text-slate-900 dark:text-white flex items-center gap-2">
+                <Star className="w-5 h-5 text-amber-400 star-filled" /> All Reviews ({dynamicReviewCount})
+              </h3>
+              <button 
+                onClick={() => setShowAllReviews(false)} 
+                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 overflow-y-auto space-y-4">
+              {reviewsList.map(review => (
+                <div key={review.id} className="border-b border-slate-100 dark:border-slate-800 pb-4 last:border-0 last:pb-0">
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                      {getInitials(review.profiles?.full_name || review.full_name || 'U')}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="font-semibold text-sm text-slate-900 dark:text-white">{review.profiles?.full_name || review.full_name || 'Anonymous'}</p>
+                        <p className="text-xs text-slate-400">{formatDate(review.created_at)}</p>
+                      </div>
+                      <div className="flex items-center justify-between my-1">
+                        <div className="flex gap-0.5">
+                          {[1,2,3,4,5].map(s => (
+                            <Star key={s} className={cn('w-3 h-3', s <= review.rating ? 'star-filled' : 'star-empty')} />
+                          ))}
+                        </div>
+                        {profile?.id && review.reviewer_id === profile.id && (
+                          <button
+                            onClick={() => handleDeleteReview(review.id)}
+                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                            title="Delete review"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{review.comment}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

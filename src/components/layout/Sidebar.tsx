@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import {
   LayoutDashboard, Home, Building2, Utensils, Users, MessageCircle,
   Bell, Heart, Search, Settings, BarChart2, QrCode, Calendar,
-  CreditCard, FileText, Shield, LogOut, ChevronRight, Star
+  CreditCard, FileText, Shield, LogOut, ChevronRight, Star, X
 } from 'lucide-react'
 import { cn, getInitials } from '../../lib/utils'
 import { useAuthStore } from '../../store/authStore'
@@ -51,7 +51,7 @@ const adminLinks = [
   { label: 'Settings', path: '/dashboard/settings', icon: Settings },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const location = useLocation()
   const { profile, signOut } = useAuthStore()
 
@@ -65,7 +65,7 @@ export default function Sidebar() {
   return (
     <aside className="w-64 h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col">
       {/* Logo */}
-      <div className="p-6 border-b border-slate-200 dark:border-slate-800">
+      <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
             <Building2 className="w-4 h-4 text-white" />
@@ -75,6 +75,14 @@ export default function Sidebar() {
             <span className="text-slate-900 dark:text-white">Nest</span>
           </span>
         </Link>
+        {onClose && (
+          <button 
+            onClick={onClose}
+            className="md:hidden p-2 -mr-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Profile Summary */}

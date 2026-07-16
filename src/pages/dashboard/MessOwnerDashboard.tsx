@@ -644,7 +644,7 @@ export default function MessOwnerDashboard() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-500 uppercase mb-2">Meals Provided</label>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {(['breakfast', 'lunch', 'dinner', 'snack'] as const).map(meal => (
                 <button
                   key={meal}
