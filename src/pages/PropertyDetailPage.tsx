@@ -17,6 +17,7 @@ type ReviewRow = {
   rating: number
   comment: string
   created_at: string
+  full_name?: string
   profiles?: { full_name?: string | null }
 }
 
@@ -70,7 +71,7 @@ export default function PropertyDetailPage() {
       rating: newRating,
       comment: newReview,
       created_at: new Date().toISOString(),
-      profiles: { full_name: profile?.full_name || 'Anonymous' }
+      full_name: profile?.full_name || 'Anonymous'
     }
 
     void (async () => {
@@ -80,7 +81,7 @@ export default function PropertyDetailPage() {
         return
       }
 
-      setReviewsList([newR, ...reviewsList])
+      setReviewsList([{ ...newR, profiles: { full_name: newR.full_name } }, ...reviewsList])
       setNewReview('')
       setNewRating(0)
     })()
@@ -232,28 +233,30 @@ export default function PropertyDetailPage() {
               <h3 className="font-display font-bold text-slate-900 dark:text-white text-xl mb-6">
                 Reviews ({property.review_count})
               </h3>
-              <div className="flex items-center gap-4 mb-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
-                <div className="text-center">
-                  <div className="text-5xl font-bold text-slate-900 dark:text-white">{property.rating}</div>
-                  <div className="flex justify-center gap-0.5 my-1">
-                    {[1,2,3,4,5].map(s => (
-                      <Star key={s} className={cn('w-4 h-4', s <= Math.floor(property.rating) ? 'star-filled' : 'star-empty')} />
+              {reviewsList.length > 0 && (
+                <div className="flex items-center gap-4 mb-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
+                  <div className="text-center">
+                    <div className="text-5xl font-bold text-slate-900 dark:text-white">{property.rating}</div>
+                    <div className="flex justify-center gap-0.5 my-1">
+                      {[1,2,3,4,5].map(s => (
+                        <Star key={s} className={cn('w-4 h-4', s <= Math.floor(property.rating) ? 'star-filled' : 'star-empty')} />
+                      ))}
+                    </div>
+                    <p className="text-xs text-slate-500">{property.review_count} reviews</p>
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    {[5,4,3,2,1].map(star => (
+                      <div key={star} className="flex items-center gap-2">
+                        <span className="text-xs text-slate-500 w-2">{star}</span>
+                        <Star className="w-3 h-3 text-amber-400" />
+                        <div className="flex-1 progress-bar">
+                          <div className="progress-fill" style={{ width: `${star === 5 ? 60 : star === 4 ? 25 : star === 3 ? 10 : star === 2 ? 3 : 2}%` }} />
+                        </div>
+                      </div>
                     ))}
                   </div>
-                  <p className="text-xs text-slate-500">{property.review_count} reviews</p>
                 </div>
-                <div className="flex-1 space-y-2">
-                  {[5,4,3,2,1].map(star => (
-                    <div key={star} className="flex items-center gap-2">
-                      <span className="text-xs text-slate-500 w-2">{star}</span>
-                      <Star className="w-3 h-3 text-amber-400" />
-                      <div className="flex-1 progress-bar">
-                        <div className="progress-fill" style={{ width: `${star === 5 ? 60 : star === 4 ? 25 : star === 3 ? 10 : star === 2 ? 3 : 2}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              )}
 
               {/* Add Review Form */}
               <div className="mb-6 p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
@@ -293,11 +296,11 @@ export default function PropertyDetailPage() {
                     <div key={review.id} className="border-b border-slate-100 dark:border-slate-800 pb-4">
                       <div className="flex items-start gap-3">
                         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                          {getInitials(review.profiles?.full_name || 'U')}
+                          {getInitials(review.profiles?.full_name || review.full_name || 'U')}
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
-                            <p className="font-semibold text-sm text-slate-900 dark:text-white">{review.profiles?.full_name}</p>
+                            <p className="font-semibold text-sm text-slate-900 dark:text-white">{review.profiles?.full_name || review.full_name || 'Anonymous'}</p>
                             <p className="text-xs text-slate-400">{formatDate(review.created_at)}</p>
                           </div>
                           <div className="flex gap-0.5 my-1">

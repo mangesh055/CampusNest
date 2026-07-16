@@ -89,7 +89,7 @@ export default function MessDetailPage() {
       rating: newRating,
       comment: newReview,
       created_at: new Date().toISOString(),
-      profiles: { full_name: profile?.full_name || 'Anonymous' }
+      full_name: profile?.full_name || 'Anonymous'
     }
 
     void (async () => {
@@ -99,7 +99,7 @@ export default function MessDetailPage() {
         return
       }
 
-      setReviewsList([newR, ...reviewsList])
+      setReviewsList([{ ...newR, profiles: { full_name: newR.full_name } }, ...reviewsList])
       setNewReview('')
       setNewRating(0)
     })()
@@ -369,28 +369,30 @@ export default function MessDetailPage() {
                     </div>
 
                     {/* Rating summary */}
-                    <div className="flex items-center gap-5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
-                      <div className="text-center">
-                        <div className="text-4xl font-bold text-slate-900 dark:text-white">{mess.rating}</div>
-                        <div className="flex gap-0.5 mt-1 justify-center">
-                          {[1,2,3,4,5].map(s => (
-                            <Star key={s} className={cn('w-3.5 h-3.5', s <= Math.floor(mess.rating) ? 'star-filled' : 'star-empty')} />
+                    {reviewsList.length > 0 && (
+                      <div className="flex items-center gap-5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
+                        <div className="text-center">
+                          <div className="text-4xl font-bold text-slate-900 dark:text-white">{mess.rating}</div>
+                          <div className="flex gap-0.5 mt-1 justify-center">
+                            {[1,2,3,4,5].map(s => (
+                              <Star key={s} className={cn('w-3.5 h-3.5', s <= Math.floor(mess.rating) ? 'star-filled' : 'star-empty')} />
+                            ))}
+                          </div>
+                          <p className="text-xs text-slate-400 mt-0.5">out of 5</p>
+                        </div>
+                        <div className="flex-1 space-y-1.5">
+                          {[5,4,3,2,1].map(star => (
+                            <div key={star} className="flex items-center gap-2">
+                              <span className="text-xs text-slate-400 w-3">{star}</span>
+                              <Star className="w-3 h-3 text-amber-400" />
+                              <div className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                <div className="h-full bg-orange-400 rounded-full" style={{ width: `${star === 5 ? 65 : star === 4 ? 20 : star === 3 ? 10 : star === 2 ? 3 : 2}%` }} />
+                              </div>
+                            </div>
                           ))}
                         </div>
-                        <p className="text-xs text-slate-400 mt-0.5">out of 5</p>
                       </div>
-                      <div className="flex-1 space-y-1.5">
-                        {[5,4,3,2,1].map(star => (
-                          <div key={star} className="flex items-center gap-2">
-                            <span className="text-xs text-slate-400 w-3">{star}</span>
-                            <Star className="w-3 h-3 text-amber-400" />
-                            <div className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                              <div className="h-full bg-orange-400 rounded-full" style={{ width: `${star === 5 ? 65 : star === 4 ? 20 : star === 3 ? 10 : star === 2 ? 3 : 2}%` }} />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                    )}
 
                     {/* Add Review Form */}
                     <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
@@ -431,10 +433,10 @@ export default function MessDetailPage() {
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex items-center gap-2.5">
                               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-indigo-600 flex items-center justify-center text-white text-sm font-bold">
-                                {(r.profiles?.full_name || 'A')[0]}
+                                {(r.profiles?.full_name || r.full_name || 'A')[0]}
                               </div>
                               <div>
-                                    <p className="font-bold text-sm text-slate-900 dark:text-white">{r.profiles?.full_name || 'Anonymous'}</p>
+                                    <p className="font-bold text-sm text-slate-900 dark:text-white">{r.profiles?.full_name || r.full_name || 'Anonymous'}</p>
                                     <p className="text-xs text-slate-400">{new Date(r.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                               </div>
                             </div>
