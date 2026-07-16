@@ -121,38 +121,92 @@ export default function QRScanPage() {
 
   const handleScan = () => {
     setStep('scanning')
-    setTimeout(() => {
-      const token = generateTokenCode()
-      setMealToken(token)
-
-      const todayStr = new Date().toISOString().split('T')[0]
-
-      void (async () => {
-        const attendanceRow = {
-          id: `att-${Date.now()}`,
-          student_id: profile?.id || '',
-          date: todayStr,
-          breakfast: selectedMeal === 'breakfast',
-          lunch: selectedMeal === 'lunch',
-          dinner: selectedMeal === 'dinner',
-          snack: selectedMeal === 'snack',
-        }
-
-        if (!attendanceRow.student_id) {
-          console.error('No authenticated student profile available for attendance.')
+    
+    void (async () => {
+      try {
+        if (!profile?.id) {
+          setErrorMsg('You must be logged in to scan.')
+          setStep('error')
           return
         }
 
-        const { error } = await supabase.from('student_attendance').insert([attendanceRow])
-        if (error) {
-          console.error('Failed to save attendance to Supabase:', error)
+        // 1. Fetch active subscription & plan details
+        const { data: subData, error: subError } = await supabase
+          .from('student_subscriptions')
+          .select('*, mess_plans(meal_types)')
+          .eq('student_id', profile.id)
+          .eq('status', 'active')
+          .maybeSingle()
+
+        if (subError || !subData) {
+          setErrorMsg('You do not have an active subscription. Please purchase a plan or use walk-in mode.')
+          setStep('error')
           return
+        }
+
+        const mealTypes = subData.mess_plans?.meal_types || []
+        
+        // 2. Validate if the plan includes the selected meal
+        if (!mealTypes.includes(selectedMeal)) {
+          setErrorMsg(`Your purchased plan does not include ${selectedMeal}.`)
+          setStep('error')
+          return
+        }
+
+        const todayStr = new Date().toISOString().split('T')[0]
+
+        // 3. Check if already marked for today
+        const { data: attData } = await supabase
+          .from('student_attendance')
+          .select('*')
+          .eq('student_id', profile.id)
+          .eq('date', todayStr)
+          .maybeSingle()
+
+        if (attData && attData[selectedMeal]) {
+          setErrorMsg(`You have already claimed your ${selectedMeal} meal for today.`)
+          setStep('error')
+          return
+        }
+
+        // Simulate processing time
+        await new Promise(r => setTimeout(r, 1500))
+
+        const token = generateTokenCode()
+        setMealToken(token)
+
+        // 4. Update or Insert attendance
+        if (attData) {
+          const { error: updateErr } = await supabase
+            .from('student_attendance')
+            .update({ [selectedMeal]: true })
+            .eq('id', attData.id)
+            
+          if (updateErr) throw updateErr
+        } else {
+          const attendanceRow = {
+            id: `att-${Date.now()}`,
+            student_id: profile.id,
+            mess_id: subData.mess_id,
+            date: todayStr,
+            breakfast: selectedMeal === 'breakfast',
+            lunch: selectedMeal === 'lunch',
+            dinner: selectedMeal === 'dinner',
+            snack: selectedMeal === 'snack',
+          }
+          const { error: insertErr } = await supabase.from('student_attendance').insert([attendanceRow])
+          if (insertErr) throw insertErr
         }
 
         saveToken(token, selectedMeal, false)
         setStep('success')
-      })()
-    }, 2000)
+        
+      } catch (err: any) {
+        console.error('Scan Error:', err)
+        setErrorMsg('An error occurred while processing your scan.')
+        setStep('error')
+      }
+    })()
   }
 
   const handleWalkInPayment = () => {

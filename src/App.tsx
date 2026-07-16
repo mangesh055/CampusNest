@@ -7,6 +7,7 @@ import MessPage from './pages/MessPage'
 import MessDetailPage from './pages/MessDetailPage'
 import AuthPage from './pages/AuthPage'
 import RoommatesPage from './pages/RoommatesPage'
+import RoommateDetailPage from './pages/RoommateDetailPage'
 import CommunityPage from './pages/CommunityPage'
 import NotificationsPage from './pages/NotificationsPage'
 
@@ -124,6 +125,7 @@ export default function App() {
           <Route path="/mess/:id" element={<MessDetailPage />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/roommates" element={<RoommatesPage />} />
+          <Route path="/roommates/:id" element={<RoommateDetailPage />} />
           <Route path="/community" element={<CommunityPage />} />
           <Route path="/favorites" element={<PropertiesPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />

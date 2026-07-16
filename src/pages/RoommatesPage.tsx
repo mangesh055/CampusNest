@@ -5,7 +5,7 @@ import { useAuthStore } from '../store/authStore'
 import { useNavigate } from 'react-router-dom'
 import type { RoommateProfile, UserRole } from '../types'
 import { cn, formatCurrency } from '../lib/utils'
-import { fetchRoommateProfiles } from '../lib/platformData'
+import { fetchRoommateProfiles, invalidatePlatformCache } from '../lib/platformData'
 import { supabase } from '../lib/supabase'
 
 type RoommateRow = RoommateProfile & { full_name?: string | null; email?: string | null }
@@ -21,20 +21,40 @@ export default function RoommatesPage() {
   const [selectedFood, setSelectedFood] = useState<string>('')
   const [maxBudget, setMaxBudget] = useState<string>('')
   const [showForm, setShowForm] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [customAmenity, setCustomAmenity] = useState('')
 
   // Form Fields for new Roommate seeker
   const [form, setForm] = useState({
     budget_min: '4000',
     budget_max: '8000',
+    deposit: '',
+    total_roommates: '2',
+    location: '',
     college: profile?.college || 'MIT WPU',
     branch: profile?.branch || 'Information Technology',
     gender: profile?.gender || 'male',
     food_preference: 'veg' as 'veg' | 'non-veg' | 'both',
     smoking: false,
     sleep_schedule: 'flexible' as 'early_bird' | 'night_owl' | 'flexible',
-    looking_for: 'any' as 'flat' | 'pg' | 'hostel' | 'any',
+    looking_for: 'flat' as 'flat' | 'pg' | 'hostel' | 'any',
+    amenities: [] as string[],
+    images: [] as string[],
     description: '',
+    phone: '',
+    whatsapp: '',
+    whatsapp_code: '+91',
   })
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files) return
+    Array.from(files).forEach(file => {
+      const reader = new FileReader()
+      reader.onloadend = () => setForm(prev => ({ ...prev, images: [...prev.images, reader.result as string] }))
+      reader.readAsDataURL(file)
+    })
+  }
 
   useEffect(() => {
     const load = async () => {
@@ -75,7 +95,16 @@ export default function RoommatesPage() {
       smoking: form.smoking,
       sleep_schedule: form.sleep_schedule,
       looking_for: form.looking_for,
-      description: form.description,
+      description: JSON.stringify({
+        text: form.description,
+        deposit: Number(form.deposit) || 0,
+        total_roommates: Number(form.total_roommates) || 1,
+        location: form.location,
+        amenities: form.amenities,
+        images: form.images,
+        phone: form.phone,
+        whatsapp: `${form.whatsapp_code}${form.whatsapp}`
+      }),
       active: true,
       created_at: new Date().toISOString(),
       full_name: profile.full_name,
@@ -94,7 +123,9 @@ export default function RoommatesPage() {
         const filtered = prev.filter(r => r.student_id !== profile.id)
         return [newProfile, ...filtered]
       })
+      invalidatePlatformCache()
       setShowForm(false)
+      setIsEditing(false)
     })()
   }
 
@@ -109,6 +140,7 @@ export default function RoommatesPage() {
 
       setMyProfile(null)
       setRoommates(prev => prev.filter(r => r.student_id !== profile.id))
+      invalidatePlatformCache()
     })()
   }
 
@@ -207,6 +239,38 @@ export default function RoommatesPage() {
                   <p className="text-[10px] text-slate-400 font-bold uppercase">Your Card is Active</p>
                   <p className="text-sm font-semibold text-white">{myProfile.college} • {myProfile.branch}</p>
                 </div>
+                <button onClick={() => {
+                  let descObj = { text: myProfile.description, deposit: 0, total_roommates: 1, location: '', amenities: [] as string[], images: [] as string[], phone: '', whatsapp: '' }
+                  try {
+                    const parsed = JSON.parse(myProfile.description || '{}')
+                    if (parsed.text !== undefined) descObj = { ...descObj, ...parsed }
+                  } catch (e) {}
+                  
+                  setForm({
+                    budget_min: myProfile.budget_min.toString(),
+                    budget_max: myProfile.budget_max.toString(),
+                    deposit: descObj.deposit ? descObj.deposit.toString() : '',
+                    total_roommates: descObj.total_roommates.toString(),
+                    location: descObj.location,
+                    college: myProfile.college,
+                    branch: myProfile.branch,
+                    gender: myProfile.gender,
+                    food_preference: myProfile.food_preference as any,
+                    smoking: myProfile.smoking,
+                    sleep_schedule: myProfile.sleep_schedule as any,
+                    looking_for: myProfile.looking_for as any,
+                    amenities: descObj.amenities,
+                    images: descObj.images,
+                    description: descObj.text,
+                    phone: descObj.phone,
+                    whatsapp: (descObj.whatsapp || descObj.phone || '').replace(/^\+\d+/, ''),
+                    whatsapp_code: (descObj.whatsapp?.match(/^\+(\d+)/)?.[0]) || '+91'
+                  })
+                  setIsEditing(true)
+                  setShowForm(true)
+                }} className="btn-secondary py-1.5 px-3 bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs">
+                  Edit Card
+                </button>
                 <button onClick={handleDeleteProfile} className="btn-secondary py-1.5 px-3 bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20 text-xs">
                   Remove Card
                 </button>
@@ -266,81 +330,94 @@ export default function RoommatesPage() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {sortedRoommates.map((item, idx) => {
               const score = calculateMatchScore(item)
+              let descObj = { text: item.description, deposit: 0, total_roommates: 1, location: '', amenities: [] as string[], images: [] as string[] }
+              try {
+                const parsed = JSON.parse(item.description || '{}')
+                if (parsed.text !== undefined) descObj = { ...descObj, ...parsed }
+              } catch (e) {}
+
               return (
                 <motion.div
                   key={item.id}
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
-                  className="card p-6 flex flex-col justify-between hover:shadow-card transition-all"
+                  className="card overflow-hidden hover:shadow-card transition-all flex flex-col cursor-pointer"
+                  onClick={() => navigate(`/roommates/${item.id}`)}
                 >
-                  <div>
-                    {/* Header */}
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
-                          {(item.full_name || 'U').split(' ').map(n => n[0]).join('')}
+                  {(descObj.images?.length || 0) > 0 && (
+                    <div className="h-48 w-full bg-slate-200 dark:bg-slate-800 relative">
+                      <img src={descObj.images?.[0]} alt="Room" className="w-full h-full object-cover" />
+                      <div className="absolute top-3 right-3 bg-black/60 text-white text-[10px] px-2 py-1 rounded-lg backdrop-blur-sm font-medium">
+                        1 of {descObj.images?.length || 0}
+                      </div>
+                    </div>
+                  )}
+                  <div className="p-6 flex flex-col justify-between flex-1">
+                    <div>
+                      {/* Header */}
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm">
+                            {(item.full_name || 'U').split(' ').map(n => n[0]).join('')}
+                          </div>
+                          <div>
+                            <h3 className="font-display font-bold text-slate-900 dark:text-white leading-tight">
+                              {item.full_name || 'Anonymous'}
+                            </h3>
+                            <p className="text-[10px] text-brand-600 dark:text-brand-400 font-semibold mt-0.5">{item.college}</p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-display font-bold text-slate-900 dark:text-white leading-tight">
-                            {item.full_name || 'Anonymous Student'}
-                          </h3>
-                          <p className="text-xs text-brand-600 dark:text-brand-400 font-semibold mt-0.5">{item.college}</p>
-                        </div>
+
+                        {score !== null && (
+                          <div className="flex flex-col items-end">
+                            <span className={cn('badge text-[10px] px-2 py-0.5 font-bold',
+                              score >= 80 ? 'badge-green' : score >= 60 ? 'badge-yellow' : 'badge-purple')}>
+                              {score}% Match
+                            </span>
+                          </div>
+                        )}
                       </div>
 
-                      {score !== null && (
-                        <div className="flex flex-col items-end">
-                          <span className={cn('badge text-[10px] px-2 py-0.5 font-bold',
-                            score >= 80 ? 'badge-green' : score >= 60 ? 'badge-yellow' : 'badge-purple')}>
-                            {score}% Match
+                      {/* Meta Details */}
+                      <div className="grid grid-cols-2 gap-y-2 gap-x-4 border-t border-slate-100 dark:border-slate-800 pt-4 mb-4">
+                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                          <DollarSign className="w-3.5 h-3.5 text-slate-400" />
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">
+                            {formatCurrency(item.budget_min)} <span className="text-[10px] font-normal">/mo</span>
                           </span>
                         </div>
-                      )}
-                    </div>
-
-                    {/* Bio */}
-                    <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-4 italic">
-                      "{item.description}"
-                    </p>
-
-                    {/* Meta Details */}
-                    <div className="space-y-2.5 border-t border-slate-100 dark:border-slate-800 pt-4 mb-5">
-                      <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <BookOpen className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="font-medium text-slate-700 dark:text-slate-300">{item.branch}</span>
+                        {descObj.deposit > 0 && (
+                          <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                            <Shield className="w-3.5 h-3.5 text-slate-400" />
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">
+                              {formatCurrency(descObj.deposit)} <span className="text-[10px] font-normal">dep.</span>
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                          <Users className="w-3.5 h-3.5 text-slate-400" />
+                          <span className="text-slate-700 dark:text-slate-300">
+                            {descObj.total_roommates} Roommate{descObj.total_roommates > 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                          <Compass className="w-3.5 h-3.5 text-slate-400" />
+                          <span className="text-slate-700 dark:text-slate-300 capitalize">{item.looking_for}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <DollarSign className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">
-                          {formatCurrency(item.budget_min)} / person / month
+
+                      {/* Tags */}
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-1 rounded-lg font-medium capitalize">
+                          {item.gender}
+                        </span>
+                        <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-1 rounded-lg font-medium capitalize">
+                          🍲 {item.food_preference}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="text-slate-700 dark:text-slate-300">Property Type: <span className="capitalize font-semibold">{item.looking_for}</span></span>
-                      </div>
-                    </div>
-
-                    {/* Tags */}
-                    <div className="flex flex-wrap gap-1.5 mb-6">
-                      <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-1 rounded-lg font-medium capitalize">
-                        {item.gender}
-                      </span>
-                      <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-1 rounded-lg font-medium capitalize">
-                        🍲 {item.food_preference}
-                      </span>
-                      <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-1 rounded-lg font-medium capitalize">
-                        🕒 {item.sleep_schedule.replace('_', ' ')}
-                      </span>
-                      {item.smoking ? (
-                        <span className="text-[10px] bg-red-50 text-red-600 px-2 py-1 rounded-lg font-medium">🚬 Smoking ok</span>
-                      ) : (
-                        <span className="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-1 rounded-lg font-medium">🚭 No smoking</span>
-                      )}
                     </div>
                   </div>
-
                 </motion.div>
               )
             })}
@@ -357,7 +434,7 @@ export default function RoommatesPage() {
               className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl shadow-glass overflow-hidden z-10 max-h-[90vh] flex flex-col">
               
               <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
-                <h3 className="text-xl font-display font-bold text-slate-900 dark:text-white">📝 Post Your Room Details</h3>
+                <h3 className="text-xl font-display font-bold text-slate-900 dark:text-white">📝 {isEditing ? 'Edit Your Room Details' : 'Post Your Room Details'}</h3>
                 <button onClick={() => setShowForm(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400"><X className="w-5 h-5" /></button>
               </div>
 
@@ -368,14 +445,65 @@ export default function RoommatesPage() {
                     <input type="number" value={form.budget_min} onChange={e => setForm(prev => ({ ...prev, budget_min: e.target.value, budget_max: e.target.value }))} className="input-field text-sm" required />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Your College</label>
-                    <input type="text" value={form.college} onChange={e => setForm(prev => ({ ...prev, college: e.target.value }))} className="input-field text-sm" placeholder="e.g. MIT WPU" required />
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Deposit Amount (₹)</label>
+                    <input type="number" value={form.deposit} onChange={e => setForm(prev => ({ ...prev, deposit: e.target.value }))} className="input-field text-sm" placeholder="e.g. 10000" />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Your Branch / Stream</label>
-                  <input type="text" value={form.branch} onChange={e => setForm(prev => ({ ...prev, branch: e.target.value }))} className="input-field text-sm" placeholder="e.g. Computer Science" required />
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Location / Address</label>
+                  <input type="text" value={form.location} onChange={e => setForm(prev => ({ ...prev, location: e.target.value }))} className="input-field text-sm" placeholder="e.g. Kothrud, near MIT Gate" required />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Contact Number (Calling)</label>
+                    <input type="tel" value={form.phone} onChange={e => setForm(prev => ({ ...prev, phone: e.target.value }))} className="input-field text-sm" placeholder="e.g. 9876543210" required />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">WhatsApp Number</label>
+                    <div className="flex gap-2">
+                      <select value={form.whatsapp_code} onChange={e => setForm(prev => ({ ...prev, whatsapp_code: e.target.value }))} className="input-field text-sm w-[90px] px-2 font-medium">
+                        <option value="+91">+91 (IN)</option>
+                        <option value="+1">+1 (US)</option>
+                        <option value="+44">+44 (UK)</option>
+                        <option value="+61">+61 (AU)</option>
+                        <option value="+971">+971 (UAE)</option>
+                      </select>
+                      <input type="tel" value={form.whatsapp} onChange={e => setForm(prev => ({ ...prev, whatsapp: e.target.value.replace(/\D/g, '') }))} className="input-field text-sm flex-1" placeholder="9876543210" required />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Total Roommates in Room</label>
+                    <input type="number" value={form.total_roommates} onChange={e => setForm(prev => ({ ...prev, total_roommates: e.target.value }))} className="input-field text-sm" placeholder="e.g. 2" required />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Property Type</label>
+                    <select value={form.looking_for} onChange={e => setForm(prev => ({ ...prev, looking_for: e.target.value as any }))} className="input-field text-sm">
+                      <option value="flat">Flat sharing</option>
+                      <option value="pg">PG partner</option>
+                      <option value="hostel">Hostel roomie</option>
+                      <option value="any">Other</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Looking for Gender</label>
+                    <select value={form.gender} onChange={e => setForm(prev => ({ ...prev, gender: e.target.value as any }))} className="input-field text-sm">
+                      <option value="male">Boys Only</option>
+                      <option value="female">Girls Only</option>
+                      <option value="other">Any / Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Your College</label>
+                    <input type="text" value={form.college} onChange={e => setForm(prev => ({ ...prev, college: e.target.value }))} className="input-field text-sm" placeholder="e.g. MIT WPU" required />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -387,6 +515,61 @@ export default function RoommatesPage() {
                       <option value="both">Both / Anything</option>
                     </select>
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-2">Amenities</label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {['WiFi', 'AC', 'Washing Machine', 'Attached Bath', 'Furnished', 'Maid'].map(am => (
+                      <button type="button" key={am}
+                        onClick={() => setForm(prev => ({ ...prev, amenities: prev.amenities.includes(am) ? prev.amenities.filter(a => a !== am) : [...prev.amenities, am] }))}
+                        className={cn('px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-colors', form.amenities.includes(am) ? 'border-brand-500 bg-brand-50 text-brand-600' : 'border-slate-200 text-slate-500 hover:bg-slate-50')}>
+                        {am}
+                      </button>
+                    ))}
+                    {form.amenities.filter(a => !['WiFi', 'AC', 'Washing Machine', 'Attached Bath', 'Furnished', 'Maid'].includes(a)).map(am => (
+                      <button type="button" key={am}
+                        onClick={() => setForm(prev => ({ ...prev, amenities: prev.amenities.filter(a => a !== am) }))}
+                        className="px-2.5 py-1.5 rounded-lg border border-brand-500 bg-brand-50 text-brand-600 text-xs font-semibold flex items-center gap-1">
+                        {am} <X className="w-3 h-3" />
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input type="text" value={customAmenity} onChange={e => setCustomAmenity(e.target.value)} placeholder="Add custom amenity..." className="input-field text-sm flex-1" />
+                    <button type="button" onClick={() => {
+                      if (customAmenity.trim() && !form.amenities.includes(customAmenity.trim())) {
+                        setForm(prev => ({ ...prev, amenities: [...prev.amenities, customAmenity.trim()] }))
+                        setCustomAmenity('')
+                      }
+                    }} className="btn-secondary px-4 text-sm">Add</button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-2">Room Images</label>
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {form.images.map((img, i) => (
+                      <div key={i} className="relative w-16 h-16 shrink-0 rounded-lg overflow-hidden border border-slate-200">
+                        <img src={img} alt="Upload" className="w-full h-full object-cover" />
+                        <button type="button" onClick={() => setForm(prev => ({ ...prev, images: prev.images.filter((_, idx) => idx !== i) }))} className="absolute top-0 right-0 bg-red-500 text-white p-0.5 rounded-bl-lg"><X className="w-3 h-3" /></button>
+                      </div>
+                    ))}
+                    <label className="w-16 h-16 shrink-0 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 cursor-pointer transition-colors">
+                      <Plus className="w-5 h-5" />
+                      <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="hidden" />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-2">Smoking</label>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => setForm(prev => ({ ...prev, smoking: false }))} className={cn('flex-1 py-1.5 rounded-lg border text-xs font-semibold capitalize', !form.smoking ? 'border-brand-500 bg-brand-50 text-brand-600' : 'border-slate-200')}>No Smoking</button>
+                      <button type="button" onClick={() => setForm(prev => ({ ...prev, smoking: true }))} className={cn('flex-1 py-1.5 rounded-lg border text-xs font-semibold capitalize', form.smoking ? 'border-brand-500 bg-brand-50 text-brand-600' : 'border-slate-200')}>Smoking OK</button>
+                    </div>
+                  </div>
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1">Sleep Schedule</label>
                     <select value={form.sleep_schedule} onChange={e => setForm(prev => ({ ...prev, sleep_schedule: e.target.value as any }))} className="input-field text-sm">
@@ -397,25 +580,6 @@ export default function RoommatesPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Property Type</label>
-                    <select value={form.looking_for} onChange={e => setForm(prev => ({ ...prev, looking_for: e.target.value as any }))} className="input-field text-sm">
-                      <option value="flat">Flat sharing</option>
-                      <option value="pg">PG partner</option>
-                      <option value="hostel">Hostel roomie</option>
-                      <option value="any">Other</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-2">Smoking</label>
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => setForm(prev => ({ ...prev, smoking: false }))} className={cn('flex-1 py-1.5 rounded-lg border text-xs font-semibold capitalize', !form.smoking ? 'border-brand-500 bg-brand-50 text-brand-600' : 'border-slate-200')}>No Smoking</button>
-                      <button type="button" onClick={() => setForm(prev => ({ ...prev, smoking: true }))} className={cn('flex-1 py-1.5 rounded-lg border text-xs font-semibold capitalize', form.smoking ? 'border-brand-500 bg-brand-50 text-brand-600' : 'border-slate-200')}>Smoking OK</button>
-                    </div>
-                  </div>
-                </div>
-
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1">About the Room & Roommate Preferences</label>
                   <textarea rows={3} value={form.description} onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
@@ -423,7 +587,7 @@ export default function RoommatesPage() {
                 </div>
 
                 <button type="submit" className="btn-primary w-full justify-center py-3 text-sm mt-2">
-                  ✓ Publish Room Details
+                  ✓ {isEditing ? 'Save Changes' : 'Publish Room Details'}
                 </button>
               </form>
             </motion.div>

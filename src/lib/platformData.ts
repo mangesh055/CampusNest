@@ -1,24 +1,114 @@
 import { supabase } from './supabase'
 import type { CommunityPost, Mess, MessPlan, Property, Review, RoommateProfile } from '../types'
 
-export async function fetchProperties() {
-  const { data, error } = await supabase
-    .from('properties')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  if (error) throw error
-  return (data || []) as Property[]
+const cache = {
+  properties: null as Property[] | null,
+  propertiesPromise: null as Promise<Property[]> | null,
+  messes: null as Mess[] | null,
+  messesPromise: null as Promise<Mess[]> | null,
+  roommates: null as RoommateProfile[] | null,
+  roommatesPromise: null as Promise<RoommateProfile[]> | null,
+  posts: null as CommunityPost[] | null,
+  postsPromise: null as Promise<CommunityPost[]> | null,
 }
 
-export async function fetchMesses() {
-  const { data, error } = await supabase
-    .from('messes')
-    .select('*, profiles:profiles(*)')
-    .order('created_at', { ascending: false })
+export function invalidatePlatformCache() {
+  cache.properties = null
+  cache.propertiesPromise = null
+  cache.messes = null
+  cache.messesPromise = null
+  cache.roommates = null
+  cache.roommatesPromise = null
+  cache.posts = null
+  cache.postsPromise = null
+}
 
-  if (error) throw error
-  return (data || []) as Mess[]
+export async function fetchProperties(forceRefresh = false) {
+  if (forceRefresh) cache.propertiesPromise = null
+  if (cache.properties && !forceRefresh) return cache.properties
+  
+  if (!cache.propertiesPromise) {
+    cache.propertiesPromise = supabase
+      .from('properties')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) throw error
+        cache.properties = (data || []) as Property[]
+        return cache.properties
+      })
+      .catch(err => {
+        cache.propertiesPromise = null
+        throw err
+      })
+  }
+  return cache.propertiesPromise
+}
+
+export async function fetchMesses(forceRefresh = false) {
+  if (forceRefresh) cache.messesPromise = null
+  if (cache.messes && !forceRefresh) return cache.messes
+
+  if (!cache.messesPromise) {
+    cache.messesPromise = supabase
+      .from('messes')
+      .select('*, profiles:profiles(*)')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) throw error
+        cache.messes = (data || []) as Mess[]
+        return cache.messes
+      })
+      .catch(err => {
+        cache.messesPromise = null
+        throw err
+      })
+  }
+  return cache.messesPromise
+}
+
+export async function fetchRoommateProfiles(forceRefresh = false) {
+  if (forceRefresh) cache.roommatesPromise = null
+  if (cache.roommates && !forceRefresh) return cache.roommates
+
+  if (!cache.roommatesPromise) {
+    cache.roommatesPromise = supabase
+      .from('roommate_profiles')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) throw error
+        cache.roommates = (data || []) as RoommateProfile[]
+        return cache.roommates
+      })
+      .catch(err => {
+        cache.roommatesPromise = null
+        throw err
+      })
+  }
+  return cache.roommatesPromise
+}
+
+export async function fetchCommunityPosts(forceRefresh = false) {
+  if (forceRefresh) cache.postsPromise = null
+  if (cache.posts && !forceRefresh) return cache.posts
+
+  if (!cache.postsPromise) {
+    cache.postsPromise = supabase
+      .from('community_posts')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) throw error
+        cache.posts = (data || []) as CommunityPost[]
+        return cache.posts
+      })
+      .catch(err => {
+        cache.postsPromise = null
+        throw err
+      })
+  }
+  return cache.postsPromise
 }
 
 export async function fetchMessPlans(messId: string) {
@@ -41,26 +131,6 @@ export async function fetchReviews(options: { propertyId?: string; messId?: stri
   const { data, error } = await query
   if (error) throw error
   return (data || []) as Review[]
-}
-
-export async function fetchRoommateProfiles() {
-  const { data, error } = await supabase
-    .from('roommate_profiles')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  if (error) throw error
-  return (data || []) as RoommateProfile[]
-}
-
-export async function fetchCommunityPosts() {
-  const { data, error } = await supabase
-    .from('community_posts')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  if (error) throw error
-  return (data || []) as CommunityPost[]
 }
 
 export async function fetchCommunityComments(postId?: string) {
