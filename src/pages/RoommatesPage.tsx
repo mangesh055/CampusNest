@@ -191,15 +191,15 @@ export default function RoommatesPage() {
             <span className="badge badge-purple bg-brand-500/20 text-brand-300 border-brand-500/30 text-xs px-2.5 py-1 mb-3">
               <Sparkles className="w-3.5 h-3.5 inline mr-1" /> Smart Matching
             </span>
-            <h1 className="text-3xl md:text-5xl font-display font-bold">Find Your Perfect Roommate</h1>
+            <h1 className="text-3xl md:text-5xl font-display font-bold">Find a Roommate for Your Room</h1>
             <p className="text-slate-300 mt-2 max-w-lg">
-              Match with like-minded students near your college. Compare budgets, habits, and study schedules.
+              Have an empty bed? Connect with students looking for accommodation near your college. Match based on rent, diet, and lifestyle.
             </p>
           </div>
           <div className="flex gap-3">
             {!myProfile ? (
               <button onClick={() => { if (!profile) navigate('/auth'); else setShowForm(true) }} className="btn-primary flex items-center gap-2">
-                <Plus className="w-5 h-5" /> Post Your Seeker Card
+                <Plus className="w-5 h-5" /> Post Your Room
               </button>
             ) : (
               <div className="flex items-center gap-3 bg-white/5 border border-white/10 p-3 rounded-2xl">
@@ -244,7 +244,7 @@ export default function RoommatesPage() {
               type="number"
               value={maxBudget}
               onChange={e => setMaxBudget(e.target.value)}
-              placeholder="Max Budget"
+              placeholder="Max Rent"
               className="input-field py-2 text-sm w-28"
             />
           </div>
@@ -313,12 +313,12 @@ export default function RoommatesPage() {
                       <div className="flex items-center gap-2 text-xs text-slate-500">
                         <DollarSign className="w-3.5 h-3.5 text-slate-400" />
                         <span className="font-semibold text-slate-800 dark:text-slate-200">
-                          {formatCurrency(item.budget_min)} - {formatCurrency(item.budget_max)} / month
+                          {formatCurrency(item.budget_min)} / person / month
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-slate-500">
                         <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="text-slate-700 dark:text-slate-300">Looking for: <span className="capitalize font-semibold">{item.looking_for}</span></span>
+                        <span className="text-slate-700 dark:text-slate-300">Property Type: <span className="capitalize font-semibold">{item.looking_for}</span></span>
                       </div>
                     </div>
 
@@ -357,35 +357,30 @@ export default function RoommatesPage() {
               className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl shadow-glass overflow-hidden z-10 max-h-[90vh] flex flex-col">
               
               <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
-                <h3 className="text-xl font-display font-bold text-slate-900 dark:text-white">📝 Set Roommate Preferences</h3>
+                <h3 className="text-xl font-display font-bold text-slate-900 dark:text-white">📝 Post Your Room Details</h3>
                 <button onClick={() => setShowForm(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400"><X className="w-5 h-5" /></button>
               </div>
 
               <form onSubmit={handleCreateProfile} className="flex-1 overflow-y-auto p-6 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Min Budget (₹/mo)</label>
-                    <input type="number" value={form.budget_min} onChange={e => setForm(prev => ({ ...prev, budget_min: e.target.value }))} className="input-field text-sm" required />
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Rent per person (₹/mo)</label>
+                    <input type="number" value={form.budget_min} onChange={e => setForm(prev => ({ ...prev, budget_min: e.target.value, budget_max: e.target.value }))} className="input-field text-sm" required />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Max Budget (₹/mo)</label>
-                    <input type="number" value={form.budget_max} onChange={e => setForm(prev => ({ ...prev, budget_max: e.target.value }))} className="input-field text-sm" required />
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Your College</label>
+                    <input type="text" value={form.college} onChange={e => setForm(prev => ({ ...prev, college: e.target.value }))} className="input-field text-sm" placeholder="e.g. MIT WPU" required />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">College Name</label>
-                  <input type="text" value={form.college} onChange={e => setForm(prev => ({ ...prev, college: e.target.value }))} className="input-field text-sm" placeholder="e.g. MIT WPU" required />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Branch / Stream</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Your Branch / Stream</label>
                   <input type="text" value={form.branch} onChange={e => setForm(prev => ({ ...prev, branch: e.target.value }))} className="input-field text-sm" placeholder="e.g. Computer Science" required />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Food Preference</label>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Allowed Food / Diet</label>
                     <select value={form.food_preference} onChange={e => setForm(prev => ({ ...prev, food_preference: e.target.value as any }))} className="input-field text-sm">
                       <option value="veg">Vegetarian</option>
                       <option value="non-veg">Non-Vegetarian</option>
@@ -404,12 +399,12 @@ export default function RoommatesPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Looking For</label>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Property Type</label>
                     <select value={form.looking_for} onChange={e => setForm(prev => ({ ...prev, looking_for: e.target.value as any }))} className="input-field text-sm">
-                      <option value="any">Any housing</option>
                       <option value="flat">Flat sharing</option>
                       <option value="pg">PG partner</option>
                       <option value="hostel">Hostel roomie</option>
+                      <option value="any">Other</option>
                     </select>
                   </div>
                   <div>
@@ -422,13 +417,13 @@ export default function RoommatesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">About Me / Description</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">About the Room & Roommate Preferences</label>
                   <textarea rows={3} value={form.description} onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Brief description about yourself, hobbies, roommate expectations..." className="input-field py-2 text-sm" required />
+                    placeholder="Describe the room, amenities, location, and the kind of roommate you are looking for..." className="input-field py-2 text-sm" required />
                 </div>
 
                 <button type="submit" className="btn-primary w-full justify-center py-3 text-sm mt-2">
-                  ✓ Publish Seeker Profile
+                  ✓ Publish Room Details
                 </button>
               </form>
             </motion.div>
