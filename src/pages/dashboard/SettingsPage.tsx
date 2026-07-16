@@ -11,7 +11,7 @@ export default function SettingsPage() {
   const [formData, setFormData] = useState({
     fullName: profile?.full_name || '',
     phone: profile?.phone || '',
-    upiId: localStorage.getItem('campusnest-mess-payment-settings') ? JSON.parse(localStorage.getItem('campusnest-mess-payment-settings') || '{}').upiId : '',
+    upiId: '',
     emergencyContact: '',
     dietaryPreference: 'none'
   })
@@ -19,28 +19,40 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
 
+  React.useEffect(() => {
+    const loadSettings = async () => {
+      if (!profile || profile.role !== 'mess_owner') return
+      const { data } = await supabase.from('mess_payment_settings').select('*').eq('owner_id', profile.id).maybeSingle()
+      if (data) {
+        setFormData((current) => ({ ...current, upiId: data.upi_id || '' }))
+      }
+    }
+
+    void loadSettings()
+  }, [profile])
+
   const handleSave = async () => {
     setLoading(true)
     setMessage({ type: '', text: '' })
-    
-    // Simulate save delay
-    setTimeout(async () => {
-      try {
-        if (profile?.role === 'mess_owner') {
-          const currentSettings = JSON.parse(localStorage.getItem('campusnest-mess-payment-settings') || '{}')
-          localStorage.setItem('campusnest-mess-payment-settings', JSON.stringify({
-            ...currentSettings,
-            upiId: formData.upiId
-          }))
-        }
-        
-        setMessage({ type: 'success', text: 'Settings updated successfully!' })
-      } catch (error) {
-        setMessage({ type: 'error', text: 'Failed to update settings.' })
-      } finally {
-        setLoading(false)
+
+    try {
+      if (profile?.role === 'mess_owner') {
+        const { error } = await supabase.from('mess_payment_settings').upsert({
+          owner_id: profile.id,
+          upi_id: formData.upiId,
+          phone_number: formData.phone || '',
+          updated_at: new Date().toISOString(),
+        })
+
+        if (error) throw error
       }
-    }, 1000)
+
+      setMessage({ type: 'success', text: 'Settings updated successfully!' })
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to update settings.' })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

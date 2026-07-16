@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import PropertyCard from '../components/property/PropertyCard'
 import MessCard from '../components/mess/MessCard'
-import { mockProperties, mockMesses } from '../data/mockData'
+import { fetchMesses, fetchProperties } from '../lib/platformData'
 import { cn } from '../lib/utils'
 
 const propertyTypes = [
@@ -40,7 +40,23 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchCity, setSearchCity] = useState('Pune')
   const [searchTab, setSearchTab] = useState<'property' | 'mess'>('property')
+  const [properties, setProperties] = useState<any[]>([])
+  const [messes, setMesses] = useState<any[]>([])
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [propertyRows, messRows] = await Promise.all([fetchProperties(), fetchMesses()])
+        setProperties(propertyRows)
+        setMesses(messRows)
+      } catch (error) {
+        console.error('Failed to load homepage data from Supabase:', error)
+      }
+    }
+
+    load()
+  }, [])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -266,7 +282,7 @@ export default function HomePage() {
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockProperties.slice(0, 3).map((property, i) => (
+            {properties.slice(0, 3).map((property, i) => (
               <PropertyCard key={property.id} property={property} index={i} />
             ))}
           </div>
@@ -293,7 +309,7 @@ export default function HomePage() {
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {mockMesses.map((mess, i) => (
+            {messes.map((mess, i) => (
               <MessCard key={mess.id} mess={mess} index={i} />
             ))}
           </div>

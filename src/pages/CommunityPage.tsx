@@ -5,97 +5,8 @@ import { useAuthStore } from '../store/authStore'
 import { useNavigate } from 'react-router-dom'
 import type { CommunityPost } from '../types'
 import { cn, formatCurrency } from '../lib/utils'
-
-// Mock Initial Community Posts
-const initialPosts: (CommunityPost & { commentsList?: { author: string; content: string; date: string }[] })[] = [
-  {
-    id: 'post-1',
-    author_id: 'stud-1',
-    title: 'Selling 3rd Semester IT Notes (Covers DS, OOP, DLD)',
-    content: 'Complete handwritten and typed notes with exam solutions. Very neat and easy to understand. Price is negotiable.',
-    category: 'notes',
-    price: 150,
-    likes: 12,
-    comment_count: 3,
-    created_at: new Date(Date.now() - 3600000 * 3).toISOString(), // 3 hours ago
-    profiles: {
-      id: 'stud-1',
-      email: 'rahul@example.com',
-      full_name: 'Rahul Sharma',
-      role: 'student',
-      created_at: '',
-      updated_at: ''
-    },
-    commentsList: [
-      { author: 'Amit Deshmukh', content: 'Are these according to SPPU syllabus?', date: '2 hours ago' },
-      { author: 'Rahul Sharma', content: 'Yes, fully aligned with SPPU syllabus!', date: '1 hour ago' },
-      { author: 'Priya Joshi', content: 'I want this. DMing you!', date: '30 mins ago' }
-    ]
-  },
-  {
-    id: 'post-2',
-    author_id: 'stud-2',
-    title: 'Hero Sprint Cycle for Sale - Good Condition',
-    content: 'Bought last year. Single-owner, 18-speed gears. Perfect for college commuting. Rear tyre is newly replaced.',
-    category: 'cycles',
-    price: 3200,
-    likes: 24,
-    comment_count: 2,
-    created_at: new Date(Date.now() - 3600000 * 8).toISOString(), // 8 hours ago
-    profiles: {
-      id: 'stud-2',
-      email: 'amit@example.com',
-      full_name: 'Amit Deshmukh',
-      role: 'student',
-      created_at: '',
-      updated_at: ''
-    },
-    commentsList: [
-      { author: 'Vikram Singh', content: 'Is the price negotiable?', date: '6 hours ago' },
-      { author: 'Amit Deshmukh', content: 'Yes, slightly. Check your messages.', date: '5 hours ago' }
-    ]
-  },
-  {
-    id: 'post-3',
-    author_id: 'admin-1',
-    title: 'Important: Hostel In-time Extended to 10:30 PM',
-    content: 'Official notice from college administration: The weekend hostel curfew has been extended starting this Friday. Please carry your student IDs.',
-    category: 'announcements',
-    likes: 56,
-    comment_count: 1,
-    created_at: new Date(Date.now() - 3600000 * 24).toISOString(), // 1 day ago
-    profiles: {
-      id: 'admin-1',
-      email: 'admin@demo.com',
-      full_name: 'Campus Administrator',
-      role: 'admin',
-      created_at: '',
-      updated_at: ''
-    },
-    commentsList: [
-      { author: 'Rahul Sharma', content: 'Great news! Much needed.', date: '18 hours ago' }
-    ]
-  },
-  {
-    id: 'post-4',
-    author_id: 'stud-3',
-    title: 'Hiring React Native Intern at Campus Startup',
-    content: 'Looking for a student intern who has built at least one React Native app. Stipend: ₹8,000/month. 3 months duration. Flexible hours.',
-    category: 'events',
-    likes: 18,
-    comment_count: 0,
-    created_at: new Date(Date.now() - 3600000 * 30).toISOString(),
-    profiles: {
-      id: 'stud-3',
-      email: 'priya@example.com',
-      full_name: 'Priya Joshi',
-      role: 'student',
-      created_at: '',
-      updated_at: ''
-    },
-    commentsList: []
-  }
-]
+import { fetchCommunityComments, fetchCommunityPosts } from '../lib/platformData'
+import { supabase } from '../lib/supabase'
 
 const categoryConfig = {
   all: { label: 'All Board', icon: HelpCircle, color: 'text-slate-500 bg-slate-100' },
@@ -113,10 +24,8 @@ export default function CommunityPage() {
   const navigate = useNavigate()
 
   // State
-  const [posts, setPosts] = useState<typeof initialPosts>(() => {
-    const saved = localStorage.getItem('campusnest-posts')
-    return saved ? JSON.parse(saved) : initialPosts
-  })
+  const [posts, setPosts] = useState<any[]>([])
+  const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({})
   
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
@@ -133,8 +42,29 @@ export default function CommunityPage() {
   })
 
   useEffect(() => {
-    localStorage.setItem('campusnest-posts', JSON.stringify(posts))
-  }, [posts])
+    const load = async () => {
+      try {
+        const [postRows, commentRows] = await Promise.all([fetchCommunityPosts(), fetchCommunityComments()])
+        const merged = (postRows || []).map((post: any) => ({
+          ...post,
+          profiles: { id: post.author_id, full_name: post.full_name, email: post.email },
+          commentsList: (commentRows || [])
+            .filter((comment: any) => comment.post_id === post.id)
+            .map((comment: any) => ({
+              author: comment.full_name || 'Anonymous',
+              content: comment.content,
+              date: new Date(comment.created_at).toLocaleString(),
+            })),
+        }))
+        setPosts(merged)
+      } catch (error) {
+        console.error('Failed to load community data from Supabase:', error)
+        setPosts([])
+      }
+    }
+
+    load()
+  }, [])
 
   const handleCreatePost = (e: React.FormEvent) => {
     e.preventDefault()
@@ -143,7 +73,7 @@ export default function CommunityPage() {
       return
     }
 
-    const newPost: typeof initialPosts[0] = {
+    const newPost = {
       id: `post-${Date.now()}`,
       author_id: profile.id,
       title: form.title,
@@ -153,34 +83,37 @@ export default function CommunityPage() {
       likes: 0,
       comment_count: 0,
       created_at: new Date().toISOString(),
-      profiles: profile,
-      commentsList: []
+      full_name: profile.full_name,
+      email: profile.email,
     }
 
-    setPosts(prev => [newPost, ...prev])
-    setShowModal(false)
-    setForm({ title: '', content: '', category: 'general', price: '' })
+    void (async () => {
+      const { error } = await supabase.from('community_posts').insert([newPost])
+      if (error) {
+        console.error('Failed to save community post to Supabase:', error)
+        return
+      }
+
+      setPosts(prev => [{ ...newPost, profiles: profile, commentsList: [] }, ...prev])
+      setShowModal(false)
+      setForm({ title: '', content: '', category: 'general', price: '' })
+    })()
   }
 
   const handleLike = (postId: string) => {
-    setPosts(prev =>
-      prev.map(p => {
-        if (p.id === postId) {
-          // simple toggle: check if user has already liked it
-          // for the demo, we just increase or decrease the likes by checking if the post is already liked
-          const likedKey = `post-liked-${postId}`
-          const isLiked = localStorage.getItem(likedKey) === 'true'
-          if (isLiked) {
-            localStorage.setItem(likedKey, 'false')
-            return { ...p, likes: p.likes - 1 }
-          } else {
-            localStorage.setItem(likedKey, 'true')
-            return { ...p, likes: p.likes + 1 }
-          }
-        }
-        return p
-      })
-    )
+    const isLiked = likedPosts[postId] === true
+    const nextLikes = posts.find((post) => post.id === postId)?.likes + (isLiked ? -1 : 1)
+
+    void (async () => {
+      const { error } = await supabase.from('community_posts').update({ likes: nextLikes }).eq('id', postId)
+      if (error) {
+        console.error('Failed to update post likes in Supabase:', error)
+        return
+      }
+
+      setLikedPosts((prev) => ({ ...prev, [postId]: !isLiked }))
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, likes: Math.max(0, nextLikes) } : p))
+    })()
   }
 
   const handleAddComment = (postId: string) => {
@@ -190,28 +123,32 @@ export default function CommunityPage() {
       return
     }
 
-    setPosts(prev =>
-      prev.map(p => {
-        if (p.id === postId) {
-          const list = p.commentsList || []
-          const updatedComments = [
-            ...list,
-            {
-              author: profile.full_name || 'Anonymous Student',
-              content: newCommentText,
-              date: 'Just now'
-            }
-          ]
-          return {
-            ...p,
-            commentsList: updatedComments,
-            comment_count: updatedComments.length
-          }
-        }
-        return p
-      })
-    )
-    setNewCommentText('')
+    const comment = {
+      id: `comment-${Date.now()}`,
+      post_id: postId,
+      author_id: profile.id,
+      content: newCommentText,
+      full_name: profile.full_name,
+    }
+
+    void (async () => {
+      const { error } = await supabase.from('community_comments').insert([comment])
+      if (error) {
+        console.error('Failed to save community comment to Supabase:', error)
+        return
+      }
+
+      await supabase.from('community_posts').update({ comment_count: (posts.find((post) => post.id === postId)?.comment_count || 0) + 1 }).eq('id', postId)
+      setPosts(prev => prev.map(p => p.id === postId ? {
+        ...p,
+        comment_count: (p.comment_count || 0) + 1,
+        commentsList: [
+          ...(p.commentsList || []),
+          { author: profile.full_name || 'Anonymous Student', content: newCommentText, date: 'Just now' }
+        ]
+      } : p))
+      setNewCommentText('')
+    })()
   }
 
   // Filter posts
@@ -301,8 +238,7 @@ export default function CommunityPage() {
               {filteredPosts.map(post => {
                 const config = categoryConfig[post.category as keyof typeof categoryConfig] || categoryConfig.general
                 const CategoryIcon = config.icon
-                const likedKey = `post-liked-${post.id}`
-                const isLiked = localStorage.getItem(likedKey) === 'true'
+                const isLiked = likedPosts[post.id] === true
 
                 return (
                   <motion.div

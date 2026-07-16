@@ -4,12 +4,15 @@ import { QrCode, MapPin, CheckCircle, XCircle, AlertTriangle, RefreshCw, Plus, M
 import { generateTokenCode } from '../../lib/utils'
 import { cn } from '../../lib/utils'
 import QRCode from 'qrcode'
+import { useAuthStore } from '../../store/authStore'
+import { supabase } from '../../lib/supabase'
 
 type ScanStep = 'checking_location' | 'location_ok' | 'scanning' | 'success' | 'error'
 
 const mockMessLocation = { lat: 18.5074, lng: 73.8077 }
 
 export default function QRScanPage() {
+  const { profile } = useAuthStore()
   const [step, setStep] = useState<ScanStep>('checking_location')
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [distance, setDistance] = useState<number | null>(null)
@@ -22,13 +25,7 @@ export default function QRScanPage() {
 
   const [cartItems, setCartItems] = useState<Record<string, number>>({})
   const [currentMenu, setCurrentMenu] = useState<string[]>([])
-  const [activeTokens, setActiveTokens] = useState<any[]>(() => {
-    try {
-      const saved = localStorage.getItem('campusnest-active-tokens')
-      if (saved) return JSON.parse(saved)
-    } catch(e) {}
-    return []
-  })
+  const [activeTokens, setActiveTokens] = useState<any[]>([])
 
   const [paymentMethod, setPaymentMethod] = useState<'upi' | 'cash' | 'none'>('none')
   const [upiQrUrl, setUpiQrUrl] = useState('')
@@ -57,11 +54,14 @@ export default function QRScanPage() {
       time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
       date: todayStr
     }
-    setActiveTokens(prev => {
-      const updated = [newToken, ...prev.filter(t => t.date === todayStr)]
-      localStorage.setItem('campusnest-active-tokens', JSON.stringify(updated))
-      return updated
-    })
+    void (async () => {
+      const { error } = await supabase.from('active_tokens').insert([newToken])
+      if (error) {
+        console.error('Failed to save active token to Supabase:', error)
+        return
+      }
+      setActiveTokens(prev => [newToken, ...prev.filter(t => t.date === todayStr)])
+    })()
   }
 
   const fallbackMenu: Record<string, string[]> = {
@@ -72,21 +72,7 @@ export default function QRScanPage() {
   }
 
   useEffect(() => {
-    let menuData = fallbackMenu
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (key && key.startsWith('campusnest-mess-menu-')) {
-          const val = localStorage.getItem(key)
-          if (val) {
-             menuData = JSON.parse(val)
-             break
-          }
-        }
-      }
-    } catch(e) {}
-    
-    setCurrentMenu(menuData[selectedMeal] || fallbackMenu[selectedMeal] || [])
+    setCurrentMenu(fallbackMenu[selectedMeal] || [])
     setCartItems({})
   }, [selectedMeal])
 
@@ -139,26 +125,33 @@ export default function QRScanPage() {
       const token = generateTokenCode()
       setMealToken(token)
 
-      // Update local storage so dashboard is dynamic
-      const saved = localStorage.getItem('campusnest-student-attendance')
-      let attendance = saved ? JSON.parse(saved) : []
       const todayStr = new Date().toISOString().split('T')[0]
-      
-      const todayIndex = attendance.findIndex((r: any) => r.date.startsWith(todayStr))
-      if (todayIndex >= 0) {
-        attendance[todayIndex][selectedMeal] = true
-      } else {
-        attendance.unshift({
+
+      void (async () => {
+        const attendanceRow = {
+          id: `att-${Date.now()}`,
+          student_id: profile?.id || '',
           date: todayStr,
           breakfast: selectedMeal === 'breakfast',
           lunch: selectedMeal === 'lunch',
           dinner: selectedMeal === 'dinner',
-          snack: selectedMeal === 'snack'
-        })
-      }
-      localStorage.setItem('campusnest-student-attendance', JSON.stringify(attendance))
-      saveToken(token, selectedMeal, false)
-      setStep('success')
+          snack: selectedMeal === 'snack',
+        }
+
+        if (!attendanceRow.student_id) {
+          console.error('No authenticated student profile available for attendance.')
+          return
+        }
+
+        const { error } = await supabase.from('student_attendance').insert([attendanceRow])
+        if (error) {
+          console.error('Failed to save attendance to Supabase:', error)
+          return
+        }
+
+        saveToken(token, selectedMeal, false)
+        setStep('success')
+      })()
     }, 2000)
   }
 

@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Users, Building2, Utensils, TrendingUp, Shield, AlertTriangle, CheckCircle, XCircle, RefreshCw } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { formatCurrency } from '../../lib/utils'
-import { mockDashboardStats } from '../../data/mockData'
 import { supabase } from '../../lib/supabase'
 
 export interface UserProfile {
@@ -36,7 +35,14 @@ export default function AdminDashboard() {
   const [loadingProps, setLoadingProps] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null)
-  const [overviewStats, setOverviewStats] = useState(mockDashboardStats)
+  const [overviewStats, setOverviewStats] = useState({
+    totalStudents: 0,
+    totalMesses: 0,
+    totalProperties: 0,
+    pendingVerifications: 0,
+    activeSubscriptions: 0,
+    monthlyRevenue: 0,
+  })
 
   useEffect(() => {
     if (currentTab === 'users') {
@@ -145,49 +151,6 @@ export default function AdminDashboard() {
     } finally {
       setLoadingUsers(false)
     }
-  }
-
-  const syncLocalDataToSupabase = async () => {
-    if (!confirm('This will upload your locally saved messes and properties to the database. Continue?')) return;
-    
-    let syncedCount = 0;
-    
-    // Sync Messes
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('campusnest-mess-profile-')) {
-        try {
-          const messData = JSON.parse(localStorage.getItem(key) || '{}');
-          if (messData && messData.id) {
-            // Ensure owner_id is a valid UUID, otherwise use a fallback or skip
-            // We will just try inserting it. If it fails due to foreign key, we log it.
-            const { error } = await supabase.from('messes').upsert([messData]);
-            if (!error) syncedCount++;
-            else console.error('Failed to sync mess:', error);
-          }
-        } catch (e) {}
-      }
-    }
-    
-    // Sync Properties
-    try {
-      const propsStorage = localStorage.getItem('campus-nest-properties');
-      if (propsStorage) {
-        const parsed = JSON.parse(propsStorage);
-        if (parsed.state && parsed.state.properties) {
-          for (const prop of parsed.state.properties) {
-            const { error } = await supabase.from('properties').upsert([prop]);
-            if (!error) syncedCount++;
-            else console.error('Failed to sync property:', error);
-          }
-        }
-      }
-    } catch (e) {}
-    
-    alert(`Successfully synced ${syncedCount} items from Local Storage to Supabase!`);
-    fetchOverview();
-    fetchMesses();
-    fetchProperties();
   }
 
   const stats = [
@@ -318,8 +281,8 @@ export default function AdminDashboard() {
           ))}
         </div>
         <div className="mt-4">
-           <button onClick={syncLocalDataToSupabase} className="btn-secondary w-full flex items-center justify-center gap-2">
-             <RefreshCw className="w-4 h-4" /> Sync Local Data to Database
+           <button onClick={() => { fetchOverview(); fetchMesses(); fetchProperties(); }} className="btn-secondary w-full flex items-center justify-center gap-2">
+             <RefreshCw className="w-4 h-4" /> Refresh Database Data
            </button>
         </div>
       </div>

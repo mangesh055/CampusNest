@@ -1,9 +1,9 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Search, SlidersHorizontal, X } from 'lucide-react'
 import MessCard from '../components/mess/MessCard'
-import { mockMesses } from '../data/mockData'
+import { fetchMesses } from '../lib/platformData'
 import { cn, messStatusConfig } from '../lib/utils'
 import type { MessStatus } from '../types'
 
@@ -15,30 +15,20 @@ export default function MessPage() {
   const [mealFilter, setMealFilter] = useState('')
   const [city, setCity] = useState(searchParams.get('city') || '')
 
-  const [allMesses] = useState(() => {
-    const defaultMesses = [...mockMesses]
-    try {
-      const customMesses = []
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (key && key.startsWith('campusnest-mess-profile-')) {
-          const messVal = localStorage.getItem(key)
-          if (messVal) {
-            customMesses.push(JSON.parse(messVal))
-          }
-        }
+  const [allMesses, setAllMesses] = useState<any[]>([])
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setAllMesses(await fetchMesses())
+      } catch (error) {
+        console.error('Failed to load messes from Supabase:', error)
+        setAllMesses([])
       }
-      const combined = [...customMesses]
-      defaultMesses.forEach(m => {
-        if (!combined.some(c => c.id === m.id)) {
-          combined.push(m)
-        }
-      })
-      return combined
-    } catch (e) {
-      return defaultMesses
     }
-  })
+
+    load()
+  }, [])
 
   const filtered = allMesses.filter(m => {
     if (search && !m.name.toLowerCase().includes(search.toLowerCase()) && !m.address.toLowerCase().includes(search.toLowerCase())) return false

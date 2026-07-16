@@ -38,15 +38,11 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
 
   useEffect(() => {
     if (profile?.role === 'mess_owner') {
-      const saved = localStorage.getItem(`campusnest-mess-profile-${profile.id}`)
-      if (saved) setMyMess(JSON.parse(saved))
-      
       const fetchMess = async () => {
         try {
           const { data } = await supabase.from('messes').select('*').eq('owner_id', profile.id).single()
           if (data) {
             setMyMess(data)
-            localStorage.setItem(`campusnest-mess-profile-${profile.id}`, JSON.stringify(data))
           }
         } catch (e) {
           console.warn('Failed to fetch mess profile for navbar', e)
@@ -61,7 +57,6 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
     const newStatus = myMess.status === 'open' ? 'closed' : 'open'
     const updated = { ...myMess, status: newStatus }
     setMyMess(updated)
-    localStorage.setItem(`campusnest-mess-profile-${profile.id}`, JSON.stringify(updated))
     
     try {
       await supabase.from('messes').update({ status: newStatus }).eq('id', myMess.id)

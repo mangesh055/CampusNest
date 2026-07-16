@@ -26,7 +26,7 @@ import PublicLayout from './components/layout/PublicLayout'
 
 // Types
 import { useAuthStore } from './store/authStore'
-import { clearSupabaseAuthStorage, getCurrentLocalAuthSnapshot } from './lib/localAuth'
+import { clearSupabaseAuthStorage } from './lib/localAuth'
 
 function DashboardRedirect() {
   const { profile } = useAuthStore()
@@ -57,20 +57,47 @@ export default function App() {
   const { setUser, setSession, fetchProfile, setLoading } = useAuthStore()
 
   useEffect(() => {
-    const localAuth = getCurrentLocalAuthSnapshot()
+    let mounted = true
 
-    if (localAuth) {
-      clearSupabaseAuthStorage()
-      setSession(localAuth.session)
-      setUser(localAuth.user)
-      useAuthStore.getState().setProfile(localAuth.profile)
-    } else {
-      setSession(null)
-      setUser(null)
-      useAuthStore.getState().setProfile(null)
+    const hydrate = async () => {
+      const { data } = await supabase.auth.getSession()
+      const session = data.session ?? null
+
+      if (!mounted) return
+
+      if (session?.user) {
+        setSession(session)
+        setUser(session.user)
+        await fetchProfile(session.user.id)
+      } else {
+        setSession(null)
+        setUser(null)
+        useAuthStore.getState().setProfile(null)
+      }
+
+      if (mounted) setLoading(false)
     }
 
-    setLoading(false)
+    hydrate()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!mounted) return
+      if (session?.user) {
+        setSession(session)
+        setUser(session.user)
+        await fetchProfile(session.user.id)
+      } else {
+        setSession(null)
+        setUser(null)
+        useAuthStore.getState().setProfile(null)
+      }
+      setLoading(false)
+    })
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [setUser, setSession, setLoading])
 
   useEffect(() => {

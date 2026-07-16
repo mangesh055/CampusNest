@@ -1,12 +1,13 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MapPin, Star, Phone, CheckCircle, ChevronLeft, Navigation2, Clock, ShieldCheck, ExternalLink, User, Utensils, Image, MessageSquare, Info } from 'lucide-react'
-import { mockMesses, mockPlans } from '../data/mockData'
+import { fetchMesses, fetchMessPlans, fetchReviews } from '../lib/platformData'
 import { formatCurrency, mealTypeLabels, messStatusConfig } from '../lib/utils'
 import { cn } from '../lib/utils'
 import type { MealType } from '../types'
 import { useAuthStore } from '../store/authStore'
+import { supabase } from '../lib/supabase'
 
 type Tab = 'dine' | 'photos' | 'menu' | 'review'
 
@@ -17,12 +18,6 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'review', label: 'REVIEW', icon: <Star className="w-3.5 h-3.5" /> },
 ]
 
-const mockReviews = [
-  { id: 'r1', name: 'Rahul S.', rating: 5, comment: 'Amazing food! Best mess in the area. Pure ghee rotis are a delight.', date: '12 Mar 2026' },
-  { id: 'r2', name: 'Priya M.', rating: 4, comment: 'Great value for money. Lunch is always fresh and tasty. Highly recommend.', date: '8 Mar 2026' },
-  { id: 'r3', name: 'Arjun K.', rating: 5, comment: 'Been eating here for 6 months. Never disappointed. Owner is very cooperative.', date: '1 Mar 2026' },
-]
-
 export default function MessDetailPage() {
   const { id } = useParams()
   const [activeTab, setActiveTab] = useState<Tab>('dine')
@@ -31,81 +26,94 @@ export default function MessDetailPage() {
 
   const [newReview, setNewReview] = useState('')
   const [newRating, setNewRating] = useState(0)
-  const [reviewsList, setReviewsList] = useState(mockReviews)
+  const [reviewsList, setReviewsList] = useState<any[]>([])
+  const [mess, setMess] = useState<any | null>(null)
+  const [displayPlans, setDisplayPlans] = useState<any[]>([])
+  const [todayMenu, setTodayMenu] = useState<Record<MealType, string[]>>({ breakfast: [], lunch: [], dinner: [], snack: [] })
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [messes, reviews] = await Promise.all([
+          fetchMesses(),
+          id ? fetchReviews({ messId: id }) : Promise.resolve([]),
+        ])
+
+        const targetMess = messes.find((item) => item.id === id) || messes[0] || null
+        setMess(targetMess)
+        setReviewsList(reviews)
+
+        if (targetMess) {
+          const plans = await fetchMessPlans(targetMess.id)
+          setDisplayPlans(plans)
+          const todayStr = new Date().toISOString().split('T')[0]
+          const { data: menuData } = await supabase
+            .from('mess_menus')
+            .select('*')
+            .eq('owner_id', targetMess.owner_id)
+            .eq('date', todayStr)
+            .maybeSingle()
+
+          if (menuData) {
+            setTodayMenu({
+              breakfast: menuData.breakfast || [],
+              lunch: menuData.lunch || [],
+              dinner: menuData.dinner || [],
+              snack: menuData.snack || []
+            })
+          } else {
+            setTodayMenu({ breakfast: [], lunch: [], dinner: [], snack: [] })
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load mess detail from Supabase:', error)
+        setMess(null)
+        setReviewsList([])
+        setDisplayPlans([])
+      }
+    }
+
+    load()
+  }, [id])
 
   const handleAddReview = (e: React.FormEvent) => {
     e.preventDefault()
     if (!newReview.trim() || newRating === 0) return
 
+    if (!mess) return
+
     const newR = {
-      id: Date.now().toString(),
-      name: profile?.full_name || 'Anonymous',
+      id: `review-${Date.now()}`,
+      mess_id: mess.id,
+      reviewer_id: profile?.id || 'anon',
       rating: newRating,
       comment: newReview,
-      date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+      created_at: new Date().toISOString(),
+      profiles: { full_name: profile?.full_name || 'Anonymous' }
     }
 
-    setReviewsList([newR, ...reviewsList])
-    setNewReview('')
-    setNewRating(0)
+    void (async () => {
+      const { error } = await supabase.from('reviews').insert([newR])
+      if (error) {
+        console.error('Failed to save mess review to Supabase:', error)
+        return
+      }
+
+      setReviewsList([newR, ...reviewsList])
+      setNewReview('')
+      setNewRating(0)
+    })()
   }
 
-  const allMesses = (() => {
-    const base = [...mockMesses]
-    try {
-      const custom: any[] = []
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (key?.startsWith('campusnest-mess-profile-')) {
-          const v = localStorage.getItem(key)
-          if (v) custom.push(JSON.parse(v))
-        }
-      }
-      const combined = [...custom]
-      base.forEach(m => { if (!combined.some(c => c.id === m.id)) combined.push(m) })
-      return combined
-    } catch { return base }
-  })()
+  if (!mess) {
+    return (
+      <div className="min-h-screen pt-24 flex items-center justify-center text-slate-500">
+        Loading mess details from Supabase...
+      </div>
+    )
+  }
 
-  const mess = allMesses.find(m => m.id === id) || allMesses[0]
   const statusCfg = messStatusConfig[mess.status as keyof typeof messStatusConfig] || messStatusConfig.open
-
-  // Get owner details from localStorage
-  const ownerDetails = (() => {
-    if (mess.owner_id) {
-      const stored = localStorage.getItem(`campusnest-mess-profile-${mess.owner_id}`)
-      if (stored) return JSON.parse(stored)
-    }
-    return null
-  })()
-
-  const displayPlans = (() => {
-    if (mess.owner_id) {
-      const s = localStorage.getItem(`campusnest-mess-plans-${mess.owner_id}`)
-      if (s) { 
-        const p = JSON.parse(s).filter((x: any) => x.active)
-        return p 
-      }
-      return [] // Dynamic messes shouldn't show fake fallback plans
-    }
-    const mf = mockPlans.filter(p => p.mess_id === mess.id)
-    if (mf.length) return mf
-    return [
-      { id: `a1-${mess.id}`, name: 'Full Day Plan', description: 'Breakfast + Lunch + Dinner', price: mess.monthly_charge, duration_days: 30, meal_types: mess.meal_types },
-      { id: `a2-${mess.id}`, name: 'Lunch + Dinner', description: 'Two meals daily', price: Math.round(mess.monthly_charge * 0.75), duration_days: 30, meal_types: mess.meal_types.filter((t: any) => t !== 'breakfast') },
-    ]
-  })()
-
-  const menuData = (() => {
-    if (mess.owner_id) { const s = localStorage.getItem(`campusnest-mess-menu-${mess.owner_id}`); if (s) return JSON.parse(s) }
-    return null
-  })()
-
-  const isCustom = !mockMesses.some(m => m.id === mess.id)
-  const todayMenu: Record<MealType, string[]> = menuData || (isCustom
-    ? { breakfast: [], lunch: [], dinner: [], snack: [] }
-    : { breakfast: ['Poha', 'Upma', 'Chai'], lunch: ['Dal Tadka', 'Rice', 'Chapati', 'Sabzi', 'Salad'], dinner: ['Rajma', 'Rice', 'Chapati', 'Dal'], snack: ['Samosa', 'Chai'] }
-  )
 
   const photos = mess.photos && mess.photos.length > 0
     ? [...mess.photos, ...mess.photos]
@@ -228,10 +236,10 @@ export default function MessDetailPage() {
                     <h3 className="text-lg font-display font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       💳 Subscription Plans
                     </h3>
-                    {ownerDetails?.owner_name && (
+                    {mess.profiles?.full_name && (
                       <div className="p-3 rounded-xl bg-brand-50 dark:bg-brand-950/20 border border-brand-100 dark:border-brand-900/40">
                         <p className="text-xs text-slate-600 dark:text-slate-400">
-                          Available plans offered by <span className="font-bold text-brand-600 dark:text-brand-400">{ownerDetails.owner_name}</span>
+                          Available plans offered by <span className="font-bold text-brand-600 dark:text-brand-400">{mess.profiles.full_name}</span>
                         </p>
                       </div>
                     )}
@@ -423,11 +431,11 @@ export default function MessDetailPage() {
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex items-center gap-2.5">
                               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-indigo-600 flex items-center justify-center text-white text-sm font-bold">
-                                {r.name[0]}
+                                {(r.profiles?.full_name || 'A')[0]}
                               </div>
                               <div>
-                                <p className="font-bold text-sm text-slate-900 dark:text-white">{r.name}</p>
-                                <p className="text-xs text-slate-400">{r.date}</p>
+                                    <p className="font-bold text-sm text-slate-900 dark:text-white">{r.profiles?.full_name || 'Anonymous'}</p>
+                                    <p className="text-xs text-slate-400">{new Date(r.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                               </div>
                             </div>
                             <div className="flex gap-0.5">
@@ -458,12 +466,12 @@ export default function MessDetailPage() {
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-11 h-11 rounded-full bg-gradient-to-br from-brand-400 to-indigo-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                    {(ownerDetails?.owner_name?.[0] || mess.name?.[0] || 'M').toUpperCase()}
+                    {((mess.profiles?.full_name || mess.name)?.[0] || 'M').toUpperCase()}
                   </div>
                   <div className="min-w-0">
                     <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Verified Provider</p>
-                    <p className="font-bold text-slate-900 dark:text-white text-sm truncate">{ownerDetails?.owner_name || mess.name}</p>
-                    <p className="text-xs text-slate-500">{ownerDetails?.contact_phone || mess.contact_phone}</p>
+                    <p className="font-bold text-slate-900 dark:text-white text-sm truncate">{mess.profiles?.full_name || mess.name}</p>
+                    <p className="text-xs text-slate-500">{mess.contact_phone}</p>
                   </div>
                 </div>
                 {mess.verified && (

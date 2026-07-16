@@ -5,126 +5,17 @@ import { useAuthStore } from '../store/authStore'
 import { useNavigate } from 'react-router-dom'
 import type { RoommateProfile, UserRole } from '../types'
 import { cn, formatCurrency } from '../lib/utils'
+import { fetchRoommateProfiles } from '../lib/platformData'
+import { supabase } from '../lib/supabase'
 
-// Mock Roommate Seekers
-const initialRoommates: RoommateProfile[] = [
-  {
-    id: 'room-1',
-    student_id: 'stud-1',
-    budget_min: 4000,
-    budget_max: 7000,
-    city: 'Pune',
-    college: 'MIT WPU',
-    branch: 'Computer Science',
-    gender: 'male',
-    food_preference: 'veg',
-    smoking: false,
-    sleep_schedule: 'night_owl',
-    looking_for: 'flat',
-    description: 'Looking for a flatmate in Kothrud. I stay up late studying or coding. Prefer someone clean and quiet.',
-    active: true,
-    created_at: new Date().toISOString(),
-    profiles: {
-      id: 'stud-1',
-      email: 'rahul@example.com',
-      full_name: 'Rahul Sharma',
-      role: 'student',
-      created_at: '',
-      updated_at: ''
-    }
-  },
-  {
-    id: 'room-2',
-    student_id: 'stud-2',
-    budget_min: 5000,
-    budget_max: 9000,
-    city: 'Pune',
-    college: 'VIT Pune',
-    branch: 'Mechanical Engineering',
-    gender: 'male',
-    food_preference: 'both',
-    smoking: false,
-    sleep_schedule: 'flexible',
-    looking_for: 'pg',
-    description: 'Hey! Friendly guy here. Looking for a room partner in VIT hostel or PG nearby. Love gaming and football.',
-    active: true,
-    created_at: new Date().toISOString(),
-    profiles: {
-      id: 'stud-2',
-      email: 'amit@example.com',
-      full_name: 'Amit Deshmukh',
-      role: 'student',
-      created_at: '',
-      updated_at: ''
-    }
-  },
-  {
-    id: 'room-3',
-    student_id: 'stud-3',
-    budget_min: 6000,
-    budget_max: 10000,
-    city: 'Pune',
-    college: 'COEP Tech',
-    branch: 'Electronics',
-    gender: 'female',
-    food_preference: 'veg',
-    smoking: false,
-    sleep_schedule: 'early_bird',
-    looking_for: 'flat',
-    description: 'Looking to rent a 2BHK flat in Shivajinagar. I am clean, organized, and wake up early. Looking for a female flatmate.',
-    active: true,
-    created_at: new Date().toISOString(),
-    profiles: {
-      id: 'stud-3',
-      email: 'priya@example.com',
-      full_name: 'Priya Joshi',
-      role: 'student',
-      created_at: '',
-      updated_at: ''
-    }
-  },
-  {
-    id: 'room-4',
-    student_id: 'stud-4',
-    budget_min: 3000,
-    budget_max: 6000,
-    city: 'Pune',
-    college: 'Pune University',
-    branch: 'MBA',
-    gender: 'female',
-    food_preference: 'both',
-    smoking: false,
-    sleep_schedule: 'flexible',
-    looking_for: 'any',
-    description: 'Looking for budget-friendly housing near PU. I am social, love cooking, and open to flat sharing or PG rooms.',
-    active: true,
-    created_at: new Date().toISOString(),
-    profiles: {
-      id: 'stud-4',
-      email: 'sneha@example.com',
-      full_name: 'Sneha Patel',
-      role: 'student',
-      created_at: '',
-      updated_at: ''
-    }
-  }
-]
+type RoommateRow = RoommateProfile & { full_name?: string | null; email?: string | null }
 
 export default function RoommatesPage() {
   const { profile } = useAuthStore()
   const navigate = useNavigate()
+  const [roommates, setRoommates] = useState<RoommateRow[]>([])
+  const [myProfile, setMyProfile] = useState<RoommateRow | null>(null)
   
-  // State
-  const [roommates, setRoommates] = useState<RoommateProfile[]>(() => {
-    const saved = localStorage.getItem('campusnest-roommates')
-    return saved ? JSON.parse(saved) : initialRoommates
-  })
-  
-  const [myProfile, setMyProfile] = useState<RoommateProfile | null>(() => {
-    const saved = localStorage.getItem('campusnest-my-roommate-profile')
-    return saved ? JSON.parse(saved) : null
-  })
-
   const [search, setSearch] = useState('')
   const [selectedGender, setSelectedGender] = useState<string>('')
   const [selectedFood, setSelectedFood] = useState<string>('')
@@ -146,16 +37,23 @@ export default function RoommatesPage() {
   })
 
   useEffect(() => {
-    localStorage.setItem('campusnest-roommates', JSON.stringify(roommates))
-  }, [roommates])
-
-  useEffect(() => {
-    if (myProfile) {
-      localStorage.setItem('campusnest-my-roommate-profile', JSON.stringify(myProfile))
-    } else {
-      localStorage.removeItem('campusnest-my-roommate-profile')
+    const load = async () => {
+      try {
+        const rows = await fetchRoommateProfiles()
+        setRoommates(rows as RoommateRow[])
+        if (profile) {
+          const myRow = (rows as RoommateRow[]).find((item) => item.student_id === profile.id) || null
+          setMyProfile(myRow)
+        }
+      } catch (error) {
+        console.error('Failed to load roommate profiles from Supabase:', error)
+        setRoommates([])
+        setMyProfile(null)
+      }
     }
-  }, [myProfile])
+
+    load()
+  }, [profile])
 
   const handleCreateProfile = (e: React.FormEvent) => {
     e.preventDefault()
@@ -164,7 +62,7 @@ export default function RoommatesPage() {
       return
     }
 
-    const newProfile: RoommateProfile = {
+    const newProfile: RoommateRow = {
       id: `my-room-${profile.id}`,
       student_id: profile.id,
       budget_min: Number(form.budget_min) || 4000,
@@ -180,24 +78,38 @@ export default function RoommatesPage() {
       description: form.description,
       active: true,
       created_at: new Date().toISOString(),
-      profiles: profile
+      full_name: profile.full_name,
+      email: profile.email,
     }
 
-    setMyProfile(newProfile)
-    
-    // Add to roommate search pool, removing any previous entry of this user
-    setRoommates(prev => {
-      const filtered = prev.filter(r => r.student_id !== profile.id)
-      return [newProfile, ...filtered]
-    })
+    void (async () => {
+      const { error } = await supabase.from('roommate_profiles').upsert([newProfile])
+      if (error) {
+        console.error('Failed to save roommate profile to Supabase:', error)
+        return
+      }
 
-    setShowForm(false)
+      setMyProfile(newProfile)
+      setRoommates(prev => {
+        const filtered = prev.filter(r => r.student_id !== profile.id)
+        return [newProfile, ...filtered]
+      })
+      setShowForm(false)
+    })()
   }
 
   const handleDeleteProfile = () => {
     if (!profile) return
-    setMyProfile(null)
-    setRoommates(prev => prev.filter(r => r.student_id !== profile.id))
+    void (async () => {
+      const { error } = await supabase.from('roommate_profiles').delete().eq('student_id', profile.id)
+      if (error) {
+        console.error('Failed to delete roommate profile from Supabase:', error)
+        return
+      }
+
+      setMyProfile(null)
+      setRoommates(prev => prev.filter(r => r.student_id !== profile.id))
+    })()
   }
 
   // Calculate Matching Score based on preferences
@@ -247,7 +159,7 @@ export default function RoommatesPage() {
 
     if (search) {
       const q = search.toLowerCase()
-      const matchesName = item.profiles?.full_name?.toLowerCase().includes(q)
+      const matchesName = item.full_name?.toLowerCase().includes(q)
       const matchesCollege = item.college.toLowerCase().includes(q)
       const matchesBranch = item.branch.toLowerCase().includes(q)
       if (!matchesName && !matchesCollege && !matchesBranch) return false
@@ -367,11 +279,11 @@ export default function RoommatesPage() {
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
-                          {item.profiles?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
+                          {(item.full_name || 'U').split(' ').map(n => n[0]).join('')}
                         </div>
                         <div>
                           <h3 className="font-display font-bold text-slate-900 dark:text-white leading-tight">
-                            {item.profiles?.full_name || 'Anonymous Student'}
+                            {item.full_name || 'Anonymous Student'}
                           </h3>
                           <p className="text-xs text-brand-600 dark:text-brand-400 font-semibold mt-0.5">{item.college}</p>
                         </div>

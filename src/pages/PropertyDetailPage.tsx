@@ -1,44 +1,89 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { MapPin, Phone, Mail, Star, Heart, Share2, ChevronLeft, ChevronRight, CheckCircle, Navigation2, ExternalLink, ShieldCheck } from 'lucide-react'
 
-import { mockReviews } from '../data/mockData'
 import { usePropertyStore } from '../store/propertyStore'
 import { formatCurrency, propertyTypeLabels, formatDate, getInitials } from '../lib/utils'
 import { cn } from '../lib/utils'
 import { useAuthStore } from '../store/authStore'
+import { fetchReviews } from '../lib/platformData'
+import { supabase } from '../lib/supabase'
+
+type ReviewRow = {
+  id: string
+  reviewer_id: string
+  property_id?: string
+  rating: number
+  comment: string
+  created_at: string
+  profiles?: { full_name?: string | null }
+}
 
 export default function PropertyDetailPage() {
   const { id } = useParams()
-  const { properties } = usePropertyStore()
-  const property = properties.find(p => p.id === id) || properties[0]
-  const reviews = mockReviews.filter(r => r.property_id === id)
+  const { properties, loadProperties } = usePropertyStore()
+  const property = properties.find(p => p.id === id)
   const [currentImage, setCurrentImage] = useState(0)
   const [favorited, setFavorited] = useState(false)
   
   const { profile } = useAuthStore()
-  const [reviewsList, setReviewsList] = useState(reviews)
+  const [reviewsList, setReviewsList] = useState<ReviewRow[]>([])
   const [newReview, setNewReview] = useState('')
   const [newRating, setNewRating] = useState(0)
+
+  useEffect(() => {
+    void loadProperties()
+  }, [loadProperties])
+
+  useEffect(() => {
+    const loadReviews = async () => {
+      if (!id) return
+      try {
+        const rows = await fetchReviews({ propertyId: id })
+        setReviewsList(rows as ReviewRow[])
+      } catch (error) {
+        console.error('Failed to load property reviews from Supabase:', error)
+        setReviewsList([])
+      }
+    }
+
+    loadReviews()
+  }, [id])
+
+  if (!property) {
+    return (
+      <div className="min-h-screen pt-24 flex items-center justify-center text-slate-500">
+        Loading property details from Supabase...
+      </div>
+    )
+  }
 
   const handleAddReview = (e: React.FormEvent) => {
     e.preventDefault()
     if (!newReview.trim() || newRating === 0) return
 
     const newR = {
-      id: Date.now().toString(),
+      id: `review-${Date.now()}`,
       property_id: property.id,
-      user_id: profile?.id || 'anon',
+      reviewer_id: profile?.id || 'anon',
       rating: newRating,
       comment: newReview,
       created_at: new Date().toISOString(),
       profiles: { full_name: profile?.full_name || 'Anonymous' }
     }
 
-    setReviewsList([newR, ...reviewsList])
-    setNewReview('')
-    setNewRating(0)
+    void (async () => {
+      const { error } = await supabase.from('reviews').insert([newR])
+      if (error) {
+        console.error('Failed to save review to Supabase:', error)
+        return
+      }
+
+      setReviewsList([newR, ...reviewsList])
+      setNewReview('')
+      setNewRating(0)
+    })()
   }
 
   // Google Maps URL

@@ -3,11 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Mail, Lock, User, Phone, Building2, AlertCircle, CheckCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import {
-  authenticateLocalAccount,
-  clearSupabaseAuthStorage,
-  upsertLocalAccount,
-} from '../lib/localAuth'
+import { clearSupabaseAuthStorage } from '../lib/localAuth'
 import { useAuthStore } from '../store/authStore'
 import type { UserRole } from '../types'
 
@@ -24,6 +20,16 @@ const isTransportError = (err: unknown) =>
     err.message.includes('NetworkError') ||
     err.message.includes('AuthRetryableFetchError')
   )
+
+const isRateLimitError = (err: unknown) => {
+  const status = typeof err === 'object' && err !== null && 'status' in err
+    ? Number((err as { status?: unknown }).status)
+    : undefined
+
+  const message = err instanceof Error ? err.message.toLowerCase() : ''
+
+  return status === 429 || message.includes('rate limit') || message.includes('too many requests')
+}
 
 export default function AuthPage() {
   const [tab, setTab] = useState<'login' | 'register'>('login')
@@ -50,16 +56,6 @@ export default function AuthPage() {
     setLoading(true)
     setError('')
     try {
-      const localAuth = authenticateLocalAccount(form.email, form.password)
-      if (localAuth) {
-        setUser(localAuth.user)
-        setSession(localAuth.session)
-        useAuthStore.getState().setProfile(localAuth.profile)
-        clearSupabaseAuthStorage()
-        navigate('/')
-        return
-      }
-
       const { data, error } = await supabase.auth.signInWithPassword({
         email: form.email,
         password: form.password,
@@ -68,31 +64,9 @@ export default function AuthPage() {
       setUser(data.user)
       setSession(data.session)
       if (data.user) await fetchProfile(data.user.id)
-      clearSupabaseAuthStorage()
       navigate('/')
     } catch (err: unknown) {
-      if (isTransportError(err)) {
-        const localAuth = authenticateLocalAccount(form.email, form.password) ?? upsertLocalAccount({
-          email: form.email,
-          password: form.password,
-          fullName: form.fullName || form.email.split('@')[0] || 'User',
-          phone: form.phone,
-          role: selectedRole,
-        })
-
-        if (localAuth) {
-          setUser(localAuth.user)
-          setSession(localAuth.session)
-          useAuthStore.getState().setProfile(localAuth.profile)
-          clearSupabaseAuthStorage()
-          navigate('/')
-          return
-        }
-
-        setError('Login failed while offline. Please try again.')
-      } else {
-        setError(err instanceof Error ? err.message : 'Login failed. Please try again.')
-      }
+      setError(err instanceof Error ? err.message : 'Login failed. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -118,20 +92,23 @@ export default function AuthPage() {
       
       if (data.user) {
         // Manually insert into profiles table since there might be no trigger
-        await supabase.from('profiles').upsert({
+        const { error: profileError } = await supabase.from('profiles').upsert({
           id: data.user.id,
           full_name: form.fullName,
           phone: form.phone,
           role: selectedRole,
           email: form.email,
         })
+        if (profileError) {
+          console.error('Supabase profile error:', profileError)
+          throw new Error(profileError.message)
+        }
       }
       
       if (data.session) {
         setUser(data.user)
         setSession(data.session)
         if (data.user) await fetchProfile(data.user.id)
-        clearSupabaseAuthStorage()
         setSuccess('Account created! Logging in...')
         setTimeout(() => {
           navigate('/')
@@ -140,28 +117,6 @@ export default function AuthPage() {
         setSuccess('Account created! Check your email to verify your account.')
       }
     } catch (err: unknown) {
-      if (isTransportError(err)) {
-        const localAuth = upsertLocalAccount({
-          email: form.email,
-          password: form.password,
-          fullName: form.fullName,
-          phone: form.phone,
-          role: selectedRole,
-        })
-
-        if (localAuth) {
-          setUser(localAuth.user)
-          setSession(localAuth.session)
-          useAuthStore.getState().setProfile(localAuth.profile)
-          clearSupabaseAuthStorage()
-          setSuccess('Account created locally. You are signed in now.')
-          setTimeout(() => {
-            navigate('/')
-          }, 1500)
-          return
-        }
-      }
-
       setError(err instanceof Error ? err.message : 'Registration failed. Please try again.')
     } finally {
       setLoading(false)
@@ -173,33 +128,6 @@ export default function AuthPage() {
       provider: 'google',
       options: { redirectTo: window.location.origin },
     })
-  }
-
-  // Demo login for testing
-  const handleDemoLogin = (role: UserRole) => {
-    const demoProfiles: Record<UserRole, { email: string; name: string }> = {
-      student: { email: 'student@demo.com', name: 'Rahul Sharma' },
-      property_owner: { email: 'owner@demo.com', name: 'Priya Mehta' },
-      mess_owner: { email: 'mess@demo.com', name: 'Suresh Kumar' },
-      admin: { email: 'admin@demo.com', name: 'Admin User' },
-    }
-    const demo = demoProfiles[role]
-    const { setProfile } = useAuthStore.getState()
-    setProfile({
-      id: `demo-${role}`,
-      email: demo.email,
-      full_name: demo.name,
-      role,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    const paths: Record<UserRole, string> = {
-      student: '/dashboard/student',
-      property_owner: '/dashboard/owner',
-      mess_owner: '/dashboard/mess',
-      admin: '/dashboard/admin',
-    }
-    navigate(paths[role])
   }
 
   return (
@@ -358,26 +286,6 @@ export default function AuthPage() {
                     Continue with Google
                   </button>
 
-                  {/* Demo Logins */}
-                  <div className="mt-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-700/50">
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3 text-center">🚀 Demo Access (No signup needed)</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {roles.map(role => (
-                        <button
-                          key={role.value}
-                          type="button"
-                          onClick={() => handleDemoLogin(role.value)}
-                          className="flex items-center gap-2 p-2.5 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:border-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-all text-left"
-                        >
-                          <span className="text-lg">{role.icon}</span>
-                          <div>
-                            <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">{role.label}</p>
-                            <p className="text-[9px] text-slate-400 leading-tight">{role.desc}</p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 </motion.form>
               ) : (
                 <motion.form

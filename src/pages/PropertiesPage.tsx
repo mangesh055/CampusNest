@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Search, SlidersHorizontal, X, Grid3X3, List, Wifi, Zap, Shield, Car, Bath, Book } from 'lucide-react'
@@ -46,7 +46,11 @@ export default function PropertiesPage() {
   const [amenityFilters, setAmenityFilters] = useState<Record<string, boolean>>({})
   const [availableOnly, setAvailableOnly] = useState(false)
 
-  const { properties } = usePropertyStore()
+  const { properties, loadProperties } = usePropertyStore()
+
+  useEffect(() => {
+    void loadProperties()
+  }, [loadProperties])
 
   const filtered = useMemo(() => {
     let result = [...properties]
