@@ -29,10 +29,14 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<UserProfile[]>([])
   const [messes, setMesses] = useState<any[]>([])
   const [properties, setProperties] = useState<any[]>([])
+  const [roommates, setRoommates] = useState<any[]>([])
+  const [community, setCommunity] = useState<any[]>([])
   const [pendingItems, setPendingItems] = useState<any[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [loadingMesses, setLoadingMesses] = useState(false)
   const [loadingProps, setLoadingProps] = useState(false)
+  const [loadingRoommates, setLoadingRoommates] = useState(false)
+  const [loadingCommunity, setLoadingCommunity] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null)
   const [overviewStats, setOverviewStats] = useState({
@@ -51,6 +55,10 @@ export default function AdminDashboard() {
       fetchMesses()
     } else if (currentTab === 'properties') {
       fetchProperties()
+    } else if (currentTab === 'roommates') {
+      fetchRoommates()
+    } else if (currentTab === 'community') {
+      fetchCommunity()
     } else if (currentTab === 'admin') {
       fetchOverview()
     }
@@ -150,6 +158,96 @@ export default function AdminDashboard() {
       setFetchError(e?.message || 'Unknown error')
     } finally {
       setLoadingUsers(false)
+    }
+  }
+
+  const fetchRoommates = async () => {
+    setLoadingRoommates(true)
+    try {
+      const { data, error } = await supabase.from('roommate_profiles').select('*').order('created_at', { ascending: false })
+      if (!error && data) setRoommates(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoadingRoommates(false)
+    }
+  }
+
+  const fetchCommunity = async () => {
+    setLoadingCommunity(true)
+    try {
+      const { data, error } = await supabase.from('community_posts').select('*').order('created_at', { ascending: false })
+      if (!error && data) setCommunity(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoadingCommunity(false)
+    }
+  }
+
+  const handleDeleteMess = async (id: string) => {
+    const confirmation = window.prompt('Type "delete" to confirm deletion:')
+    if (confirmation !== 'delete') return
+    
+    // Manually cascade delete to avoid FK constraint errors
+    await supabase.from('mess_plans').delete().eq('mess_id', id)
+    await supabase.from('student_subscriptions').delete().eq('mess_id', id)
+    await supabase.from('student_attendance').delete().eq('mess_id', id)
+    await supabase.from('reviews').delete().eq('target_id', id).eq('target_type', 'mess')
+    await supabase.from('mess_transactions').delete().eq('mess_id', id) // just in case
+    
+    const { data, error } = await supabase.from('messes').delete().eq('id', id).select()
+    if (error) {
+      alert(`Failed to delete mess: ${error.message}`)
+      console.error('Delete Mess Error:', error)
+    } else if (data && data.length === 0) {
+      alert(`Deletion silently blocked by Database Row Level Security (RLS) policies. You must update the Supabase 'messes' table RLS delete policy to allow admins.`)
+    } else {
+      setMesses(prev => prev.filter(item => item.id !== id))
+    }
+  }
+
+  const handleDeleteProperty = async (id: string) => {
+    const confirmation = window.prompt('Type "delete" to confirm deletion:')
+    if (confirmation !== 'delete') return
+    
+    // Manually cascade delete
+    await supabase.from('reviews').delete().eq('target_id', id).eq('target_type', 'property')
+    
+    const { data, error } = await supabase.from('properties').delete().eq('id', id).select()
+    if (error) {
+      alert(`Failed to delete property: ${error.message}`)
+      console.error('Delete Property Error:', error)
+    } else if (data && data.length === 0) {
+      alert(`Deletion blocked by Database RLS. Please update 'properties' table RLS delete policy.`)
+    } else {
+      setProperties(prev => prev.filter(item => item.id !== id))
+    }
+  }
+
+  const handleDeleteRoommate = async (id: string) => {
+    const confirmation = window.prompt('Type "delete" to confirm deletion:')
+    if (confirmation !== 'delete') return
+    const { data, error } = await supabase.from('roommate_profiles').delete().eq('id', id).select()
+    if (error) {
+      alert(`Failed to delete roommate: ${error.message}`)
+    } else if (data && data.length === 0) {
+      alert(`Deletion blocked by Database RLS. Please update 'roommate_profiles' table RLS delete policy.`)
+    } else {
+      setRoommates(prev => prev.filter(item => item.id !== id))
+    }
+  }
+
+  const handleDeleteCommunity = async (id: string) => {
+    const confirmation = window.prompt('Type "delete" to confirm deletion:')
+    if (confirmation !== 'delete') return
+    const { data, error } = await supabase.from('community_posts').delete().eq('id', id).select()
+    if (error) {
+      alert(`Failed to delete post: ${error.message}`)
+    } else if (data && data.length === 0) {
+      alert(`Deletion blocked by Database RLS. Please update 'community_posts' table RLS delete policy.`)
+    } else {
+      setCommunity(prev => prev.filter(item => item.id !== id))
     }
   }
 
@@ -272,7 +370,8 @@ export default function AdminDashboard() {
             { label: 'Manage Users', icon: '👥', path: '/dashboard/admin/users', color: 'bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 border-brand-200 dark:border-brand-800' },
             { label: 'Review Properties', icon: '🏠', path: '/dashboard/admin/properties', color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' },
             { label: 'Approve Messes', icon: '🍽️', path: '/dashboard/admin/messes', color: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' },
-            { label: 'View Reports', icon: '📊', path: '/dashboard/admin/reports', color: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800' },
+            { label: 'Roommates', icon: '🫂', path: '/dashboard/admin/roommates', color: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800' },
+            { label: 'Community', icon: '📣', path: '/dashboard/admin/community', color: 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800' },
           ].map(action => (
             <Link key={action.label} to={action.path} className={`flex items-center gap-3 p-4 rounded-2xl border font-medium text-sm transition-all hover:shadow-sm ${action.color}`}>
               <span className="text-xl">{action.icon}</span>
@@ -385,11 +484,12 @@ export default function AdminDashboard() {
                   {!mess.verified ? (
                     <>
                       <button onClick={() => handleApprove(mess.id, mess.name)} className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded text-xs font-bold transition-colors">Approve</button>
-                      <button onClick={() => handleReject(mess.id, mess.name)} className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs font-bold transition-colors">Reject</button>
+                      <button onClick={() => handleReject(mess.id, mess.name)} className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded text-xs font-bold transition-colors">Reject</button>
                     </>
                   ) : (
-                    <button onClick={() => handleReject(mess.id, mess.name)} className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs font-bold transition-colors">Revoke</button>
+                    <button onClick={() => handleReject(mess.id, mess.name)} className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded text-xs font-bold transition-colors">Revoke</button>
                   )}
+                  <button onClick={() => handleDeleteMess(mess.id)} className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs font-bold transition-colors">Delete</button>
                 </td>
               </tr>
             ))}
@@ -437,11 +537,12 @@ export default function AdminDashboard() {
                   {!prop.verified ? (
                     <>
                       <button onClick={() => handleApproveProperty(prop.id, prop.title)} className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded text-xs font-bold transition-colors">Approve</button>
-                      <button onClick={() => handleRejectProperty(prop.id, prop.title)} className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs font-bold transition-colors">Reject</button>
+                      <button onClick={() => handleRejectProperty(prop.id, prop.title)} className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded text-xs font-bold transition-colors">Reject</button>
                     </>
                   ) : (
-                    <button onClick={() => handleRejectProperty(prop.id, prop.title)} className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs font-bold transition-colors">Revoke</button>
+                    <button onClick={() => handleRejectProperty(prop.id, prop.title)} className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded text-xs font-bold transition-colors">Revoke</button>
                   )}
+                  <button onClick={() => handleDeleteProperty(prop.id)} className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs font-bold transition-colors">Delete</button>
                 </td>
               </tr>
             ))}
@@ -451,12 +552,74 @@ export default function AdminDashboard() {
     </div>
   )
 
-  const renderReports = () => (
+  const renderRoommates = () => (
     <div className="card p-6">
-      <h3 className="font-display font-bold text-slate-900 dark:text-white mb-4">Platform Reports</h3>
-      <div className="p-12 text-center text-slate-500 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl">
-        <TrendingUp className="w-12 h-12 mx-auto mb-3 text-slate-400" />
-        <p>No active user reports or flags to review.</p>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-display font-bold text-slate-900 dark:text-white">Roommate Profiles</h3>
+        <button onClick={fetchRoommates} className="text-sm text-brand-500 hover:underline">Refresh</button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead>
+            <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500">
+              <th className="pb-3 font-medium">Name</th>
+              <th className="pb-3 font-medium">College</th>
+              <th className="pb-3 font-medium">Budget</th>
+              <th className="pb-3 font-medium text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            {loadingRoommates ? (
+              <tr><td colSpan={4} className="py-8 text-center text-slate-500">Loading...</td></tr>
+            ) : roommates.length === 0 ? (
+              <tr><td colSpan={4} className="py-8 text-center text-slate-500">No roommates found.</td></tr>
+            ) : roommates.map(r => (
+              <tr key={r.id}>
+                <td className="py-3 font-medium text-slate-900 dark:text-white">{r.full_name}</td>
+                <td className="py-3 text-slate-500">{r.college}</td>
+                <td className="py-3 text-slate-500">₹{r.budget_min} - ₹{r.budget_max}</td>
+                <td className="py-3 text-right">
+                  <button onClick={() => handleDeleteRoommate(r.id)} className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs font-bold transition-colors">Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+
+  const renderCommunity = () => (
+    <div className="card p-6">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-display font-bold text-slate-900 dark:text-white">Community Posts</h3>
+        <button onClick={fetchCommunity} className="text-sm text-brand-500 hover:underline">Refresh</button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead>
+            <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500">
+              <th className="pb-3 font-medium">Title</th>
+              <th className="pb-3 font-medium">Category</th>
+              <th className="pb-3 font-medium text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            {loadingCommunity ? (
+              <tr><td colSpan={3} className="py-8 text-center text-slate-500">Loading...</td></tr>
+            ) : community.length === 0 ? (
+              <tr><td colSpan={3} className="py-8 text-center text-slate-500">No posts found.</td></tr>
+            ) : community.map(post => (
+              <tr key={post.id}>
+                <td className="py-3 font-medium text-slate-900 dark:text-white max-w-xs truncate">{post.title}</td>
+                <td className="py-3 text-slate-500 capitalize">{post.category}</td>
+                <td className="py-3 text-right">
+                  <button onClick={() => handleDeleteCommunity(post.id)} className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs font-bold transition-colors">Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )
@@ -479,7 +642,8 @@ export default function AdminDashboard() {
       {currentTab === 'users' && renderUsers()}
       {currentTab === 'messes' && renderMesses()}
       {currentTab === 'properties' && renderProperties()}
-      {currentTab === 'reports' && renderReports()}
+      {currentTab === 'roommates' && renderRoommates()}
+      {currentTab === 'community' && renderCommunity()}
 
       {/* Manage User Modal */}
       <AnimatePresence>

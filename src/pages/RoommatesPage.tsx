@@ -129,17 +129,20 @@ export default function RoommatesPage() {
     })()
   }
 
-  const handleDeleteProfile = () => {
-    if (!profile) return
+  const handleDeleteProfile = (id: string = '') => {
+    const targetId = id || (myProfile?.id)
+    if (!targetId) return
     void (async () => {
-      const { error } = await supabase.from('roommate_profiles').delete().eq('student_id', profile.id)
+      const { error } = await supabase.from('roommate_profiles').delete().eq('id', targetId)
       if (error) {
         console.error('Failed to delete roommate profile from Supabase:', error)
         return
       }
 
-      setMyProfile(null)
-      setRoommates(prev => prev.filter(r => r.student_id !== profile.id))
+      if (!id || id === myProfile?.id) {
+        setMyProfile(null)
+      }
+      setRoommates(prev => prev.filter(r => r.id !== targetId))
       invalidatePlatformCache()
     })()
   }
@@ -271,7 +274,10 @@ export default function RoommatesPage() {
                 }} className="btn-secondary py-1.5 px-3 bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs">
                   Edit Card
                 </button>
-                <button onClick={handleDeleteProfile} className="btn-secondary py-1.5 px-3 bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20 text-xs">
+                <button onClick={() => {
+                  if (!window.confirm("Are you sure you want to remove your roommate profile card?")) return
+                  handleDeleteProfile(myProfile.id)
+                }} className="btn-secondary py-1.5 px-3 bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20 text-xs">
                   Remove Card
                 </button>
               </div>

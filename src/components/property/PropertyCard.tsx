@@ -1,9 +1,11 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { MapPin, Wifi, Star, Heart, BedDouble, Bath, Shield, Zap, Car, Dumbbell } from 'lucide-react'
+import { MapPin, Wifi, Star, Heart, BedDouble, Bath, Shield, Zap, Car, Dumbbell, X } from 'lucide-react'
 import { cn, formatCurrency, propertyTypeLabels } from '../../lib/utils'
 import type { Property } from '../../types'
+import { useAuthStore } from '../../store/authStore'
+import { usePropertyStore } from '../../store/propertyStore'
 
 interface PropertyCardProps {
   property: Property
@@ -12,6 +14,8 @@ interface PropertyCardProps {
 
 export default function PropertyCard({ property, index = 0 }: PropertyCardProps) {
   const [favorited, setFavorited] = React.useState(false)
+  const { profile } = useAuthStore()
+  const { deleteProperty } = usePropertyStore()
 
   const amenityIcons = [
     { key: 'wifi', icon: Wifi, label: 'WiFi' },

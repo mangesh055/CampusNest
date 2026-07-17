@@ -4,6 +4,8 @@ import { motion } from 'framer-motion'
 import { MapPin, Star, Heart, Clock, Phone } from 'lucide-react'
 import { cn, formatCurrency, messStatusConfig, mealTypeLabels } from '../../lib/utils'
 import type { Mess } from '../../types'
+import { useAuthStore } from '../../store/authStore'
+import { supabase } from '../../lib/supabase'
 
 interface MessCardProps {
   mess: Mess
@@ -12,6 +14,7 @@ interface MessCardProps {
 
 export default function MessCard({ mess, index = 0 }: MessCardProps) {
   const [favorited, setFavorited] = React.useState(false)
+  const { profile } = useAuthStore()
   const statusCfg = messStatusConfig[mess.status]
 
   const defaultPhoto = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600'

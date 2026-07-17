@@ -138,6 +138,18 @@ export default function CommunityPage() {
     })()
   }
 
+  const handleDeletePost = (postId: string) => {
+    if (!window.confirm('Are you sure you want to delete this post?')) return
+    void (async () => {
+      const { error } = await supabase.from('community_posts').delete().eq('id', postId)
+      if (error) {
+        console.error('Failed to delete community post:', error)
+        return
+      }
+      setPosts(prev => prev.filter(p => p.id !== postId))
+    })()
+  }
+
   // Filter posts
   const filteredPosts = posts.filter(post => {
     if (selectedCategory !== 'all' && post.category !== selectedCategory) return false
@@ -274,28 +286,37 @@ export default function CommunityPage() {
                         </span>
                         
                         {post.author_id === profile?.id && (
-                          <button
-                            onClick={() => {
-                              const phoneNoCode = phone.replace(/^\+\d+/, '')
-                              const phoneCode = phone.match(/^\+(\d+)/)?.[0] || '+91'
-                              setForm({
-                                title: post.title,
-                                content: textContent,
-                                category: post.category as any,
-                                price: post.price ? post.price.toString() : '',
-                                phone: phoneNoCode,
-                                phone_code: phoneCode,
-                                location: location,
-                                images: images,
-                              })
-                              setIsEditingPostId(post.id)
-                              setShowModal(true)
-                            }}
-                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-brand-600 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors"
-                            title="Edit Post"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => {
+                                const phoneNoCode = phone.replace(/^\+\d+/, '')
+                                const phoneCode = phone.match(/^\+(\d+)/)?.[0] || '+91'
+                                setForm({
+                                  title: post.title,
+                                  content: textContent,
+                                  category: post.category as any,
+                                  price: post.price ? post.price.toString() : '',
+                                  phone: phoneNoCode,
+                                  phone_code: phoneCode,
+                                  location: location,
+                                  images: images,
+                                })
+                                setIsEditingPostId(post.id)
+                                setShowModal(true)
+                              }}
+                              className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-brand-600 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors"
+                              title="Edit Post"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeletePost(post.id)}
+                              className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 dark:bg-red-900/20 dark:hover:bg-red-900/40 transition-colors"
+                              title="Delete Post"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
