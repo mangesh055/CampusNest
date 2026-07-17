@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Users, Calendar, QrCode, TrendingUp, DollarSign, Bell, RefreshCw, BarChart2, Search, Plus, Trash2, Edit2, Sparkles, ChefHat, MapPin, Phone, Building, Download, CreditCard, FileText, BookOpen, ToggleLeft, ToggleRight, Camera, Link2, X } from 'lucide-react'
@@ -27,7 +27,10 @@ type MessRow = {
   latitude?: number | null
   longitude?: number | null
   google_maps_url?: string | null
+  service_hours?: string | null
   photos?: string[] | null
+  qr_token?: string | null
+  menu_card?: { name: string; price: string }[] | null
 }
 
 type PlanRow = {
@@ -37,6 +40,7 @@ type PlanRow = {
   description: string
   price: number
   duration_days: number
+  total_meals?: number | null
   meal_types: string[]
   active: boolean
 }
@@ -95,6 +99,7 @@ type StudentProfile = {
   id: string
   full_name: string | null
   email: string | null
+  phone: string | null
 }
 
 const defaultMenu = {
@@ -121,6 +126,7 @@ export default function MessOwnerDashboard() {
   const [attendance, setAttendance] = useState<AttendanceRow[]>([])
   const [transactions, setTransactions] = useState<TransactionRow[]>([])
   const [menu, setMenu] = useState<MenuRow | null>(null)
+  const [menuCard, setMenuCard] = useState<{name: string, price: string}[]>([])
   const [paymentSettings, setPaymentSettings] = useState<PaymentSettingsRow>({ owner_id: profile?.id || '', upi_id: '', phone_number: '' })
   const [loading, setLoading] = useState(false)
   const [bannerMsg, setBannerMsg] = useState('')
@@ -129,6 +135,7 @@ export default function MessOwnerDashboard() {
   const [description, setDescription] = useState('')
   const [address, setAddress] = useState('')
   const [contactPhone, setContactPhone] = useState('')
+  const [serviceHours, setServiceHours] = useState('08:00 AM - 10:30 PM')
   const [monthlyCharge, setMonthlyCharge] = useState('3200')
   const [perMealCharge, setPerMealCharge] = useState('110')
   const [selectedMealTypes, setSelectedMealTypes] = useState<string[]>(['breakfast', 'lunch', 'dinner'])
@@ -224,15 +231,22 @@ export default function MessOwnerDashboard() {
     setPhotos(prev => prev.filter((_, i) => i !== index))
   }
 
-  const [newItem, setNewItem] = useState('')
-  const [newItemPrice, setNewItemPrice] = useState('')
+  const newItemRef = useRef<HTMLInputElement>(null)
+  const newItemPriceRef = useRef<HTMLInputElement>(null)
   const [activeMenuCategory, setActiveMenuCategory] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('lunch')
-  const [planForm, setPlanForm] = useState({ name: '', description: '', price: '', duration_days: '30', meal_types: [] as string[] })
+  const [planForm, setPlanForm] = useState({ name: '', description: '', price: '', duration_days: '30', total_meals: '', meal_types: [] as string[] })
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null)
   const [selectedPlan, setSelectedPlan] = useState<PlanRow | null>(null)
   const [paymentForm, setPaymentForm] = useState({ upi_id: '', phone_number: '' })
 
+  const [searchCountryCode, setSearchCountryCode] = useState('+91')
+  const [searchPhone, setSearchPhone] = useState('')
+  const [foundUser, setFoundUser] = useState<any>(null)
+  const [selectedAddPlanId, setSelectedAddPlanId] = useState('')
+  const [searchLoading, setSearchLoading] = useState(false)
+
   const path = location.pathname
-  const view = path.endsWith('/menu') ? 'menu' : path.endsWith('/plans') ? 'plans' : path.endsWith('/subscribers') ? 'subscribers' : path.endsWith('/attendance') ? 'attendance' : path.endsWith('/qr') ? 'qr' : path.endsWith('/analytics') ? 'analytics' : path.endsWith('/payments') ? 'payments' : path.endsWith('/reports') ? 'reports' : path.endsWith('/settings') ? 'settings' : 'overview'
+  const view = path.endsWith('/menu') ? 'menu' : path.endsWith('/menucard') ? 'menucard' : path.endsWith('/plans') ? 'plans' : path.endsWith('/subscribers') ? 'subscribers' : path.endsWith('/attendance') ? 'attendance' : path.endsWith('/qr') ? 'qr' : path.endsWith('/analytics') ? 'analytics' : path.endsWith('/payments') ? 'payments' : path.endsWith('/reports') ? 'reports' : path.endsWith('/settings') ? 'settings' : 'overview'
 
   const loadDashboard = async () => {
     if (!profile) return
@@ -256,6 +270,7 @@ export default function MessOwnerDashboard() {
       setDescription(currentMess.description || '')
       setAddress(currentMess.address || '')
       setContactPhone(currentMess.contact_phone || '')
+      setServiceHours(currentMess.service_hours || '08:00 AM - 10:30 PM')
       setMonthlyCharge(String(currentMess.monthly_charge || 3200))
       setPerMealCharge(String(currentMess.per_meal_charge || 110))
       setSelectedMealTypes(currentMess.meal_types || ['breakfast', 'lunch', 'dinner'])
@@ -263,6 +278,7 @@ export default function MessOwnerDashboard() {
       setLongitude(currentMess.longitude || 73.8567)
       setGoogleMapsUrl(currentMess.google_maps_url || '')
       setPhotos(currentMess.photos || [])
+      setMenuCard(currentMess.menu_card || [])
 
       const [plansResult, subscriptionsResult, attendanceResult, transactionsResult, paymentResult, menuResult] = await Promise.all([
         supabase.from('mess_plans').select('*').eq('mess_id', currentMess.id).order('created_at', { ascending: false }),
@@ -282,12 +298,12 @@ export default function MessOwnerDashboard() {
       const studentIds = Array.from(new Set(subscriptionRows.map((row) => row.student_id)))
       const planIds = Array.from(new Set(subscriptionRows.map((row) => row.plan_id)))
       const [profileRows, planLookupResult] = await Promise.all([
-        studentIds.length ? supabase.from('profiles').select('id, full_name, email').in('id', studentIds) : Promise.resolve({ data: [] }),
+        studentIds.length ? supabase.from('profiles').select('id, full_name, email, phone').in('id', studentIds) : Promise.resolve({ data: [] }),
         planIds.length ? supabase.from('mess_plans').select('*').in('id', planIds) : Promise.resolve({ data: [] }),
       ])
 
-      const profilesById = new Map<string, StudentProfile>((profileRows.data || []) as StudentProfile[] as any)
-      const plansById = new Map<string, PlanRow>((planLookupResult.data || []) as PlanRow[] as any)
+      const profilesById = new Map<string, any>((profileRows.data || []).map((p: any) => [p.id, p]))
+      const plansById = new Map<string, PlanRow>((planLookupResult.data || []).map((p: any) => [p.id, p]))
 
       setPlans(planRows)
       setSubscribers(subscriptionRows.map((row) => ({
@@ -319,6 +335,17 @@ export default function MessOwnerDashboard() {
   const todayStr = new Date().toISOString().split('T')[0]
   const todaysScans = attendance.filter((row) => row.date === todayStr)
 
+  useEffect(() => {
+    if (googleMapsUrl) {
+      const match = googleMapsUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || 
+                    googleMapsUrl.match(/[?&](?:q|query|ll|pb=!-?\d+d)(-?\d+\.\d+)[,!](-?\d+\.\d+)/);
+      if (match) {
+        setLatitude(parseFloat(match[1]));
+        setLongitude(parseFloat(match[2]));
+      }
+    }
+  }, [googleMapsUrl]);
+
   const stats = useMemo(() => ([
     { label: 'Total Subscribers', value: subscribers.length.toString(), icon: '👥', color: 'from-brand-400 to-brand-600', sub: subscribers.length > 0 ? `${subscribers.length} active users` : 'No users registered' },
     { label: "Today's Attendance", value: todaysScans.length.toString(), icon: '✅', color: 'from-emerald-400 to-emerald-600', sub: todaysScans.length > 0 ? `${todaysScans.length} scans logged` : 'No logs yet' },
@@ -345,9 +372,22 @@ export default function MessOwnerDashboard() {
     { name: 'Dinner', value: todaysScans.filter((row) => row.dinner).length, color: '#8b5cf6' },
   ].filter((row) => row.value > 0)), [todaysScans])
 
-  const handleAddItem = () => {
-    if (!newItem.trim()) return
-    const text = newItemPrice.trim() ? `${newItem.trim()} - ₹${newItemPrice.trim()}` : newItem.trim()
+  const handleAddCardItem = () => {
+    const itemName = newItemRef.current?.value || ''
+    const itemPrice = newItemPriceRef.current?.value || ''
+    if (!itemName.trim()) return
+    
+    setMenuCard(prev => [...prev, { name: itemName.trim(), price: itemPrice.trim() }])
+    
+    if (newItemRef.current) newItemRef.current.value = ''
+    if (newItemPriceRef.current) newItemPriceRef.current.value = ''
+  }
+
+  const handleAddDailyItem = () => {
+    const itemName = newItemRef.current?.value || ''
+    const itemPrice = newItemPriceRef.current?.value || ''
+    if (!itemName.trim()) return
+    const text = itemPrice.trim() ? `${itemName.trim()} - ₹${itemPrice.trim()}` : itemName.trim()
     setMenu((prev) => {
       const p = prev || { id: `menu-${Date.now()}`, owner_id: profile?.id || '', breakfast: [], lunch: [], dinner: [], snack: [], date: todayStr }
       return {
@@ -355,11 +395,23 @@ export default function MessOwnerDashboard() {
         [activeMenuCategory]: [...(p[activeMenuCategory] || []), text]
       }
     })
-    setNewItem('')
-    setNewItemPrice('')
+    if (newItemRef.current) newItemRef.current.value = ''
+    if (newItemPriceRef.current) newItemPriceRef.current.value = ''
   }
 
-  const updateMenu = async () => {
+  const updateMenuCard = async () => {
+    if (!profile || !mess) return
+    const { error } = await supabase.from('messes').update({ menu_card: menuCard }).eq('id', mess.id)
+    if (error) {
+      console.error('Failed to save menu card:', error)
+      alert(`Database Error: ${error.message}. Please make sure you added the 'menu_card' column to the 'messes' table!`)
+      return
+    }
+    setBannerMsg('Menu Card saved to Supabase')
+    setTimeout(() => setBannerMsg(''), 2500)
+  }
+
+  const updateDailyMenu = async () => {
     if (!profile || !mess) return
     const payload = {
       id: menu?.id || `menu-${Date.now()}`,
@@ -373,33 +425,68 @@ export default function MessOwnerDashboard() {
     }
     const { error } = await supabase.from('mess_menus').upsert(payload)
     if (error) {
-      console.error('Failed to save menu:', error)
+      console.error('Failed to save daily menu:', error)
+      alert(`Database Error: ${error.message}`)
       return
     }
     setMenu(payload as MenuRow)
-    setBannerMsg('Menu saved to Supabase')
+    setBannerMsg('Daily Menu saved to Supabase')
     setTimeout(() => setBannerMsg(''), 2500)
   }
 
   const savePlan = async () => {
     if (!profile || !mess || !planForm.name.trim() || !planForm.price || planForm.meal_types.length === 0) return
-    const payload = {
-      id: `plan-${Date.now()}`,
-      mess_id: mess.id,
-      name: planForm.name,
-      description: planForm.description,
-      price: Number(planForm.price),
-      duration_days: Number(planForm.duration_days),
-      meal_types: planForm.meal_types,
-      active: true,
+    
+    if (editingPlanId) {
+      const payload = {
+        name: planForm.name,
+        description: planForm.description,
+        price: Number(planForm.price),
+        duration_days: Number(planForm.duration_days),
+        total_meals: planForm.total_meals ? Number(planForm.total_meals) : null,
+        meal_types: planForm.meal_types,
+      }
+      const { error } = await supabase.from('mess_plans').update(payload).eq('id', editingPlanId)
+      if (error) {
+        console.error('Failed to update plan:', error)
+        alert(`Database Error: ${error.message}`)
+        return
+      }
+      setPlans((prev) => prev.map((plan) => plan.id === editingPlanId ? { ...plan, ...payload } : plan))
+      setEditingPlanId(null)
+    } else {
+      const payload = {
+        id: `plan-${Date.now()}`,
+        mess_id: mess.id,
+        name: planForm.name,
+        description: planForm.description,
+        price: Number(planForm.price),
+        duration_days: Number(planForm.duration_days),
+        total_meals: planForm.total_meals ? Number(planForm.total_meals) : null,
+        meal_types: planForm.meal_types,
+        active: true,
+      }
+      const { error } = await supabase.from('mess_plans').insert(payload)
+      if (error) {
+        console.error('Failed to save plan:', error)
+        alert(`Database Error: ${error.message}. Please make sure you added the 'total_meals' column to the 'mess_plans' table!`)
+        return
+      }
+      setPlans((prev) => [payload as PlanRow, ...prev])
     }
-    const { error } = await supabase.from('mess_plans').insert(payload)
-    if (error) {
-      console.error('Failed to save plan:', error)
-      return
-    }
-    setPlans((prev) => [payload as PlanRow, ...prev])
-    setPlanForm({ name: '', description: '', price: '', duration_days: '30', meal_types: [] })
+    setPlanForm({ name: '', description: '', price: '', duration_days: '30', total_meals: '', meal_types: [] })
+  }
+
+  const handleEditPlan = (plan: PlanRow) => {
+    setEditingPlanId(plan.id)
+    setPlanForm({
+      name: plan.name,
+      description: plan.description,
+      price: String(plan.price),
+      duration_days: String(plan.duration_days),
+      total_meals: plan.total_meals ? String(plan.total_meals) : '',
+      meal_types: plan.meal_types || [],
+    })
   }
 
   const togglePlanActive = async (id: string) => {
@@ -437,9 +524,19 @@ export default function MessOwnerDashboard() {
       return
     }
 
+    if (!mess?.id) {
+      const { data: existingMess } = await supabase.from('messes').select('id').eq('owner_id', profile.id).maybeSingle()
+      if (existingMess) {
+        alert('You have already registered a mess.')
+        await loadDashboard()
+        return
+      }
+    }
+
     const payload = {
       id: mess?.id || `mess-${Date.now()}`,
       owner_id: profile.id,
+      qr_token: mess?.qr_token || crypto.randomUUID(),
       name: messName,
       description,
       address,
@@ -448,6 +545,7 @@ export default function MessOwnerDashboard() {
       latitude,
       longitude,
       google_maps_url: googleMapsUrl,
+      service_hours: serviceHours,
       contact_phone: contactPhone,
       monthly_charge: Number(monthlyCharge),
       per_meal_charge: Number(perMealCharge),
@@ -488,29 +586,7 @@ export default function MessOwnerDashboard() {
     }
   }
 
-  const handleSimulateScan = async () => {
-    if (!mess || subscribers.length === 0) {
-      alert('Need at least one subscriber to simulate scans.')
-      return
-    }
-    const random = subscribers[0]
-    const meal = mess.meal_types[Math.floor(Math.random() * mess.meal_types.length)] || 'lunch'
-    const payload = {
-      id: `att-${Date.now()}`,
-      student_id: random.student_id,
-      mess_id: mess.id,
-      date: todayStr,
-      breakfast: meal === 'breakfast',
-      lunch: meal === 'lunch',
-      dinner: meal === 'dinner',
-      snack: meal === 'snack',
-    }
-    const { error } = await supabase.from('student_attendance').insert(payload)
-    if (error) return console.error('Failed to save attendance scan:', error)
-    setAttendance((prev) => [payload as AttendanceRow, ...prev])
-    setBannerMsg(`Scan saved for ${random.student?.full_name || 'Student'}`)
-    setTimeout(() => setBannerMsg(''), 2500)
-  }
+
 
   const handleVerifyCash = async (txnId: string) => {
     const { error } = await supabase.from('mess_transactions').update({ status: 'Completed' }).eq('id', txnId)
@@ -518,7 +594,140 @@ export default function MessOwnerDashboard() {
     setTransactions((prev) => prev.map((txn) => txn.id === txnId ? { ...txn, status: 'Completed' } : txn))
   }
 
+  const handleSearchUser = async () => {
+    if (!searchPhone.trim()) return
+    setSearchLoading(true)
+    setFoundUser(null)
+    
+    const searchPattern = `%${searchPhone.trim()}%`;
+    const fullSearchPattern = `%${searchCountryCode}%${searchPhone.trim()}%`;
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .or(`phone.ilike.${searchPattern},phone.ilike.${fullSearchPattern}`)
+      .limit(1)
+      .maybeSingle()
+      
+    if (error || !data) {
+      console.error('Search error:', error);
+      alert('User not found with this phone number.')
+    } else {
+      setFoundUser(data)
+    }
+    setSearchLoading(false)
+  }
+
+  const handleAddSubscriber = async () => {
+    if (!foundUser || !selectedAddPlanId || !mess) return
+    const plan = plans.find(p => p.id === selectedAddPlanId)
+    if (!plan) return
+
+    const startDate = new Date()
+    const endDate = new Date()
+    endDate.setDate(startDate.getDate() + plan.duration_days)
+
+    const payload = {
+      id: `sub-${Date.now()}`,
+      student_id: foundUser.id,
+      mess_id: mess.id,
+      plan_id: plan.id,
+      status: 'active',
+      start_date: startDate.toISOString().split('T')[0],
+      end_date: endDate.toISOString().split('T')[0],
+      amount_paid: plan.price,
+      payment_status: 'paid',
+      remaining_days: plan.total_meals || plan.duration_days,
+      total_meals: plan.total_meals || plan.duration_days,
+      plan_name: plan.name,
+      plan_description: plan.description
+    }
+
+    const { error } = await supabase.from('student_subscriptions').insert(payload)
+    if (error) {
+      console.error('Failed to add subscriber:', error)
+      alert(`Database Error: ${error.message}`)
+      return
+    }
+
+    // Push notifications
+    const studentNotification = {
+      user_id: foundUser.id,
+      type: 'success',
+      title: 'Plan Allocated Successfully',
+      message: `You have successfully been subscribed to the ${plan.name} at ${mess.name}. Your plan is active until ${formatDate(endDate.toISOString())}.`,
+      read: false,
+    }
+
+    const ownerNotification = {
+      user_id: profile?.id || '',
+      type: 'info',
+      title: 'New Subscriber Added',
+      message: `${foundUser.full_name} has been manually added to the ${plan.name} plan.`,
+      read: false,
+    }
+
+    await supabase.from('app_notifications').insert([studentNotification, ownerNotification])
+
+    setBannerMsg('Subscriber added successfully')
+    setTimeout(() => setBannerMsg(''), 2500)
+    
+    // Clear form and reload data
+    setSearchPhone('')
+    setFoundUser(null)
+    setSelectedAddPlanId('')
+    await loadDashboard()
+  }
+
+  const handleDeleteSubscriber = async (id: string) => {
+    if (!window.confirm('Are you sure you want to remove this subscriber? This will immediately revoke their plan.')) return;
+    
+    const { error } = await supabase.from('student_subscriptions').delete().eq('id', id);
+    if (error) {
+      alert(`Error deleting subscriber: ${error.message}`);
+      return;
+    }
+    
+    setBannerMsg('Subscriber removed successfully');
+    setTimeout(() => setBannerMsg(''), 2500);
+    setSubscribers((prev) => prev.filter((sub) => sub.id !== id));
+  }
+
+  const handleDownloadReport = () => {
+    // Generate CSV data for subscribers
+    const headers = ['Student Name', 'Phone', 'Plan Name', 'Start Date', 'End Date', 'Payment Status']
+    const rows = subscribers.map(sub => [
+      `"${sub.student?.full_name || 'Unknown'}"`,
+      `"${sub.student?.phone || 'N/A'}"`,
+      `"${sub.plan?.name || 'Unknown Plan'}"`,
+      `"${formatDate(sub.start_date)}"`,
+      `"${formatDate(sub.end_date)}"`,
+      `"${sub.payment_status}"`
+    ])
+    
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+    
+    // Trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `mess_subscribers_report_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   const renderBanner = () => bannerMsg ? <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="fixed top-20 right-6 z-50 bg-slate-900 text-white text-xs px-4 py-3 rounded-2xl border border-slate-800 flex items-center gap-2 shadow-xl"><Sparkles className="w-4 h-4 text-brand-400" />{bannerMsg}</motion.div> : null
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    )
+  }
 
   if (!mess) {
     return (
@@ -536,8 +745,9 @@ export default function MessOwnerDashboard() {
           <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Mess Service Name</label><input value={messName} onChange={(e) => setMessName(e.target.value)} placeholder="Mess Service Name" className="input-field" /></div>
           <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Description</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" className="input-field min-h-24" /></div>
           <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Contact Phone</label><input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="Contact Phone" className="input-field" /></div>
+          <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Service Hours</label><input value={serviceHours} onChange={(e) => setServiceHours(e.target.value)} placeholder="e.g. 08:00 AM - 10:30 PM" className="input-field" /></div>
           <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Address</label><input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Address" className="input-field" /></div>
-          <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Google Maps Embed URL (Optional)</label><input value={googleMapsUrl} onChange={(e) => setGoogleMapsUrl(e.target.value)} placeholder="Google Maps Embed URL (Optional)" className="input-field" /></div>
+          <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Google Maps URL</label><input value={googleMapsUrl} onChange={(e) => setGoogleMapsUrl(e.target.value)} placeholder="Paste Google Maps link here..." className="input-field" /></div>
           {googleMapsUrl && (
             <div className="text-sm">
               <a href={googleMapsUrl} target="_blank" rel="noreferrer" className="text-brand-500 hover:underline flex items-center gap-1 mb-2">
@@ -553,38 +763,6 @@ export default function MessOwnerDashboard() {
           <div className="grid grid-cols-2 gap-3">
             <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Monthly Charge (₹)</label><input value={monthlyCharge} onChange={(e) => setMonthlyCharge(e.target.value)} placeholder="Monthly Charge" className="input-field" /></div>
             <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Per Meal Charge (₹)</label><input value={perMealCharge} onChange={(e) => setPerMealCharge(e.target.value)} placeholder="Per Meal Charge" className="input-field" /></div>
-          </div>
-          
-          {/* Location Detection */}
-          <div className="flex items-center gap-4 py-2">
-            <button 
-              type="button"
-              onClick={() => {
-                if (navigator.geolocation) {
-                  navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                      setLatitude(position.coords.latitude)
-                      setLongitude(position.coords.longitude)
-                      setBannerMsg('Location detected automatically!')
-                      setTimeout(() => setBannerMsg(''), 2500)
-                    },
-                    (error) => alert('Could not detect location. Please allow location access.')
-                  )
-                }
-              }}
-              className="btn-secondary flex items-center justify-center gap-2 flex-1"
-            >
-              <MapPin className="w-4 h-4 text-brand-500" /> Detect Current Location
-            </button>
-            <div className="flex-1 text-xs text-slate-500">
-              {(latitude && longitude && latitude !== 18.5204) ? (
-                <span className="text-emerald-600 font-medium flex items-center gap-1">
-                  ✓ Location captured ({latitude.toFixed(4)}, {longitude.toFixed(4)})
-                </span>
-              ) : (
-                <span>📍 Location not detected yet</span>
-              )}
-            </div>
           </div>
 
           {(latitude && longitude && latitude !== 18.5204) && (
@@ -669,18 +847,27 @@ export default function MessOwnerDashboard() {
     return (
       <div className="p-6 space-y-6">
         {renderBanner()}
-        <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-display font-bold text-slate-900 dark:text-white flex items-center gap-2">{mess.name} <Link to="/dashboard/mess/settings" className="text-slate-400 hover:text-brand-500"><Edit2 className="w-5 h-5" /></Link></h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">📍 {mess.address} | Owner Dashboard</p>
           </div>
-          <div className="flex gap-2 items-center flex-wrap justify-end"><button onClick={handleSimulateScan} className="btn-secondary text-xs flex items-center gap-1">⚡ Scan Simulator</button><Link to="/dashboard/mess/qr" className="btn-primary text-sm flex items-center gap-1"><QrCode className="w-4 h-4" /> View QR Poster</Link></div>
+          <div className="flex flex-wrap gap-2">
+            <Link to="/dashboard/mess/menucard" className="btn-secondary text-sm flex items-center gap-1">
+              <ChefHat className="w-4 h-4" /> Menu Card
+            </Link>
+            <Link to="/dashboard/mess/menu" className="btn-secondary text-sm flex items-center gap-1">
+              <ChefHat className="w-4 h-4" /> Daily Menu
+            </Link>
+            <Link to="/dashboard/mess/qr" className="btn-primary text-sm flex items-center gap-1">
+              <QrCode className="w-4 h-4" /> View QR Poster
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">{stats.map((s) => (<div key={s.label} className="card p-5"><div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${s.color} flex items-center justify-center text-2xl mb-3`}>{s.icon}</div><div className="text-2xl font-bold text-slate-900 dark:text-white leading-tight">{s.value}</div><div className="text-xs text-slate-500 mt-0.5">{s.label}</div><div className="text-[11px] text-brand-500 mt-1">{s.sub}</div></div>))}</div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="card p-6 text-center"><h3 className="font-display font-bold mb-4 flex items-center justify-center gap-2"><QrCode className="w-4 h-4 text-brand-500" /> Daily Check-In QR</h3><div className="w-40 h-40 rounded-2xl border-4 border-dashed border-slate-300 mx-auto flex items-center justify-center text-slate-400">QR</div><Link to="/dashboard/mess/qr" className="btn-primary w-full text-xs py-2 mt-4">Open Printable QR Poster</Link></div>
+        <div className="grid lg:grid-cols-2 gap-6">
           <div className="card p-6"><h3 className="font-display font-bold mb-4 flex items-center gap-2"><Calendar className="w-4 h-4 text-brand-500" /> Today's Meal Scans</h3><div className="space-y-4">{mess.meal_types.map((meal) => { const count = todaysScans.filter((s) => s[meal as keyof AttendanceRow]).length; return (<div key={meal}><div className="flex justify-between items-center mb-1"><span className="text-xs font-medium capitalize">{mealTypeLabels[meal as keyof typeof mealTypeLabels] || meal}</span><span className="text-xs font-bold">{count} checked in</span></div><div className="progress-bar h-1.5"><div className="h-full rounded-full bg-brand-500" style={{ width: `${subscribers.length > 0 ? (count / subscribers.length) * 100 : 0}%` }} /></div></div>)})}</div></div>
           <div className="card p-6"><h3 className="font-display font-bold mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-brand-500" /> Meal Attendance Rate</h3><ResponsiveContainer width="100%" height={160}>{dynamicPieData.length > 0 ? <PieChart><Pie data={dynamicPieData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">{dynamicPieData.map((entry, index) => <Cell key={index} fill={entry.color} />)}</Pie><Tooltip /></PieChart> : <div className="w-full h-full flex items-center justify-center text-xs text-slate-400 italic">No attendance yet today</div>}</ResponsiveContainer></div>
         </div>
@@ -692,13 +879,74 @@ export default function MessOwnerDashboard() {
     )
   }
 
+  if (view === 'menucard') {
+    return (
+      <div className="p-6 space-y-6">
+        {renderBanner()}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-display font-bold flex items-center gap-2">
+              <ChefHat className="w-6 h-6 text-brand-500" /> Mess Menu Card Manager
+            </h1>
+            <p className="text-slate-500 text-sm mt-1">Publish and edit the standard menu card for {mess.name}</p>
+          </div>
+          <Link to="/dashboard/mess" className="btn-secondary text-sm">Back to Overview</Link>
+        </div>
+        
+        <div className="card p-6 space-y-6 max-w-4xl">
+          <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+            <h3 className="font-bold">Active Menu Card Items</h3>
+            <button onClick={() => setMenuCard([])} className="text-xs text-red-500 hover:underline font-medium">Clear All</button>
+          </div>
+          
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {menuCard.map((item, idx) => (
+              <div key={idx} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 text-sm font-medium text-slate-800 dark:text-slate-200 border border-slate-100 dark:border-slate-700 shadow-sm">
+                <div className="min-w-0 flex-1 flex justify-between pr-3">
+                  <span className="truncate">{item.name}</span>
+                  <span className="font-bold ml-2 shrink-0">₹{item.price}</span>
+                </div>
+                <button 
+                  onClick={() => setMenuCard(prev => prev.filter((_, i) => i !== idx))}
+                  className="p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors shrink-0"
+                >
+                  <Trash2 className="w-4 h-4 text-red-500" />
+                </button>
+              </div>
+            ))}
+            {menuCard.length === 0 && (
+              <div className="sm:col-span-2 lg:col-span-3 text-center py-10 text-slate-400 text-xs italic bg-slate-50 rounded-xl border border-dashed">
+                No items added to the menu card yet.
+              </div>
+            )}
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-slate-100">
+            <input ref={newItemRef} className="input-field flex-1" placeholder="Item Name (e.g. Paneer Butter Masala)" />
+            <input ref={newItemPriceRef} className="input-field w-full sm:w-32" placeholder="Price (₹)" type="number" />
+            <button onClick={handleAddCardItem} className="btn-secondary whitespace-nowrap">Add Item</button>
+            <button onClick={updateMenuCard} className="btn-primary whitespace-nowrap">Save Menu Card</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (view === 'menu') {
     const activeCategories = (['breakfast', 'lunch', 'dinner', 'snack'] as const).filter((cat) => mess.meal_types.includes(cat))
     return (
       <div className="p-6 space-y-6">
         {renderBanner()}
-        <div className="flex items-center justify-between"><div><h1 className="text-2xl font-display font-bold flex items-center gap-2"><ChefHat className="w-6 h-6 text-brand-500" /> Daily Menu Manager</h1><p className="text-slate-500 text-sm mt-1">Publish and edit today's menu at {mess.name}</p></div><Link to="/dashboard/mess" className="btn-secondary text-sm">Back to Overview</Link></div>
-        <div className="grid lg:grid-cols-3 gap-8"><div className="card p-5 space-y-1 lg:col-span-1">{activeCategories.map((cat) => <button key={cat} onClick={() => setActiveMenuCategory(cat)} className={cn('w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-semibold capitalize', activeMenuCategory === cat ? 'bg-brand-500 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800')}>{cat}<span className="badge text-[9px]">{(currentMenu[cat] || []).length} Items</span></button>)}</div><div className="card p-6 lg:col-span-2 space-y-4"><div className="flex justify-between items-center"><h3 className="font-bold capitalize">Editing: {activeMenuCategory}</h3><button onClick={() => setMenu({ id: menu?.id || '', owner_id: profile?.id || '', breakfast: [], lunch: [], dinner: [], snack: [], date: todayStr })} className="text-xs text-red-500 hover:underline font-medium">Clear All</button></div><div className="grid sm:grid-cols-2 gap-3">{(currentMenu[activeMenuCategory] || []).map((item, idx) => <div key={idx} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 text-sm font-medium text-slate-800 dark:text-slate-200 border border-slate-100 dark:border-slate-700 shadow-sm"><span className="truncate pr-2">{item}</span><button onClick={() => setMenu((prev) => prev ? { ...prev, [activeMenuCategory]: (prev[activeMenuCategory] || []).filter((_: string, i: number) => i !== idx) } : prev)} className="p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4 text-red-500" /></button></div>)} </div><div className="flex gap-2 mt-2"><input value={newItem} onChange={(e) => setNewItem(e.target.value)} className="input-field flex-1" placeholder="Add menu item (e.g. Paneer Masala)" /><input value={newItemPrice} onChange={(e) => setNewItemPrice(e.target.value)} className="input-field w-24 sm:w-32" placeholder="Price (₹)" /><button onClick={handleAddItem} className="btn-secondary whitespace-nowrap">Add</button><button onClick={updateMenu} className="btn-primary whitespace-nowrap">Save Menu</button></div></div></div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-display font-bold flex items-center gap-2">
+              <ChefHat className="w-6 h-6 text-brand-500" /> Daily Menu Manager
+            </h1>
+            <p className="text-slate-500 text-sm mt-1">Publish and edit today's menu at {mess.name}</p>
+          </div>
+          <Link to="/dashboard/mess" className="btn-secondary text-sm self-start sm:self-auto">Back to Overview</Link>
+        </div>
+        <div className="grid lg:grid-cols-3 gap-8"><div className="card p-5 space-y-1 lg:col-span-1">{activeCategories.map((cat) => <button key={cat} onClick={() => setActiveMenuCategory(cat)} className={cn('w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-semibold capitalize', activeMenuCategory === cat ? 'bg-brand-500 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800')}>{cat}<span className="badge text-[9px]">{(currentMenu[cat] || []).length} Items</span></button>)}</div><div className="card p-6 lg:col-span-2 space-y-4"><div className="flex justify-between items-center"><h3 className="font-bold capitalize">Editing: {activeMenuCategory}</h3><button onClick={() => setMenu({ id: menu?.id || '', owner_id: profile?.id || '', breakfast: [], lunch: [], dinner: [], snack: [], date: todayStr })} className="text-xs text-red-500 hover:underline font-medium">Clear All</button></div><div className="grid sm:grid-cols-2 gap-3">{(currentMenu[activeMenuCategory] || []).map((item, idx) => <div key={idx} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 text-sm font-medium text-slate-800 dark:text-slate-200 border border-slate-100 dark:border-slate-700 shadow-sm"><span className="truncate pr-2">{item}</span><button onClick={() => setMenu((prev) => prev ? { ...prev, [activeMenuCategory]: (prev[activeMenuCategory] || []).filter((_: string, i: number) => i !== idx) } : prev)} className="p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4 text-red-500" /></button></div>)} </div><div className="flex flex-col sm:flex-row gap-2 mt-2"><input ref={newItemRef} className="input-field flex-1" placeholder="Add menu item (e.g. Paneer Masala)" /><input ref={newItemPriceRef} className="input-field w-full sm:w-32" placeholder="Price (₹)" /><button onClick={handleAddDailyItem} className="btn-secondary whitespace-nowrap">Add</button><button onClick={updateDailyMenu} className="btn-primary whitespace-nowrap">Save Menu</button></div></div></div>
       </div>
     )
   }
@@ -706,8 +954,73 @@ export default function MessOwnerDashboard() {
   if (view === 'plans') {
     return (
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between"><div><h1 className="text-2xl font-display font-bold flex items-center gap-2"><CreditCard className="w-6 h-6 text-brand-500" /> Subscription Plans Manager</h1><p className="text-slate-500 text-sm mt-1">Manage meal plans stored in Supabase.</p></div><button onClick={() => setPlanForm({ name: '', description: '', price: '', duration_days: '30', meal_types: [] })} className="btn-secondary">New Plan</button></div>
-        <div className="grid lg:grid-cols-3 gap-6"><div className="card p-6 space-y-3"><input className="input-field" value={planForm.name} onChange={(e) => setPlanForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Plan name" /><textarea className="input-field min-h-24" value={planForm.description} onChange={(e) => setPlanForm((prev) => ({ ...prev, description: e.target.value }))} placeholder="Description" /><div className="grid grid-cols-2 gap-2"><input className="input-field" value={planForm.price} onChange={(e) => setPlanForm((prev) => ({ ...prev, price: e.target.value }))} placeholder="Price" /><input className="input-field" value={planForm.duration_days} onChange={(e) => setPlanForm((prev) => ({ ...prev, duration_days: e.target.value }))} placeholder="Days" /></div><div className="grid grid-cols-2 gap-2">{(['breakfast', 'lunch', 'dinner', 'snack'] as const).map((meal) => <button key={meal} onClick={() => setPlanForm((prev) => ({ ...prev, meal_types: prev.meal_types.includes(meal) ? prev.meal_types.filter((item) => item !== meal) : [...prev.meal_types, meal] }))} className={cn('p-2 rounded-xl border text-xs capitalize', planForm.meal_types.includes(meal) ? 'border-brand-500 bg-brand-50' : 'border-slate-200')}>{meal}</button>)}</div><button onClick={savePlan} className="btn-primary w-full">Save Plan</button></div><div className="card p-6 lg:col-span-2 space-y-3">{plans.map((plan) => <div key={plan.id} className="p-4 rounded-2xl border border-slate-200 flex items-center justify-between"><div><div className="font-bold">{plan.name}</div><div className="text-xs text-slate-500">{formatCurrency(plan.price)} • {plan.duration_days} days</div></div><div className="flex gap-2"><button onClick={() => handleGeneratePaymentQR(plan)} className="btn-secondary text-xs">QR</button><button onClick={() => togglePlanActive(plan.id)} className="btn-secondary text-xs">{plan.active ? 'Deactivate' : 'Activate'}</button><button onClick={() => deletePlan(plan.id)} className="btn-secondary text-xs text-red-500">Delete</button></div></div>)}</div></div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-display font-bold flex items-center gap-2">
+              <CreditCard className="w-6 h-6 text-brand-500" /> Subscription Plans Manager
+            </h1>
+            <p className="text-slate-500 text-sm mt-1">Manage meal plans stored in Supabase.</p>
+          </div>
+          <button onClick={() => { setEditingPlanId(null); setPlanForm({ name: '', description: '', price: '', duration_days: '30', total_meals: '', meal_types: [] }) }} className="btn-secondary self-start sm:self-auto">New Plan</button>
+        </div>
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="card p-6 space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Plan Name</label>
+              <input className="input-field" value={planForm.name} onChange={(e) => setPlanForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="e.g. Monthly Standard" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Description</label>
+              <textarea className="input-field min-h-24" value={planForm.description} onChange={(e) => setPlanForm((prev) => ({ ...prev, description: e.target.value }))} placeholder="What is included?" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Price (₹)</label>
+                <input className="input-field" value={planForm.price} onChange={(e) => setPlanForm((prev) => ({ ...prev, price: e.target.value }))} placeholder="e.g. 3000" type="number" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Validity (Days)</label>
+                <input className="input-field" value={planForm.duration_days} onChange={(e) => setPlanForm((prev) => ({ ...prev, duration_days: e.target.value }))} placeholder="e.g. 30" type="number" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Meal Count</label>
+                <input className="input-field" value={planForm.total_meals} onChange={(e) => setPlanForm((prev) => ({ ...prev, total_meals: e.target.value }))} placeholder="e.g. 60" type="number" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase mb-2">Included Meals</label>
+              <div className="grid grid-cols-2 gap-2">
+                {(['breakfast', 'lunch', 'dinner', 'snack'] as const).map((meal) => 
+                  <button key={meal} onClick={() => setPlanForm((prev) => ({ ...prev, meal_types: prev.meal_types.includes(meal) ? prev.meal_types.filter((item) => item !== meal) : [...prev.meal_types, meal] }))} className={cn('p-2 rounded-xl border text-xs capitalize', planForm.meal_types.includes(meal) ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-slate-200 text-slate-500 hover:bg-slate-50')}>{meal}</button>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-2 mt-2">
+              <button onClick={savePlan} className="btn-primary flex-1">{editingPlanId ? 'Update Plan' : 'Save Plan'}</button>
+              {editingPlanId && (
+                <button onClick={() => { setEditingPlanId(null); setPlanForm({ name: '', description: '', price: '', duration_days: '30', total_meals: '', meal_types: [] }) }} className="btn-secondary">Cancel</button>
+              )}
+            </div>
+          </div>
+          <div className="card p-6 lg:col-span-2 space-y-3">
+            {plans.map((plan) => 
+              <div key={plan.id} className="p-4 rounded-2xl border border-slate-200 flex items-center justify-between">
+                <div>
+                  <div className="font-bold">{plan.name}</div>
+                  <div className="text-xs text-slate-500">
+                    {formatCurrency(plan.price)} • {plan.duration_days} days {plan.total_meals ? `• ${plan.total_meals} meals` : ''}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2 sm:mt-0">
+                  <button onClick={() => handleGeneratePaymentQR(plan)} className="btn-secondary text-xs">QR</button>
+                  <button onClick={() => handleEditPlan(plan)} className="btn-secondary text-xs text-brand-600">Edit</button>
+                  <button onClick={() => togglePlanActive(plan.id)} className="btn-secondary text-xs">{plan.active ? 'Deactivate' : 'Activate'}</button>
+                  <button onClick={() => deletePlan(plan.id)} className="btn-secondary text-xs text-red-500">Delete</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     )
   }
@@ -715,8 +1028,64 @@ export default function MessOwnerDashboard() {
   if (view === 'subscribers') {
     return (
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between"><h1 className="text-2xl font-display font-bold">Active Subscribers</h1><button onClick={handleSimulateScan} className="btn-secondary text-xs">Simulate Scan</button></div>
-        <div className="card p-6 overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b"><th className="text-left py-3 px-3">Student</th><th className="text-left py-3 px-3">Plan</th><th className="text-left py-3 px-3">Expiry</th><th className="text-left py-3 px-3">Status</th></tr></thead><tbody>{subscribers.map((sub) => <tr key={sub.id} className="border-b"><td className="py-3 px-3">{sub.student?.full_name || sub.student?.email || sub.student_id}</td><td className="py-3 px-3">{sub.plan?.name || sub.plan_id}</td><td className="py-3 px-3">{formatDate(sub.end_date)}</td><td className="py-3 px-3"><span className={cn('badge text-[10px]', sub.payment_status === 'paid' ? 'badge-green' : 'badge-red')}>{sub.payment_status}</span></td></tr>)}</tbody></table></div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h1 className="text-2xl font-display font-bold">Active Subscribers</h1>
+        </div>
+
+        <div className="card p-6 space-y-4 bg-brand-50/50 dark:bg-brand-900/10 border-brand-100 dark:border-brand-900/30">
+          <h3 className="font-bold text-sm">Add New Subscriber Manually</h3>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-1 gap-2">
+              <select 
+                className="input-field w-24 shrink-0" 
+                value={searchCountryCode} 
+                onChange={(e) => setSearchCountryCode(e.target.value)}
+              >
+                <option value="+91">+91 (IN)</option>
+                <option value="+1">+1 (US)</option>
+                <option value="+44">+44 (UK)</option>
+                <option value="+61">+61 (AU)</option>
+              </select>
+              <input 
+                type="text" 
+                className="input-field flex-1" 
+                placeholder="Search user by phone number..." 
+                value={searchPhone} 
+                onChange={(e) => setSearchPhone(e.target.value)} 
+              />
+            </div>
+            <button onClick={handleSearchUser} disabled={searchLoading} className="btn-secondary whitespace-nowrap">
+              {searchLoading ? 'Searching...' : 'Search User'}
+            </button>
+          </div>
+          
+          {foundUser && (
+            <div className="flex flex-col sm:flex-row gap-4 items-end mt-4 p-4 border border-brand-200 dark:border-brand-800 rounded-xl bg-white dark:bg-slate-900">
+              <div className="flex-1 w-full">
+                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Selected User</label>
+                <div className="font-medium">{foundUser.full_name || 'No Name'} ({foundUser.phone})</div>
+              </div>
+              <div className="flex-1 w-full">
+                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Select Plan</label>
+                <select className="input-field py-2" value={selectedAddPlanId} onChange={(e) => setSelectedAddPlanId(e.target.value)}>
+                  <option value="">-- Choose a Plan --</option>
+                  {plans.filter(p => p.active).map(p => (
+                    <option key={p.id} value={p.id}>{p.name} - ₹{p.price} ({p.duration_days} days)</option>
+                  ))}
+                </select>
+              </div>
+              <button 
+                onClick={handleAddSubscriber} 
+                disabled={!selectedAddPlanId}
+                className="btn-primary w-full sm:w-auto"
+              >
+                Add Subscriber
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="card p-6 overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b"><th className="text-left py-3 px-3">Student</th><th className="text-left py-3 px-3">Plan</th><th className="text-left py-3 px-3">Expiry</th><th className="text-left py-3 px-3">Status</th><th className="text-right py-3 px-3">Action</th></tr></thead><tbody>{subscribers.map((sub) => <tr key={sub.id} className="border-b"><td className="py-3 px-3">{sub.student?.full_name || sub.student?.email || sub.student_id}</td><td className="py-3 px-3">{sub.plan?.name || sub.plan_id}</td><td className="py-3 px-3">{formatDate(sub.end_date)}</td><td className="py-3 px-3"><span className={cn('badge text-[10px]', sub.payment_status === 'paid' ? 'badge-green' : 'badge-red')}>{sub.payment_status}</span></td><td className="py-3 px-3 text-right"><button onClick={() => handleDeleteSubscriber(sub.id)} className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors" title="Delete Plan"><Trash2 className="w-4 h-4" /></button></td></tr>)}</tbody></table></div>
       </div>
     )
   }
@@ -730,10 +1099,94 @@ export default function MessOwnerDashboard() {
     )
   }
 
-  if (view === 'payments') {
+  if (view === 'analytics') {
+    const totalRevenue = subscribers.reduce((sum, sub) => sum + sub.amount_paid, 0)
+    const activeSubscribersCount = subscribers.filter(s => s.status === 'active' || s.payment_status === 'paid').length
+    const mealsServed = attendance.length
+    const totalPlans = plans.length
+
     return (
       <div className="p-6 space-y-6">
-        <div className="grid lg:grid-cols-3 gap-6"><div className="card p-6 space-y-3"><h3 className="font-bold flex items-center gap-2"><CreditCard className="w-4 h-4 text-brand-500" /> Payment Settings</h3><input className="input-field" value={paymentForm.upi_id} onChange={(e) => setPaymentForm((prev) => ({ ...prev, upi_id: e.target.value }))} placeholder="UPI ID" /><input className="input-field" value={paymentForm.phone_number} onChange={(e) => setPaymentForm((prev) => ({ ...prev, phone_number: e.target.value }))} placeholder="Phone number" /><button onClick={savePaymentSettings} className="btn-primary w-full">Save Settings</button></div><div className="card p-6 lg:col-span-2 overflow-x-auto"><h3 className="font-bold mb-4">Transactions</h3><table className="w-full text-sm"><thead><tr className="border-b"><th className="text-left py-3 px-3">Student</th><th className="text-left py-3 px-3">Amount</th><th className="text-left py-3 px-3">Date</th><th className="text-left py-3 px-3">Status</th></tr></thead><tbody>{transactions.map((txn) => <tr key={txn.id} className="border-b"><td className="py-3 px-3">{txn.student_name}</td><td className="py-3 px-3">{formatCurrency(txn.amount)}</td><td className="py-3 px-3">{formatDate(txn.date)}</td><td className="py-3 px-3"><button onClick={() => handleVerifyCash(txn.id)} className={cn('badge text-[10px]', txn.status === 'Completed' ? 'badge-green' : 'badge-yellow')}>{txn.status}</button></td></tr>)}</tbody></table></div></div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-display font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <BarChart2 className="w-6 h-6 text-brand-500" /> Dashboard Analytics
+            </h1>
+            <p className="text-slate-500 text-sm mt-1">Key metrics and performance of your mess.</p>
+          </div>
+          <button onClick={handleDownloadReport} className="btn-secondary self-start sm:self-auto flex items-center gap-2">
+            <FileText className="w-4 h-4" /> Generate Report
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="card p-5 border-l-4 border-l-orange-500">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Revenue</h3>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(totalRevenue)}</div>
+          </div>
+          <div className="card p-5 border-l-4 border-l-green-500">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Active Subscribers</h3>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white">{activeSubscribersCount}</div>
+          </div>
+          <div className="card p-5 border-l-4 border-l-blue-500">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Meals Served</h3>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white">{mealsServed}</div>
+          </div>
+          <div className="card p-5 border-l-4 border-l-purple-500">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Active Plans</h3>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white">{totalPlans}</div>
+          </div>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-6 mt-6">
+          <div className="card p-6">
+            <h3 className="font-bold mb-4 flex items-center gap-2">
+              <Users className="w-4 h-4 text-brand-500" /> Subscriber Breakdown
+            </h3>
+            {plans.length > 0 ? (
+              <div className="space-y-4">
+                {plans.map(plan => {
+                  const subsForPlan = subscribers.filter(s => s.plan_id === plan.id).length
+                  const percentage = subscribers.length > 0 ? Math.round((subsForPlan / subscribers.length) * 100) : 0
+                  
+                  return (
+                    <div key={plan.id}>
+                      <div className="flex justify-between text-sm font-medium mb-1">
+                        <span>{plan.name}</span>
+                        <span>{subsForPlan} ({percentage}%)</span>
+                      </div>
+                      <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+                        <div className="bg-brand-500 h-2 rounded-full" style={{ width: `${percentage}%` }}></div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="text-slate-500 text-sm">No plans available to show breakdown.</p>
+            )}
+          </div>
+          
+          <div className="card p-6">
+            <h3 className="font-bold mb-4 flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-brand-500" /> Recent Attendance Activity
+            </h3>
+            <div className="space-y-3">
+              {attendance.length > 0 ? (
+                attendance.slice(0, 5).map(record => (
+                  <div key={record.id} className="flex justify-between items-center p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 text-sm">
+                    <span className="font-medium text-slate-700 dark:text-slate-300">
+                      {subscribers.find(s => s.student_id === record.student_id)?.student?.full_name || 'Unknown Student'}
+                    </span>
+                    <span className="text-slate-500">{formatDate(record.date)}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-slate-500 text-sm">No recent attendance recorded.</p>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -746,9 +1199,10 @@ export default function MessOwnerDashboard() {
           <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Mess Name</label><input className="input-field" value={messName} onChange={(e) => setMessName(e.target.value)} placeholder="Mess name" /></div>
           <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Description</label><textarea className="input-field min-h-24" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" /></div>
           <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Contact Phone</label><input className="input-field" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="Contact Phone" /></div>
+          <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Service Hours</label><input className="input-field" value={serviceHours} onChange={(e) => setServiceHours(e.target.value)} placeholder="e.g. 08:00 AM - 10:30 PM" /></div>
           <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Address</label><input className="input-field" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Address" /></div>
           
-          <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Google Maps Embed URL (Optional)</label><input value={googleMapsUrl} onChange={(e) => setGoogleMapsUrl(e.target.value)} placeholder="Google Maps Embed URL (Optional)" className="input-field" /></div>
+          <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Google Maps URL</label><input value={googleMapsUrl} onChange={(e) => setGoogleMapsUrl(e.target.value)} placeholder="Paste Google Maps link here..." className="input-field" /></div>
           {googleMapsUrl && (
             <div className="text-sm">
               <a href={googleMapsUrl} target="_blank" rel="noreferrer" className="text-brand-500 hover:underline flex items-center gap-1 mb-2">
@@ -765,38 +1219,6 @@ export default function MessOwnerDashboard() {
           <div className="grid grid-cols-2 gap-2">
             <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Monthly Charge (₹)</label><input className="input-field" value={monthlyCharge} onChange={(e) => setMonthlyCharge(e.target.value)} placeholder="Monthly charge" /></div>
             <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Per Meal Charge (₹)</label><input className="input-field" value={perMealCharge} onChange={(e) => setPerMealCharge(e.target.value)} placeholder="Per meal charge" /></div>
-          </div>
-
-          {/* Location Detection */}
-          <div className="flex items-center gap-4 py-2">
-            <button 
-              type="button"
-              onClick={() => {
-                if (navigator.geolocation) {
-                  navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                      setLatitude(position.coords.latitude)
-                      setLongitude(position.coords.longitude)
-                      setBannerMsg('Location detected automatically!')
-                      setTimeout(() => setBannerMsg(''), 2500)
-                    },
-                    (error) => alert('Could not detect location. Please allow location access.')
-                  )
-                }
-              }}
-              className="btn-secondary flex items-center justify-center gap-2 flex-1"
-            >
-              <MapPin className="w-4 h-4 text-brand-500" /> Detect Current Location
-            </button>
-            <div className="flex-1 text-xs text-slate-500">
-              {(latitude && longitude && latitude !== 18.5204) ? (
-                <span className="text-emerald-600 font-medium flex items-center gap-1">
-                  ✓ Location captured ({latitude.toFixed(4)}, {longitude.toFixed(4)})
-                </span>
-              ) : (
-                <span>📍 Location not detected yet</span>
-              )}
-            </div>
           </div>
 
           {(latitude && longitude && latitude !== 18.5204) && (
@@ -873,6 +1295,40 @@ export default function MessOwnerDashboard() {
           <button onClick={saveProfile} className="btn-primary mt-4">Save Mess Profile</button>
         </div>
         {renderCameraModal()}
+      </div>
+    )
+  }
+
+  if (view === 'qr') {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-display font-bold">Printable QR Poster</h1>
+            <p className="text-slate-500 text-sm mt-1">Students can scan this static QR code to log their meals.</p>
+          </div>
+          <Link to="/dashboard/mess" className="btn-secondary text-xs">Back</Link>
+        </div>
+        <div className="card p-10 flex flex-col items-center justify-center max-w-md mx-auto mt-10">
+          <h2 className="text-xl font-bold mb-6 text-center">{mess.name}</h2>
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+            {mess.qr_token ? (
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(mess.qr_token)}`} 
+                alt="Mess Check-in QR" 
+                className="w-48 h-48 sm:w-64 sm:h-64 object-contain"
+              />
+            ) : (
+              <div className="w-48 h-48 sm:w-64 sm:h-64 flex items-center justify-center bg-slate-100 rounded-xl text-slate-400">
+                No QR Token found
+              </div>
+            )}
+          </div>
+          <p className="text-sm text-slate-500 mt-6 text-center">Scan this to mark your meal entry automatically.</p>
+          <button onClick={() => window.print()} className="btn-primary w-full mt-6 flex items-center justify-center gap-2">
+            <QrCode className="w-4 h-4" /> Print Poster
+          </button>
+        </div>
       </div>
     )
   }

@@ -27,6 +27,7 @@ import PublicLayout from './components/layout/PublicLayout'
 
 // Types
 import { useAuthStore } from './store/authStore'
+import { useNotificationStore } from './store/notificationStore'
 import { clearSupabaseAuthStorage } from './lib/localAuth'
 
 function DashboardRedirect() {
@@ -70,6 +71,7 @@ export default function App() {
         setSession(session)
         setUser(session.user)
         await fetchProfile(session.user.id)
+        useNotificationStore.getState().fetchServerNotifications(session.user.id)
       } else {
         setSession(null)
         setUser(null)
@@ -87,6 +89,7 @@ export default function App() {
         setSession(session)
         setUser(session.user)
         await fetchProfile(session.user.id)
+        useNotificationStore.getState().fetchServerNotifications(session.user.id)
       } else {
         setSession(null)
         setUser(null)
@@ -146,6 +149,7 @@ export default function App() {
           
           <Route path="mess" element={<MessOwnerDashboard />} />
           <Route path="mess/menu" element={<MessOwnerDashboard />} />
+          <Route path="mess/menucard" element={<MessOwnerDashboard />} />
           <Route path="mess/plans" element={<MessOwnerDashboard />} />
           <Route path="mess/subscribers" element={<MessOwnerDashboard />} />
           <Route path="mess/attendance" element={<MessOwnerDashboard />} />

@@ -18,6 +18,7 @@ export type NotificationType =
   | 'attendance_recorded'
   | 'payment_due'
   | 'listing_approved'
+  | 'subscription_allocated'
 
 export interface Profile {
   id: string
@@ -30,6 +31,8 @@ export interface Profile {
   branch?: string
   gender?: 'male' | 'female' | 'other'
   bio?: string
+  email_notifications?: boolean
+  push_notifications?: boolean
   created_at: string
   updated_at: string
 }
@@ -105,6 +108,8 @@ export interface Mess {
   photos: string[]
   meal_types: MealType[]
   google_maps_url?: string
+  service_hours?: string
+  menu_card?: { name: string; price: string; category?: string }[]
   created_at: string
   updated_at: string
   profiles?: Profile
@@ -117,6 +122,7 @@ export interface MessPlan {
   description: string
   price: number
   duration_days: number
+  total_meals?: number
   meal_types: MealType[]
   is_custom: boolean
   active: boolean

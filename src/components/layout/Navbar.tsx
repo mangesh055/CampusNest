@@ -65,6 +65,46 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
     }
   }
 
+  // Auto-close mess if past service hours
+  useEffect(() => {
+    if (!myMess || myMess.status !== 'open' || !myMess.service_hours) return
+
+    const checkTimeAndClose = async () => {
+      try {
+        const parts = myMess.service_hours.split('-')
+        if (parts.length === 2) {
+          const closingTimeStr = parts[1].trim()
+          const timeRegex = /(\d{1,2}):(\d{2})\s*(AM|PM)/i
+          const match = closingTimeStr.match(timeRegex)
+          
+          if (match) {
+            let hours = parseInt(match[1])
+            const minutes = parseInt(match[2])
+            const period = match[3].toUpperCase()
+            
+            if (period === 'PM' && hours !== 12) hours += 12
+            if (period === 'AM' && hours === 12) hours = 0
+            
+            const now = new Date()
+            const currentHours = now.getHours()
+            const currentMinutes = now.getMinutes()
+            
+            if (currentHours > hours || (currentHours === hours && currentMinutes >= minutes)) {
+              setMyMess((prev: any) => prev ? { ...prev, status: 'closed' } : prev)
+              await supabase.from('messes').update({ status: 'closed' }).eq('id', myMess.id)
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Auto close check failed', e)
+      }
+    }
+
+    checkTimeAndClose() // Check immediately on mount/update
+    const interval = setInterval(checkTimeAndClose, 60000) // Check every minute
+    return () => clearInterval(interval)
+  }, [myMess?.status, myMess?.service_hours, myMess?.id])
+
   useEffect(() => {
     init()
     const handleScroll = () => setScrolled(window.scrollY > 20)
@@ -199,9 +239,13 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
                     onClick={() => setProfileOpen(!profileOpen)}
                     className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
                   >
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white text-xs font-bold">
-                      {getInitials(profile.full_name || 'User')}
-                    </div>
+                    {profile.avatar_url ? (
+                      <img src={profile.avatar_url} alt="Profile" className="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-slate-700 flex-shrink-0" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                        {getInitials(profile.full_name || 'User')}
+                      </div>
+                    )}
                     <span className="text-sm font-medium hidden sm:block max-w-20 truncate text-slate-700 dark:text-slate-300">
                       {profile.full_name?.split(' ')[0]}
                     </span>

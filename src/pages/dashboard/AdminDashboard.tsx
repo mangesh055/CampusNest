@@ -143,7 +143,7 @@ export default function AdminDashboard() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, email, role, phone, created_at')
+        .select('id, full_name, email, role, phone, created_at, status')
         .order('created_at', { ascending: false })
       
       if (error) {
@@ -248,6 +248,64 @@ export default function AdminDashboard() {
       alert(`Deletion blocked by Database RLS. Please update 'community_posts' table RLS delete policy.`)
     } else {
       setCommunity(prev => prev.filter(item => item.id !== id))
+    }
+  }
+
+  const handleDeleteUser = async (id: string) => {
+    const confirmation = window.prompt('Type "delete" to confirm user deletion. Note: This deletes the profile data.')
+    if (confirmation !== 'delete') return
+    const { error } = await supabase.from('profiles').delete().eq('id', id)
+    if (error) {
+      alert(`Failed to delete user: ${error.message}`)
+    } else {
+      setUsers(prev => prev.filter(u => u.id !== id))
+      setSelectedUser(null)
+      alert('User profile deleted.')
+    }
+  }
+
+  const handleResetPassword = async (email?: string) => {
+    if (!email) {
+      alert('Cannot reset password: No email found for this user.')
+      return
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email)
+    if (error) {
+      alert(`Failed to send reset email: ${error.message}`)
+    } else {
+      alert(`Password reset link sent to ${email}`)
+    }
+  }
+
+  const handleSuspendUser = async () => {
+    if (!selectedUser) return
+    const isSuspended = selectedUser.status === 'suspended'
+    const newStatus = isSuspended ? 'active' : 'suspended'
+    
+    // Update UI immediately
+    setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, status: newStatus } : u))
+    setSelectedUser(prev => prev ? { ...prev, status: newStatus } : null)
+    
+    const { error } = await supabase.from('profiles').update({ status: newStatus }).eq('id', selectedUser.id)
+    if (error) {
+      alert(`Failed to update user status: ${error.message}`)
+    } else {
+      // Send notification to the user
+      const notifTitle = isSuspended ? 'Account Reactivated' : 'Account Suspended'
+      const notifMessage = isSuspended 
+        ? 'Your account has been reactivated by the administrator. Welcome back!' 
+        : 'Your account has been suspended by the administrator. You will not be able to log in until it is reactivated.'
+      const notifType = isSuspended ? 'success' : 'error'
+      
+      await supabase.from('app_notifications').insert([{
+        user_id: selectedUser.id,
+        title: notifTitle,
+        message: notifMessage,
+        type: notifType,
+        read: false
+      }])
+
+      alert(`User account successfully ${isSuspended ? 'reactivated' : 'suspended'} and notification sent!`)
     }
   }
 
@@ -428,7 +486,13 @@ export default function AdminDashboard() {
                 <td className="py-3 font-medium text-slate-900 dark:text-white">{user.full_name || 'Anonymous User'}</td>
                 <td className="py-3 text-slate-500 text-xs">{user.email || '—'}</td>
                 <td className="py-3 text-slate-500 capitalize">{user.role?.replace('_', ' ')}</td>
-                <td className="py-3"><span className="badge bg-emerald-50 text-emerald-600">Active</span></td>
+                <td className="py-3">
+                  {user.status === 'suspended' ? (
+                    <span className="badge bg-red-50 text-red-600">Suspended</span>
+                  ) : (
+                    <span className="badge bg-emerald-50 text-emerald-600">Active</span>
+                  )}
+                </td>
                 <td className="py-3 text-slate-500">{user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}</td>
                 <td className="py-3 text-right">
                   <button 
@@ -673,13 +737,13 @@ export default function AdminDashboard() {
                 <div>
                   <p className="text-xs font-semibold text-slate-500 uppercase">Account Actions</p>
                   <div className="mt-2 space-y-2">
-                    <button className="w-full py-2.5 px-4 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-xl font-medium text-sm transition-colors text-left flex justify-between">
-                      Suspend Account <span>⚠️</span>
+                    <button onClick={handleSuspendUser} className="w-full py-2.5 px-4 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-xl font-medium text-sm transition-colors text-left flex justify-between">
+                      {selectedUser.status === 'suspended' ? 'Reactivate Account' : 'Suspend Account'} <span>⚠️</span>
                     </button>
-                    <button className="w-full py-2.5 px-4 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-medium text-sm transition-colors text-left flex justify-between">
+                    <button onClick={() => handleDeleteUser(selectedUser.id)} className="w-full py-2.5 px-4 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-medium text-sm transition-colors text-left flex justify-between">
                       Delete User Data <span>🗑️</span>
                     </button>
-                    <button className="w-full py-2.5 px-4 bg-brand-50 hover:bg-brand-100 text-brand-600 rounded-xl font-medium text-sm transition-colors text-left flex justify-between">
+                    <button onClick={() => handleResetPassword(selectedUser.email)} className="w-full py-2.5 px-4 bg-brand-50 hover:bg-brand-100 text-brand-600 rounded-xl font-medium text-sm transition-colors text-left flex justify-between">
                       Reset Password <span>🔑</span>
                     </button>
                   </div>

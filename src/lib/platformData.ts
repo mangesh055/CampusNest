@@ -28,21 +28,20 @@ export async function fetchProperties(forceRefresh = false) {
   if (cache.properties && !forceRefresh) return cache.properties
   
   if (!cache.propertiesPromise) {
-    cache.propertiesPromise = supabase
-      .from('properties')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (error) throw error
-        cache.properties = (data || []) as Property[]
-        return cache.properties
-      })
-      .catch(err => {
-        cache.propertiesPromise = null
-        throw err
-      })
+    cache.propertiesPromise = (async () => {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      cache.properties = (data || []) as Property[]
+      return cache.properties
+    })().catch((err: any) => {
+      cache.propertiesPromise = null
+      throw err
+    })
   }
-  return cache.propertiesPromise
+  return cache.propertiesPromise as Promise<Property[]>
 }
 
 export async function fetchMesses(forceRefresh = false) {
@@ -50,21 +49,20 @@ export async function fetchMesses(forceRefresh = false) {
   if (cache.messes && !forceRefresh) return cache.messes
 
   if (!cache.messesPromise) {
-    cache.messesPromise = supabase
-      .from('messes')
-      .select('*, profiles:profiles(*)')
-      .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (error) throw error
-        cache.messes = (data || []) as Mess[]
-        return cache.messes
-      })
-      .catch(err => {
-        cache.messesPromise = null
-        throw err
-      })
+    cache.messesPromise = (async () => {
+      const { data, error } = await supabase
+        .from('messes')
+        .select('*, profiles:profiles(*)')
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      cache.messes = (data || []) as Mess[]
+      return cache.messes
+    })().catch((err: any) => {
+      cache.messesPromise = null
+      throw err
+    })
   }
-  return cache.messesPromise
+  return cache.messesPromise as Promise<Mess[]>
 }
 
 export async function fetchRoommateProfiles(forceRefresh = false) {
@@ -72,21 +70,20 @@ export async function fetchRoommateProfiles(forceRefresh = false) {
   if (cache.roommates && !forceRefresh) return cache.roommates
 
   if (!cache.roommatesPromise) {
-    cache.roommatesPromise = supabase
-      .from('roommate_profiles')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (error) throw error
-        cache.roommates = (data || []) as RoommateProfile[]
-        return cache.roommates
-      })
-      .catch(err => {
-        cache.roommatesPromise = null
-        throw err
-      })
+    cache.roommatesPromise = (async () => {
+      const { data, error } = await supabase
+        .from('roommate_profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      cache.roommates = (data || []) as RoommateProfile[]
+      return cache.roommates
+    })().catch((err: any) => {
+      cache.roommatesPromise = null
+      throw err
+    })
   }
-  return cache.roommatesPromise
+  return cache.roommatesPromise as Promise<RoommateProfile[]>
 }
 
 export async function fetchCommunityPosts(forceRefresh = false) {
@@ -94,21 +91,20 @@ export async function fetchCommunityPosts(forceRefresh = false) {
   if (cache.posts && !forceRefresh) return cache.posts
 
   if (!cache.postsPromise) {
-    cache.postsPromise = supabase
-      .from('community_posts')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (error) throw error
-        cache.posts = (data || []) as CommunityPost[]
-        return cache.posts
-      })
-      .catch(err => {
-        cache.postsPromise = null
-        throw err
-      })
+    cache.postsPromise = (async () => {
+      const { data, error } = await supabase
+        .from('community_posts')
+        .select('*')
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      cache.posts = (data || []) as CommunityPost[]
+      return cache.posts
+    })().catch((err: any) => {
+      cache.postsPromise = null
+      throw err
+    })
   }
-  return cache.postsPromise
+  return cache.postsPromise as Promise<CommunityPost[]>
 }
 
 export async function fetchMessPlans(messId: string) {

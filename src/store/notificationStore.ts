@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { supabase } from '../lib/supabase'
 
 export interface AppNotification {
   id: string
@@ -18,6 +19,7 @@ interface NotificationState {
   markAsRead: (id: string) => void
   markAllAsRead: () => void
   clearAll: () => void
+  fetchServerNotifications: (userId: string) => Promise<void>
 }
 
 const defaultNotifications: AppNotification[] = [
@@ -88,5 +90,51 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   clearAll: () => {
     set({ notifications: [], unreadCount: 0 })
     localStorage.setItem('campusnest-notifications', JSON.stringify([]))
+  },
+  fetchServerNotifications: async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('app_notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+      
+      if (error) throw error
+      
+      if (data && data.length > 0) {
+        const serverNotifs: AppNotification[] = data.map(n => ({
+          id: n.id,
+          title: n.title,
+          message: n.message,
+          type: n.type as 'info' | 'success' | 'warning' | 'error',
+          read: n.read,
+          createdAt: n.created_at,
+          link: n.link
+        }))
+        
+        // Merge with existing local notifications, avoiding duplicates
+        const existing = get().notifications
+        const merged = [...serverNotifs]
+        
+        existing.forEach(local => {
+          if (!merged.some(s => s.id === local.id)) {
+            merged.push(local)
+          }
+        })
+        
+        merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        
+        set({ notifications: merged, unreadCount: merged.filter(n => !n.read).length })
+        localStorage.setItem('campusnest-notifications', JSON.stringify(merged))
+        
+        // Mark as read in server so we don't fetch as unread again
+        const unreadIds = data.filter(n => !n.read).map(n => n.id)
+        if (unreadIds.length > 0) {
+           await supabase.from('app_notifications').update({ read: true }).in('id', unreadIds)
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch server notifications', e)
+    }
   }
 }))

@@ -40,6 +40,16 @@ export const useAuthStore = create<AuthState>()(
           .single()
 
         if (error) throw error
+        
+        if (data.status === 'suspended') {
+          await supabase.auth.signOut()
+          clearLocalAuth()
+          clearSupabaseAuthStorage()
+          set({ user: null, session: null, profile: null, initialized: true, loading: false })
+          setTimeout(() => alert('Your account is unable to login due to suspension by the admin.'), 100)
+          return
+        }
+
         set({ profile: data, initialized: true, loading: false })
       } catch (error) {
         console.warn('Error fetching profile from DB:', error)

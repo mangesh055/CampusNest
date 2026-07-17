@@ -12,9 +12,9 @@ import { supabase } from '../lib/supabase'
 type Tab = 'dine' | 'photos' | 'menu' | 'review'
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: 'dine',   label: 'DINE',   icon: <Utensils className="w-3.5 h-3.5" /> },
+  { id: 'dine', label: 'DINE', icon: <Utensils className="w-3.5 h-3.5" /> },
   { id: 'photos', label: 'PHOTOS', icon: <Image className="w-3.5 h-3.5" /> },
-  { id: 'menu',   label: 'MENU',   icon: <MessageSquare className="w-3.5 h-3.5" /> },
+  { id: 'menu', label: 'MENU', icon: <MessageSquare className="w-3.5 h-3.5" /> },
   { id: 'review', label: 'REVIEW', icon: <Star className="w-3.5 h-3.5" /> },
 ]
 
@@ -31,22 +31,25 @@ export default function MessDetailPage() {
   const [mess, setMess] = useState<any | null>(null)
   const [displayPlans, setDisplayPlans] = useState<any[]>([])
   const [todayMenu, setTodayMenu] = useState<Record<MealType, string[]>>({ breakfast: [], lunch: [], dinner: [], snack: [] })
+  const [menuCard, setMenuCard] = useState<{ name: string, price: string }[]>([])
 
   useEffect(() => {
     const load = async () => {
       try {
         const [messes, reviews] = await Promise.all([
-          fetchMesses(),
+          fetchMesses(true),
           id ? fetchReviews({ messId: id }) : Promise.resolve([]),
         ])
 
-        const targetMess = messes.find((item) => item.id === id) || messes[0] || null
+        const targetMess = messes?.find((item) => item.id === id) || messes?.[0] || null
         setMess(targetMess)
         setReviewsList(reviews)
 
         if (targetMess) {
           const plans = await fetchMessPlans(targetMess.id)
           setDisplayPlans(plans)
+          setMenuCard(targetMess.menu_card || [])
+
           const todayStr = new Date().toISOString().split('T')[0]
           const { data: menuData } = await supabase
             .from('mess_menus')
@@ -106,6 +109,17 @@ export default function MessDetailPage() {
     })()
   }
 
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!window.confirm('Delete this review?')) return
+    const { error } = await supabase.from('reviews').delete().eq('id', reviewId)
+    if (error) {
+      console.error('Failed to delete review', error)
+      return
+    }
+    setReviewsList(prev => prev.filter(r => r.id !== reviewId))
+    setMess((prev: any) => ({ ...prev, review_count: Math.max(0, (prev?.review_count || 1) - 1) }))
+  }
+
   if (!mess) {
     return (
       <div className="min-h-screen pt-24 flex items-center justify-center text-slate-500">
@@ -119,19 +133,19 @@ export default function MessDetailPage() {
   const photos = mess.photos && mess.photos.length > 0
     ? [...mess.photos, ...mess.photos]
     : [
-        'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400',
-        'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400',
-        'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400',
-        'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400',
-        'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400',
-        'https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=400',
-      ]
+      'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400',
+      'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400',
+      'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400',
+      'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400',
+      'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400',
+      'https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=400',
+    ]
 
-  const googleMapsUrl = mess.latitude && mess.longitude
+  const googleMapsUrl = mess.google_maps_url || (mess.latitude && mess.longitude
     ? `https://www.google.com/maps/dir/?api=1&destination=${mess.latitude},${mess.longitude}`
-    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${mess.name} ${mess.address} ${mess.city}`)}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${mess.name} ${mess.address} ${mess.city}`)}`)
 
-  const serviceStart = mess.meal_types?.includes('breakfast') ? '8:00 AM' : '12:30 PM'
+  const serviceHours = mess.service_hours || (mess.meal_types?.includes('breakfast') ? '8:00 AM - 10:30 PM' : '12:30 PM - 10:30 PM')
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pt-16">
@@ -157,6 +171,9 @@ export default function MessDetailPage() {
                   <h1 className="text-3xl font-display font-bold drop-shadow">{mess.name}</h1>
                   <div className="flex items-center gap-2 mt-1 text-sm opacity-90">
                     <MapPin className="w-4 h-4" />{mess.address}, {mess.city}
+                  </div>
+                  <div className="flex items-center gap-2 mt-1 text-xs opacity-80 font-medium">
+                    <Clock className="w-3 h-3" /> Service Hours: {serviceHours}
                   </div>
                 </div>
                 <div className="absolute top-4 left-4 flex gap-2">
@@ -231,65 +248,93 @@ export default function MessDetailPage() {
                 transition={{ duration: 0.18 }}
               >
 
-                {/* DINE TAB — Subscription Plans */}
+                {/* DINE TAB — Menu & Subscription Plans */}
                 {activeTab === 'dine' && (
-                  <div className="card p-6 space-y-5">
-                    <h3 className="text-lg font-display font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                      💳 Subscription Plans
-                    </h3>
-                    {mess.profiles?.full_name && (
-                      <div className="p-3 rounded-xl bg-brand-50 dark:bg-brand-950/20 border border-brand-100 dark:border-brand-900/40">
-                        <p className="text-xs text-slate-600 dark:text-slate-400">
-                          Available plans offered by <span className="font-bold text-brand-600 dark:text-brand-400">{mess.profiles.full_name}</span>
-                        </p>
-                      </div>
-                    )}
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      {displayPlans.length > 0 ? (
-                        displayPlans.map((plan: any) => (
-                          <motion.div
-                            key={plan.id}
-                            whileHover={{ scale: 1.02 }}
-                            onClick={() => setSelectedPlan(plan.id)}
-                            className={cn(
-                              'p-5 rounded-2xl border-2 cursor-pointer transition-all',
-                              selectedPlan === plan.id
-                                ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/10'
-                                : 'border-slate-200 dark:border-slate-700 hover:border-orange-300'
-                            )}
-                          >
-                            <div className="flex justify-between items-start mb-3">
-                              <div>
-                                <h4 className="font-bold text-slate-900 dark:text-white text-sm">{plan.name}</h4>
-                                <p className="text-xs text-slate-400 mt-0.5">{plan.duration_days} days</p>
+                  <div className="space-y-6">
+                    {/* Today's Menu Section */}
+                    <div className="card p-6 space-y-5">
+                      <h3 className="text-lg font-display font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        🍳 Mess Menu Card
+                      </h3>
+                      {menuCard && menuCard.length > 0 ? (
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {menuCard.map((item, idx) => (
+                            <div key={idx} className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                              <div className="flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-brand-500" />
+                                <span className="text-sm font-medium text-slate-900 dark:text-white">{item.name}</span>
                               </div>
-                              {selectedPlan === plan.id && <CheckCircle className="w-5 h-5 text-orange-500" />}
+                              <span className="font-bold text-slate-900 dark:text-white shrink-0">
+                                ₹{item.price}
+                              </span>
                             </div>
-                            <div className="text-2xl font-bold text-orange-600 dark:text-orange-400 mb-1">{formatCurrency(plan.price)}</div>
-                            <p className="text-xs text-slate-500 mb-3">{plan.description}</p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {(plan.meal_types || []).map((m: any) => (
-                                <span key={m} className="tag text-[10px]">{mealTypeLabels[m as MealType]}</span>
-                              ))}
-                            </div>
-                          </motion.div>
-                        ))
+                          ))}
+                        </div>
                       ) : (
-                        <div className="sm:col-span-2 p-6 text-center">
-                          <p className="text-slate-500 dark:text-slate-400">No subscription plans available at the moment.</p>
+                        <div className="text-center py-6 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800">
+                          <p className="text-sm text-slate-500">Menu card is not uploaded yet.</p>
                         </div>
                       )}
                     </div>
-                    {selectedPlan && displayPlans.length > 0 && (
-                      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-                        <Link
-                          to={`/dashboard/student/subscription?mess=${mess.id}&plan=${selectedPlan}`}
-                          className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm transition-all shadow-md shadow-orange-500/20"
-                        >
-                          Subscribe to Selected Plan 🎉
-                        </Link>
-                      </motion.div>
-                    )}
+
+                    <div className="card p-6 space-y-5">
+                      <h3 className="text-lg font-display font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        💳 Subscription Plans
+                      </h3>
+                      {mess.profiles?.full_name && (
+                        <div className="p-3 rounded-xl bg-brand-50 dark:bg-brand-950/20 border border-brand-100 dark:border-brand-900/40">
+                          <p className="text-xs text-slate-600 dark:text-slate-400">
+                            Available plans offered by <span className="font-bold text-brand-600 dark:text-brand-400">{mess.profiles.full_name}</span>
+                          </p>
+                        </div>
+                      )}
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        {displayPlans.length > 0 ? (
+                          displayPlans.map((plan: any) => (
+                            <motion.div
+                              key={plan.id}
+                              whileHover={{ scale: 1.02 }}
+                              onClick={() => setSelectedPlan(plan.id)}
+                              className={cn(
+                                'p-5 rounded-2xl border-2 cursor-pointer transition-all',
+                                selectedPlan === plan.id
+                                  ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/10'
+                                  : 'border-slate-200 dark:border-slate-700 hover:border-orange-300'
+                              )}
+                            >
+                              <div className="flex justify-between items-start mb-3">
+                                <div>
+                                  <h4 className="font-bold text-slate-900 dark:text-white text-sm">{plan.name}</h4>
+                                  <p className="text-xs text-slate-400 mt-0.5">{plan.duration_days} days</p>
+                                </div>
+                                {selectedPlan === plan.id && <CheckCircle className="w-5 h-5 text-orange-500" />}
+                              </div>
+                              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400 mb-1">{formatCurrency(plan.price)}</div>
+                              <p className="text-xs text-slate-500 mb-3">{plan.description}</p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {(plan.meal_types || []).map((m: any) => (
+                                  <span key={m} className="tag text-[10px]">{mealTypeLabels[m as MealType]}</span>
+                                ))}
+                              </div>
+                            </motion.div>
+                          ))
+                        ) : (
+                          <div className="sm:col-span-2 p-6 text-center">
+                            <p className="text-slate-500 dark:text-slate-400">No subscription plans available at the moment.</p>
+                          </div>
+                        )}
+                      </div>
+                      {selectedPlan && displayPlans.length > 0 && (
+                        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                          <Link
+                            to={`/dashboard/student/subscription?mess=${mess.id}&plan=${selectedPlan}`}
+                            className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm transition-all shadow-md shadow-orange-500/20"
+                          >
+                            Subscribe to Selected Plan 🎉
+                          </Link>
+                        </motion.div>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -360,7 +405,6 @@ export default function MessDetailPage() {
                     </div>
                   </div>
                 )}
-
                 {/* REVIEW TAB */}
                 {activeTab === 'review' && (
                   <div className="card p-6 space-y-5">
@@ -375,14 +419,14 @@ export default function MessDetailPage() {
                         <div className="text-center">
                           <div className="text-4xl font-bold text-slate-900 dark:text-white">{mess.rating}</div>
                           <div className="flex gap-0.5 mt-1 justify-center">
-                            {[1,2,3,4,5].map(s => (
+                            {[1, 2, 3, 4, 5].map(s => (
                               <Star key={s} className={cn('w-3.5 h-3.5', s <= Math.floor(mess.rating) ? 'star-filled' : 'star-empty')} />
                             ))}
                           </div>
                           <p className="text-xs text-slate-400 mt-0.5">out of 5</p>
                         </div>
                         <div className="flex-1 space-y-1.5">
-                          {[5,4,3,2,1].map(star => (
+                          {[5, 4, 3, 2, 1].map(star => (
                             <div key={star} className="flex items-center gap-2">
                               <span className="text-xs text-slate-400 w-3">{star}</span>
                               <Star className="w-3 h-3 text-amber-400" />
@@ -417,8 +461,8 @@ export default function MessDetailPage() {
                           value={newReview}
                           onChange={(e) => setNewReview(e.target.value)}
                         />
-                        <button 
-                          type="submit" 
+                        <button
+                          type="submit"
                           disabled={!newReview.trim() || newRating === 0}
                           className="btn-primary w-full text-sm py-2 disabled:opacity-50"
                         >
@@ -437,12 +481,12 @@ export default function MessDetailPage() {
                                 {(r.profiles?.full_name || r.full_name || 'A')[0]}
                               </div>
                               <div>
-                                    <p className="font-bold text-sm text-slate-900 dark:text-white">{r.profiles?.full_name || r.full_name || 'Anonymous'}</p>
-                                    <p className="text-xs text-slate-400">{new Date(r.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                                <p className="font-bold text-sm text-slate-900 dark:text-white">{r.profiles?.full_name || r.full_name || 'Anonymous'}</p>
+                                <p className="text-xs text-slate-400">{new Date(r.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                               </div>
                             </div>
                             <div className="flex gap-0.5">
-                              {[1,2,3,4,5].map(s => (
+                              {[1, 2, 3, 4, 5].map(s => (
                                 <Star key={s} className={cn('w-3 h-3', s <= r.rating ? 'star-filled' : 'star-empty')} />
                               ))}
                             </div>
@@ -453,11 +497,11 @@ export default function MessDetailPage() {
                     </div>
 
                     {reviewsList.length > 3 && (
-                      <button 
-                        onClick={() => setShowAllReviews(true)} 
+                      <button
+                        onClick={() => setShowAllReviews(true)}
                         className="w-full py-3 mt-4 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
                       >
-                        Show all {dynamicReviewCount} reviews
+                        Show all {reviewsList.length} reviews
                       </button>
                     )}
 
@@ -518,7 +562,7 @@ export default function MessDetailPage() {
                 <Clock className="w-3.5 h-3.5 text-brand-500" /> Operating Details
               </p>
               <div className="space-y-3 text-sm">
-                <div className="flex justify-between"><span className="text-slate-500">Service Hours</span><span className="font-bold text-slate-900 dark:text-white">{serviceStart} — 10:00 PM</span></div>
+                <div className="flex justify-between"><span className="text-slate-500">Service Hours</span><span className="font-bold text-slate-900 dark:text-white">{serviceHours}</span></div>
                 <div className="flex justify-between"><span className="text-slate-500">Monthly</span><span className="font-bold text-slate-900 dark:text-white">{formatCurrency(mess.monthly_charge)}</span></div>
                 {mess.per_meal_charge && <div className="flex justify-between"><span className="text-slate-500">Per Meal</span><span className="font-bold text-slate-900 dark:text-white">{formatCurrency(mess.per_meal_charge)}</span></div>}
                 <div className="flex justify-between"><span className="text-slate-500">Status</span>
@@ -559,13 +603,13 @@ export default function MessDetailPage() {
       {/* Show All Reviews Modal */}
       <AnimatePresence>
         {showAllReviews && (
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 md:p-6"
           >
-            <motion.div 
+            <motion.div
               initial={{ y: 50, opacity: 0, scale: 0.95 }}
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: 20, opacity: 0, scale: 0.95 }}
@@ -573,10 +617,10 @@ export default function MessDetailPage() {
             >
               <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white dark:bg-slate-900 z-10">
                 <h3 className="font-display font-bold text-xl text-slate-900 dark:text-white flex items-center gap-2">
-                  <Star className="w-5 h-5 text-amber-400 star-filled" /> All Reviews ({dynamicReviewCount})
+                  <Star className="w-5 h-5 text-amber-400 star-filled" /> All Reviews ({reviewsList.length})
                 </h3>
-                <button 
-                  onClick={() => setShowAllReviews(false)} 
+                <button
+                  onClick={() => setShowAllReviews(false)}
                   className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -597,7 +641,7 @@ export default function MessDetailPage() {
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="flex gap-0.5">
-                          {[1,2,3,4,5].map(s => (
+                          {[1, 2, 3, 4, 5].map(s => (
                             <Star key={s} className={cn('w-3 h-3', s <= r.rating ? 'star-filled' : 'star-empty')} />
                           ))}
                         </div>

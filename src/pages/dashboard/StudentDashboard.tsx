@@ -18,6 +18,10 @@ type SubscriptionRow = {
   amount_paid: number
   payment_status: string
   created_at: string
+  remaining_days?: number
+  total_meals?: number
+  plan_name?: string
+  plan_description?: string
 }
 
 type AttendanceRow = {
@@ -93,9 +97,9 @@ export default function StudentDashboard() {
       setMesses(messRows)
       setAttendance(attendanceRows)
 
-      const active = subscriptionRows.find((row) => row.status === 'active') || null
+      const active = subscriptionRows.find((row) => row.status === 'active' && (row.remaining_days === undefined || row.remaining_days === null || row.remaining_days > 0)) || null
       setSubscription(active)
-      setSubscriptionHistory(subscriptionRows.filter((row) => row.status !== 'active'))
+      setSubscriptionHistory(subscriptionRows.filter((row) => row.id !== active?.id))
       setSelectedMess(active ? messRows.find((mess) => mess.id === active.mess_id) || messRows[0] || null : messRows[0] || null)
     }
 
@@ -111,12 +115,19 @@ export default function StudentDashboard() {
       ])
       const planRows = (plansResult.data || []) as PlanRow[]
       setPlans(planRows)
-      setSelectedPlan(planRows[0] || null)
+      
+      let initialPlan = planRows[0] || null
+      if (subscription && subscription.mess_id === selectedMess.id) {
+        const activePlan = planRows.find(p => p.id === subscription.plan_id)
+        if (activePlan) initialPlan = activePlan
+      }
+      
+      setSelectedPlan(initialPlan)
       setMenu((menuResult.data || [])[0] || null)
     }
 
     void loadPlansAndMenu()
-  }, [selectedMess])
+  }, [selectedMess, subscription])
 
   const filteredAttendance = useMemo(() => {
     if (!subscription) return attendance
@@ -274,34 +285,51 @@ export default function StudentDashboard() {
       <div className="p-6 space-y-6">
         <div>
           <h1 className="text-2xl font-display font-bold text-slate-900 dark:text-white">Mess Subscriptions</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Select a mess and purchase a plan stored in Supabase.</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">View your active meal plan and today's menu.</p>
         </div>
 
-        {subscription && (
+        {subscription ? (
           <div className="grid md:grid-cols-3 gap-6">
-            <div className="card p-6 md:col-span-1 bg-gradient-to-br from-brand-600 via-indigo-600 to-purple-700 text-white">
+            <div className="card p-6 md:col-span-1 bg-gradient-to-br from-brand-600 via-indigo-600 to-purple-700 text-white relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10"><Utensils className="w-24 h-24" /></div>
               <p className="text-brand-100 text-[10px] uppercase font-bold tracking-wider">Active Meal Plan</p>
-              <h3 className="text-2xl font-display font-bold mt-1">{selectedPlan?.name || 'Active Plan'}</h3>
-              <p className="text-sm font-semibold text-brand-100 mt-2">📍 {selectedMess?.name}</p>
+              <h3 className="text-2xl font-display font-bold mt-1">{subscription.plan_name || selectedPlan?.name || 'Active Plan'}</h3>
+              <p className="text-sm font-semibold text-brand-100 mt-2 flex items-center gap-1">📍 {selectedMess?.name}</p>
+              
+              <div className="mt-6 bg-white/10 rounded-xl p-3 backdrop-blur-sm border border-white/20">
+                <p className="text-xs text-brand-100 uppercase tracking-wider mb-1 font-bold">Meals Left</p>
+                <div className="text-3xl font-black">{subscription.remaining_days ?? remaining}</div>
+              </div>
+
               <div className="mt-4 text-xs text-brand-100 space-y-1"><p>Start Date: {formatDate(subscription.start_date)}</p><p>End Date: {formatDate(subscription.end_date)}</p></div>
             </div>
             <div className="card p-6 md:col-span-2"><h3 className="font-display font-bold mb-3">Today's Menu</h3>{(Object.keys(activeMenu) as (keyof MenuRow)[]).map((meal) => activeMenu[meal]?.length ? (<div key={meal} className="mb-3"><p className="text-[10px] uppercase font-bold text-slate-400 mb-1">{meal}</p><div className="flex flex-wrap gap-1.5">{activeMenu[meal]?.map((item, i) => <span key={i} className="badge bg-slate-50 text-slate-600 text-[10px]">{item}</span>)}</div></div>) : null)}</div>
           </div>
+        ) : (
+          <div className="card p-12 text-center border-dashed border-2 border-slate-200 dark:border-slate-800">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">No Active Subscription</h3>
+            <p className="text-slate-500 dark:text-slate-400">You don't have an active meal plan right now. Mess owners can allocate a plan to you.</p>
+          </div>
         )}
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="card p-6 lg:col-span-1 space-y-3"><label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Step 1: Choose Mess</label><select value={selectedMess?.id || ''} onChange={(e) => setSelectedMess(messes.find((mess) => mess.id === e.target.value) || null)} className="input-field">{messes.map((mess) => <option key={mess.id} value={mess.id}>{mess.name}</option>)}</select></div>
-          <div className="card p-6 lg:col-span-2 space-y-3"><label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Step 2: Choose Plan</label><div className="grid sm:grid-cols-2 gap-4">{plans.map((plan) => (<button key={plan.id} onClick={() => setSelectedPlan(plan)} className={cn('p-4 rounded-2xl border text-left', selectedPlan?.id === plan.id ? 'border-brand-500 bg-brand-50/50' : 'border-slate-200')}> <div className="flex justify-between"><span className="font-bold">{plan.name}</span><span className="badge badge-purple text-[10px]">{plan.duration_days} Days</span></div><p className="text-xs text-slate-500 mt-2">{plan.description}</p><div className="mt-3 font-extrabold">{formatCurrency(plan.price)}</div></button>))}</div><div className="mt-4 flex justify-end"><button disabled={!selectedMess || !selectedPlan} onClick={() => setShowCheckout(true)} className="btn-primary">Proceed to Payment</button></div></div>
-        </div>
-
-        {showCheckout && selectedMess && selectedPlan && (
-          <div className="card p-6 max-w-xl mx-auto space-y-4">
-            <h3 className="font-display font-bold text-lg">Checkout</h3>
-            <div className="grid grid-cols-2 gap-2"><button onClick={() => setPaymentMethod('upi')} className={cn('p-3 rounded-xl border', paymentMethod === 'upi' ? 'border-brand-500 bg-brand-50' : 'border-slate-200')}>UPI</button><button onClick={() => setPaymentMethod('card')} className={cn('p-3 rounded-xl border', paymentMethod === 'card' ? 'border-brand-500 bg-brand-50' : 'border-slate-200')}>Card</button></div>
-            {checkoutStep === 'details' && <button onClick={handlePurchase} className="btn-primary w-full">Pay {formatCurrency(selectedPlan.price)}</button>}
-            {checkoutStep === 'qr' && <div className="text-center space-y-4"><img src={checkoutQRUrl} alt="Payment QR" className="w-56 h-56 mx-auto" /><button onClick={handlePurchase} className="btn-primary w-full">I Have Paid</button></div>}
-            {checkoutStep === 'paying' && <div>Processing payment...</div>}
-            {checkoutStep === 'success' && <div className="text-center text-emerald-600 font-bold">Subscription Activated!</div>}
+        {subscriptionHistory.length > 0 && (
+          <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800">
+            <h3 className="font-display font-bold text-lg mb-4">Previous Plans</h3>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {subscriptionHistory.map((sub) => (
+                <div key={sub.id} className="card p-4 opacity-80 hover:opacity-100 transition-opacity">
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-bold text-sm">{sub.plan_name || 'Legacy Plan'}</h4>
+                    <span className="badge bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 text-[10px] uppercase">{sub.status}</span>
+                  </div>
+                  <div className="text-xs text-slate-500 space-y-1">
+                    <p>Paid: {formatCurrency(sub.amount_paid)}</p>
+                    <p>Ended: {formatDate(sub.end_date)}</p>
+                    {sub.total_meals && <p>Total Meals: {sub.total_meals}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

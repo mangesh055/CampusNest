@@ -30,14 +30,13 @@ const ownerLinks = [
 
 const messOwnerLinks = [
   { label: 'Overview', path: '/dashboard/mess', icon: LayoutDashboard },
-  { label: 'Menu Manager', path: '/dashboard/mess/menu', icon: Utensils },
+  { label: 'Menu Card Manager', path: '/dashboard/mess/menucard', icon: FileText },
+  { label: 'Daily Menu Manager', path: '/dashboard/mess/menu', icon: Utensils },
   { label: 'Plans Manager', path: '/dashboard/mess/plans', icon: CreditCard },
   { label: 'Subscribers', path: '/dashboard/mess/subscribers', icon: Users },
   { label: 'Attendance', path: '/dashboard/mess/attendance', icon: Calendar },
   { label: 'QR Generator', path: '/dashboard/mess/qr', icon: QrCode },
   { label: 'Analytics', path: '/dashboard/mess/analytics', icon: BarChart2 },
-  { label: 'Payments', path: '/dashboard/mess/payments', icon: CreditCard },
-  { label: 'Reports', path: '/dashboard/mess/reports', icon: FileText },
   { label: 'Settings', path: '/dashboard/settings', icon: Settings },
 ]
 
@@ -89,9 +88,13 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       {profile && (
         <div className="p-4 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-              {getInitials(profile.full_name || 'User')}
-            </div>
+            {profile.avatar_url ? (
+              <img src={profile.avatar_url} alt="Avatar" className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700 flex-shrink-0" />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                {getInitials(profile.full_name || 'User')}
+              </div>
+            )}
             <div className="overflow-hidden">
               <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{profile.full_name}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">{roleLabel}</p>

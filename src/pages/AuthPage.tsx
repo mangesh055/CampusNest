@@ -61,6 +61,15 @@ export default function AuthPage() {
         password: form.password,
       })
       if (error) throw error
+      
+      if (data.user) {
+        const { data: profile } = await supabase.from('profiles').select('status').eq('id', data.user.id).single()
+        if (profile?.status === 'suspended') {
+          await supabase.auth.signOut()
+          throw new Error('Your account is unable to login due to suspension by the admin.')
+        }
+      }
+
       setUser(data.user)
       setSession(data.session)
       if (data.user) await fetchProfile(data.user.id)

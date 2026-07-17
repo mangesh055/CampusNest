@@ -263,9 +263,9 @@ export default function RoommatesPage() {
                     sleep_schedule: myProfile.sleep_schedule as any,
                     looking_for: myProfile.looking_for as any,
                     amenities: descObj.amenities,
-                    images: descObj.images,
-                    description: descObj.text,
-                    phone: descObj.phone,
+                    images: descObj.images || [],
+                    description: descObj.text || '',
+                    phone: descObj.phone || '',
                     whatsapp: (descObj.whatsapp || descObj.phone || '').replace(/^\+\d+/, ''),
                     whatsapp_code: (descObj.whatsapp?.match(/^\+(\d+)/)?.[0]) || '+91'
                   })
