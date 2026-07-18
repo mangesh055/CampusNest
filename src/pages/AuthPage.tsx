@@ -40,7 +40,7 @@ export default function AuthPage() {
   const [selectedRole, setSelectedRole] = useState<UserRole>('student')
 
   const [form, setForm] = useState({
-    email: '', password: '', fullName: '', phone: '',
+    email: '', password: '', fullName: '', phone: '', gender: 'male'
   })
 
   const { setUser, setSession, fetchProfile } = useAuthStore()
@@ -63,8 +63,14 @@ export default function AuthPage() {
       if (error) throw error
       
       if (data.user) {
-        const { data: profile } = await supabase.from('profiles').select('status').eq('id', data.user.id).single()
-        if (profile?.status === 'suspended') {
+        const { data: profile, error: profileError } = await supabase.from('profiles').select('status').eq('id', data.user.id).single()
+        
+        if (profileError || !profile) {
+          await supabase.auth.signOut()
+          throw new Error('Account not exist, please sign up first')
+        }
+
+        if (profile.status === 'suspended') {
           await supabase.auth.signOut()
           throw new Error('Your account is unable to login due to suspension by the admin.')
         }
@@ -75,7 +81,12 @@ export default function AuthPage() {
       if (data.user) await fetchProfile(data.user.id)
       navigate('/')
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Login failed. Please try again.')
+      const errorMessage = err instanceof Error ? err.message : 'Login failed. Please try again.'
+      if (errorMessage === 'Invalid login credentials') {
+        setError('Account not exist, please sign up first')
+      } else {
+        setError(errorMessage)
+      }
     } finally {
       setLoading(false)
     }
@@ -94,6 +105,7 @@ export default function AuthPage() {
             full_name: form.fullName,
             phone: form.phone,
             role: selectedRole,
+            gender: form.gender,
           },
         },
       })
@@ -107,6 +119,7 @@ export default function AuthPage() {
           phone: form.phone,
           role: selectedRole,
           email: form.email,
+          gender: form.gender,
         })
         if (profileError) {
           console.error('Supabase profile error:', profileError)
@@ -232,9 +245,11 @@ export default function AuthPage() {
                         type="email"
                         value={form.email}
                         onChange={handleChange}
-                        placeholder="you@example.com"
+                        placeholder="you@gmail.com"
                         className="input-field pl-10"
                         required
+                        pattern="^[a-zA-Z0-9._%+\-]+@gmail\.com$"
+                        title="Please enter a valid @gmail.com email address"
                       />
                     </div>
                   </div>
@@ -318,7 +333,8 @@ export default function AuthPage() {
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <input name="email" type="email" value={form.email} onChange={handleChange}
-                        placeholder="you@example.com" className="input-field pl-10" required />
+                        placeholder="you@gmail.com" className="input-field pl-10" required 
+                        pattern="^[a-zA-Z0-9._%+\-]+@gmail\.com$" title="Please enter a valid @gmail.com email address" />
                     </div>
                   </div>
                   <div>
@@ -326,7 +342,8 @@ export default function AuthPage() {
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <input name="phone" type="tel" value={form.phone} onChange={handleChange}
-                        placeholder="+91 98765 43210" className="input-field pl-10" />
+                        placeholder="9876543210" className="input-field pl-10" 
+                        pattern="[0-9]{10}" title="Please enter a valid 10-digit mobile number" required />
                     </div>
                   </div>
                   <div>
@@ -339,6 +356,17 @@ export default function AuthPage() {
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Gender</label>
+                    <div className="relative">
+                      <select name="gender" value={form.gender} onChange={handleChange as any}
+                        className="input-field">
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                      </select>
                     </div>
                   </div>
 

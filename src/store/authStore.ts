@@ -53,21 +53,10 @@ export const useAuthStore = create<AuthState>()(
         set({ profile: data, initialized: true, loading: false })
       } catch (error) {
         console.warn('Error fetching profile from DB:', error)
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          const fallbackProfile: Profile = {
-            id: user.id,
-            email: user.email || '',
-            full_name: user.user_metadata?.full_name || user.user_metadata?.name || 'User',
-            phone: user.user_metadata?.phone || '',
-            role: (user.user_metadata?.role as UserRole) || 'student',
-            created_at: user.created_at || new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          }
-          set({ profile: fallbackProfile, initialized: true, loading: false })
-        } else {
-          set({ profile: null, initialized: true, loading: false })
-        }
+        await supabase.auth.signOut()
+        clearLocalAuth()
+        clearSupabaseAuthStorage()
+        set({ user: null, session: null, profile: null, initialized: true, loading: false })
       }
     },
 

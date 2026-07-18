@@ -464,7 +464,7 @@ export default function RoommatesPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1">Contact Number (Calling)</label>
-                    <input type="tel" value={form.phone} onChange={e => setForm(prev => ({ ...prev, phone: e.target.value }))} className="input-field text-sm" placeholder="e.g. 9876543210" required />
+                    <input type="tel" value={form.phone} onChange={e => setForm(prev => ({ ...prev, phone: e.target.value }))} className="input-field text-sm" placeholder="e.g. 9876543210" pattern="[0-9]{10}" title="Please enter a 10 digit mobile number" required />
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1">WhatsApp Number</label>
@@ -476,7 +476,7 @@ export default function RoommatesPage() {
                         <option value="+61">+61 (AU)</option>
                         <option value="+971">+971 (UAE)</option>
                       </select>
-                      <input type="tel" value={form.whatsapp} onChange={e => setForm(prev => ({ ...prev, whatsapp: e.target.value.replace(/\D/g, '') }))} className="input-field text-sm flex-1" placeholder="9876543210" required />
+                      <input type="tel" value={form.whatsapp} onChange={e => setForm(prev => ({ ...prev, whatsapp: e.target.value.replace(/\D/g, '') }))} className="input-field text-sm flex-1" placeholder="9876543210" pattern="[0-9]{10}" title="Please enter a 10 digit mobile number" required />
                     </div>
                   </div>
                 </div>
@@ -503,7 +503,6 @@ export default function RoommatesPage() {
                     <select value={form.gender} onChange={e => setForm(prev => ({ ...prev, gender: e.target.value as any }))} className="input-field text-sm">
                       <option value="male">Boys Only</option>
                       <option value="female">Girls Only</option>
-                      <option value="other">Any / Other</option>
                     </select>
                   </div>
                   <div>

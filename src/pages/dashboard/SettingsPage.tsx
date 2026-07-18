@@ -90,6 +90,18 @@ export default function SettingsPage() {
         return
       }
 
+      if (activeTab === 'profile') {
+        if (formData.phone && !/^[0-9]{10}$/.test(formData.phone)) {
+          throw new Error('Phone number must be exactly 10 digits.')
+        }
+      }
+
+      if (activeTab === 'preferences' && profile?.role === 'student') {
+        if (formData.emergencyContact && !/^[0-9]{10}$/.test(formData.emergencyContact)) {
+          throw new Error('Emergency contact must be exactly 10 digits.')
+        }
+      }
+
       if (profile) {
         const { error: profileError } = await supabase.from('profiles').update({
           full_name: formData.fullName,
@@ -327,7 +339,9 @@ export default function SettingsPage() {
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                         className="input-field pl-10"
-                        placeholder="+91 "
+                        placeholder="9876543210"
+                        pattern="[0-9]{10}"
+                        title="Please enter a 10 digit mobile number"
                       />
                     </div>
                   </div>
@@ -460,7 +474,9 @@ export default function SettingsPage() {
                     value={formData.emergencyContact}
                     onChange={(e) => setFormData({ ...formData, emergencyContact: e.target.value })}
                     className="input-field"
-                    placeholder="Parent / Guardian Phone"
+                    placeholder="Parent / Guardian 10-digit Phone"
+                    pattern="[0-9]{10}"
+                    title="Please enter a 10 digit mobile number"
                   />
                 </div>
               </div>
