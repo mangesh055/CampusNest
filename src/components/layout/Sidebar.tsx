@@ -22,9 +22,6 @@ const studentLinks = [
 const ownerLinks = [
   { label: 'Overview', path: '/dashboard/owner', icon: LayoutDashboard },
   { label: 'My Listings', path: '/dashboard/owner/listings', icon: Building2 },
-  { label: 'Inquiries', path: '/dashboard/owner/inquiries', icon: MessageCircle },
-  { label: 'Analytics', path: '/dashboard/owner/analytics', icon: BarChart2 },
-  { label: 'Reviews', path: '/dashboard/owner/reviews', icon: Star },
   { label: 'Settings', path: '/dashboard/settings', icon: Settings },
 ]
 

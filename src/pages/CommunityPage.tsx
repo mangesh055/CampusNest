@@ -56,6 +56,15 @@ export default function CommunityPage() {
   }
 
   useEffect(() => {
+    if (showModal) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => { document.body.style.overflow = 'unset' }
+  }, [showModal])
+
+  useEffect(() => {
     const load = async () => {
       try {
         const postRows = await fetchCommunityPosts()
@@ -383,10 +392,10 @@ export default function CommunityPage() {
       {/* New Post Modal */}
       <AnimatePresence>
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowModal(false); setIsEditingPostId(null); setForm({ title: '', content: '', category: 'general', price: '', phone: '', phone_code: '+91', location: '', images: [] }) }} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
             <motion.div initial={{ scale: 0.95, y: 15, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.95, y: 15, opacity: 0 }}
-              className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-glass overflow-hidden z-10 p-6 space-y-4">
+              className="relative w-full max-w-md h-full sm:h-auto max-h-screen overflow-y-auto bg-white dark:bg-slate-900 rounded-none sm:rounded-3xl shadow-glass z-10 p-6 space-y-4">
               
               <div className="flex justify-between items-center border-b pb-3">
                 <h3 className="text-lg font-display font-bold text-slate-900 dark:text-white">{isEditingPostId ? '📝 Edit Board Post' : '🆕 Post on Community Board'}</h3>
@@ -421,7 +430,7 @@ export default function CommunityPage() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1">Contact Number</label>
                     <div className="flex gap-2">

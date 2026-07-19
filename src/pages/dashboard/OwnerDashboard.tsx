@@ -1,24 +1,17 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Users, Building2, TrendingUp, DollarSign, Star, Eye, MessageSquare, 
+import {
+  Users, Building2, TrendingUp, DollarSign, Star, Eye, MessageSquare,
   Trash2, ToggleLeft, ToggleRight, X, Plus, Check, MapPin, Phone
 } from 'lucide-react'
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { usePropertyStore } from '../../store/propertyStore'
 import { useAuthStore } from '../../store/authStore'
 import { formatCurrency } from '../../lib/utils'
 import { uploadToCloudinary } from '../../utils/cloudinary'
 import type { Property, PropertyType } from '../../types'
 
-const viewsData = [
-  { day: 'Mon', views: 24 }, { day: 'Tue', views: 38 }, { day: 'Wed', views: 52 },
-  { day: 'Thu', views: 41 }, { day: 'Fri', views: 68 }, { day: 'Sat', views: 55 }, { day: 'Sun', views: 34 },
-]
-
 export default function OwnerDashboard() {
   const { properties, loadProperties, addProperty, updateProperty, toggleAvailability, deleteProperty } = usePropertyStore()
-  const [view, setView] = useState<'overview' | 'listings'>('overview')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formStep, setFormStep] = useState(1)
@@ -78,12 +71,12 @@ export default function OwnerDashboard() {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
-    
+
     setIsUploading(true)
     try {
       const uploadPromises = Array.from(files).map(file => uploadToCloudinary(file))
       const urls = await Promise.all(uploadPromises)
-      
+
       setFormData(prev => ({
         ...prev,
         images: [...prev.images, ...urls]
@@ -159,7 +152,7 @@ export default function OwnerDashboard() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!profile?.id) {
       alert('You must be logged in to create a property.')
       return
@@ -241,145 +234,31 @@ export default function OwnerDashboard() {
     })
   }
 
-  const totalReviews = displayProperties.reduce((acc, p) => acc + (p.review_count || 0), 0)
-  const avgRating = displayProperties.length > 0
-    ? (displayProperties.reduce((acc, p) => acc + (Number(p.rating) || 0), 0) / displayProperties.length).toFixed(1)
-    : '0.0'
-  const totalViews = displayProperties.reduce((acc, p) => acc + (p.views || 0), 0)
-
-  const stats = [
-    { label: 'Total Listings', value: displayProperties.length.toString(), icon: '🏠', color: 'from-brand-400 to-brand-600', change: displayProperties.length > 0 ? '+1 this week' : 'No listings' },
-    { label: 'Total Views', value: displayProperties.length > 0 ? totalViews.toLocaleString() : '0', icon: '👁️', color: 'from-blue-400 to-blue-600', change: displayProperties.length > 0 ? '+18% vs last month' : 'No views yet' },
-    { label: 'Avg Rating', value: displayProperties.length > 0 ? avgRating : '0.0', icon: '⭐', color: 'from-amber-400 to-amber-600', change: displayProperties.length > 0 ? `Based on ${totalReviews} reviews` : 'No reviews yet' },
-  ]
-
-  const dynamicViewsData = displayProperties.length > 0 ? [
-    { day: 'Mon', views: 24 * displayProperties.length }, { day: 'Tue', views: 38 * displayProperties.length }, { day: 'Wed', views: 52 * displayProperties.length },
-    { day: 'Thu', views: 41 * displayProperties.length }, { day: 'Fri', views: 68 * displayProperties.length }, { day: 'Sat', views: 55 * displayProperties.length }, { day: 'Sun', views: 34 * displayProperties.length },
-  ] : [
-    { day: 'Mon', views: 0 }, { day: 'Tue', views: 0 }, { day: 'Wed', views: 0 },
-    { day: 'Thu', views: 0 }, { day: 'Fri', views: 0 }, { day: 'Sat', views: 0 }, { day: 'Sun', views: 0 },
-  ]
-
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-display font-bold text-slate-900 dark:text-white">Property Owner Dashboard</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Manage listings, add rental properties, and view student analytics</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Manage listings and add rental properties</p>
         </div>
         <div className="flex gap-2">
-          <button 
-            onClick={() => setView(view === 'overview' ? 'listings' : 'overview')}
-            className="btn-secondary text-sm"
-          >
-            {view === 'overview' ? '📁 Manage Listings' : '📊 View Analytics'}
-          </button>
           <button onClick={() => { setEditingId(null); setIsModalOpen(true); }} className="btn-primary text-sm flex items-center gap-1">
             <Plus className="w-4 h-4" /> Add Listing
           </button>
         </div>
       </div>
 
-      {/* Tabs Menu */}
-      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800 pb-px">
-        <button 
-          onClick={() => setView('overview')}
-          className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-all ${view === 'overview' ? 'border-brand-500 text-brand-600 dark:text-brand-400' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
-        >
-          Overview
-        </button>
-        <button 
-          onClick={() => setView('listings')}
-          className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-all ${view === 'listings' ? 'border-brand-500 text-brand-600 dark:text-brand-400' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
-        >
-          Manage Listings ({displayProperties.length})
-        </button>
-      </div>
 
-      {view === 'overview' ? (
-        <>
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {stats.map((s, i) => (
-              <motion.div key={s.label} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <div className="card p-5">
-                  <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${s.color} flex items-center justify-center text-2xl mb-3`}>{s.icon}</div>
-                  <div className="text-2xl font-bold text-slate-900 dark:text-white">{s.value}</div>
-                  <div className="text-xs text-slate-500 mt-0.5">{s.label}</div>
-                  <div className="text-[11px] text-emerald-500 mt-1">{s.change}</div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-6">
-            {/* Views Chart */}
-            <div className="card p-6 lg:col-span-2">
-              <h3 className="font-display font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                <Eye className="w-4 h-4 text-brand-500" /> Views This Week
-              </h3>
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={dynamicViewsData}>
-                  <defs>
-                    <linearGradient id="viewGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip />
-                  <Area type="monotone" dataKey="views" stroke="#6366f1" fill="url(#viewGrad)" strokeWidth={2.5} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Quick Listings View */}
-            <div className="card p-6">
-              <h3 className="font-display font-bold text-slate-900 dark:text-white mb-4">My Listings</h3>
-              {displayProperties.length === 0 ? (
-                <div className="text-center py-8 space-y-2">
-                  <Building2 className="w-8 h-8 text-slate-300 dark:text-slate-700 mx-auto" />
-                  <p className="text-xs text-slate-500 italic">No listings added yet.</p>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
-                    {displayProperties.map(p => (
-                      <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
-                        <img src={p.images[0]} alt={p.title} className="w-12 h-10 rounded-lg object-cover flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">{p.title}</p>
-                          <p className="text-[10px] text-slate-500">{formatCurrency(p.rent)}/mo • {p.available_rooms} left</p>
-                        </div>
-                        <div className="flex items-center gap-0.5 text-xs">
-                          <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
-                          <span className="text-[10px] font-medium">{p.rating}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <button onClick={() => setView('listings')} className="btn-secondary w-full justify-center mt-4 text-xs">
-                    Manage All Listings ({displayProperties.length})
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </>
-      ) : (
-        /* Listings Management Panel */
+      {/* Listings Management Panel */}
         <div className="card p-6 space-y-6">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h3 className="font-display font-bold text-xl text-slate-900 dark:text-white">Active Properties</h3>
-              <p className="text-xs text-slate-400">Total: {displayProperties.length} active listings</p>
+              <h3 className="font-display font-bold text-2xl text-slate-900 dark:text-white">Active Properties</h3>
+              <p className="text-sm text-slate-500">Total: {displayProperties.length} active listings</p>
             </div>
-            <button onClick={() => { setEditingId(null); setIsModalOpen(true); }} className="btn-primary text-xs flex items-center gap-1.5">
-              <Plus className="w-3.5 h-3.5" /> Add Property
+            <button onClick={() => { setEditingId(null); setIsModalOpen(true); }} className="btn-primary w-full sm:w-auto text-sm py-2 flex justify-center items-center gap-1.5">
+              <Plus className="w-4 h-4" /> Add Property
             </button>
           </div>
 
@@ -398,74 +277,73 @@ export default function OwnerDashboard() {
             </div>
           ) : (
             <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-2xl">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                <tr>
-                  <th className="py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">Property Details</th>
-                  <th className="py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">Type</th>
-                  <th className="py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">Rent</th>
-                  <th className="py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">Rooms Left</th>
-                  <th className="py-3 px-4 font-semibold text-slate-600 dark:text-slate-300 text-center">Status</th>
-                  <th className="py-3 px-4 font-semibold text-slate-600 dark:text-slate-300 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {displayProperties.map(p => (
-                  <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
-                    <td className="py-4 px-4 flex items-center gap-3">
-                      <img src={p.images[0]} alt={p.title} className="w-14 h-10 rounded-lg object-cover flex-shrink-0" />
-                      <div className="min-w-0">
-                        <p className="font-semibold text-slate-900 dark:text-white truncate max-w-[220px]">{p.title}</p>
-                        <p className="text-xs text-slate-400 flex items-center gap-1"><MapPin className="w-3 h-3 text-slate-400" /> {p.address}, {p.city}</p>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 capitalize text-xs text-slate-600 dark:text-slate-400 font-medium">{p.property_type.replace('_', ' ')}</td>
-                    <td className="py-4 px-4 font-bold text-slate-800 dark:text-slate-200">{formatCurrency(p.rent)}/mo</td>
-                    <td className="py-4 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300">{p.available_rooms}/{p.total_rooms}</td>
-                    <td className="py-4 px-4 text-center">
-                      <button onClick={() => toggleAvailability(p.id)} className="focus:outline-none">
-                        {p.availability ? (
-                          <span className="badge badge-green inline-flex items-center gap-1 cursor-pointer">
-                            <ToggleRight className="w-4 h-4" /> Available
-                          </span>
-                        ) : (
-                          <span className="badge badge-red inline-flex items-center gap-1 cursor-pointer">
-                            <ToggleLeft className="w-4 h-4" /> Fully Booked
-                          </span>
-                        )}
-                      </button>
-                    </td>
-                    <td className="py-4 px-4 text-right space-x-1.5 whitespace-nowrap">
-                      <button 
-                        onClick={() => handleEdit(p)}
-                        className="p-1.5 hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-950/20 rounded-lg text-slate-400 transition-colors inline-flex"
-                        title="Edit Listing"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                      </button>
-                      <button 
-                        onClick={() => deleteProperty(p.id)}
-                        className="p-1.5 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20 rounded-lg text-slate-400 transition-colors inline-flex"
-                        title="Delete Listing"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
+              <table className="w-full text-sm text-left md:min-w-[800px] md:whitespace-nowrap">
+                <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                  <tr>
+                    <th className="py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">Property Details</th>
+                    <th className="hidden sm:table-cell py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">Type</th>
+                    <th className="hidden sm:table-cell py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">Rent</th>
+                    <th className="hidden sm:table-cell py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">Rooms Left</th>
+                    <th className="hidden sm:table-cell py-3 px-4 font-semibold text-slate-600 dark:text-slate-300 text-center">Status</th>
+                    <th className="py-3 px-4 font-semibold text-slate-600 dark:text-slate-300 text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {displayProperties.map(p => (
+                    <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
+                      <td className="py-4 px-4 flex items-center gap-3">
+                        <img src={p.images[0]} alt={p.title} className="w-14 h-10 rounded-lg object-cover flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="font-semibold text-slate-900 dark:text-white truncate max-w-[220px]">{p.title}</p>
+                          <p className="text-xs text-slate-400 flex items-center gap-1"><MapPin className="w-3 h-3 text-slate-400" /> {p.address}, {p.city}</p>
+                        </div>
+                      </td>
+                      <td className="hidden sm:table-cell py-4 px-4 capitalize text-xs text-slate-600 dark:text-slate-400 font-medium">{p.property_type.replace('_', ' ')}</td>
+                      <td className="hidden sm:table-cell py-4 px-4 font-bold text-slate-800 dark:text-slate-200">{formatCurrency(p.rent)}/mo</td>
+                      <td className="hidden sm:table-cell py-4 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300">{p.available_rooms}/{p.total_rooms}</td>
+                      <td className="hidden sm:table-cell py-4 px-4 text-center">
+                        <button onClick={() => toggleAvailability(p.id)} className="focus:outline-none">
+                          {p.availability ? (
+                            <span className="badge badge-green inline-flex items-center gap-1 cursor-pointer">
+                              <ToggleRight className="w-4 h-4" /> Available
+                            </span>
+                          ) : (
+                            <span className="badge badge-red inline-flex items-center gap-1 cursor-pointer">
+                              <ToggleLeft className="w-4 h-4" /> Fully Booked
+                            </span>
+                          )}
+                        </button>
+                      </td>
+                      <td className="py-4 px-4 text-right space-x-1.5 whitespace-nowrap">
+                        <button
+                          onClick={() => handleEdit(p)}
+                          className="p-1.5 hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-950/20 rounded-lg text-slate-400 transition-colors inline-flex"
+                          title="Edit Listing"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                        </button>
+                        <button
+                          onClick={() => deleteProperty(p.id)}
+                          className="p-1.5 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20 rounded-lg text-slate-400 transition-colors inline-flex"
+                          title="Delete Listing"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
-      )}
 
       {/* Add Listing Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             {/* Backdrop */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -474,7 +352,7 @@ export default function OwnerDashboard() {
             />
 
             {/* Modal Body */}
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.95, y: 15, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.95, y: 15, opacity: 0 }}
@@ -498,16 +376,16 @@ export default function OwnerDashboard() {
                     <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm border-b pb-1">1. Basic Information</h4>
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 mb-1">Property Title / Name *</label>
-                      <input 
+                      <input
                         type="text" name="title" required value={formData.title} onChange={handleInputChange}
-                        placeholder="e.g. Sunshine PG for Boys – Near MIT College" className="input-field" 
+                        placeholder="e.g. Sunshine PG for Boys – Near MIT College" className="input-field"
                       />
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 mb-1">Description *</label>
-                      <textarea 
+                      <textarea
                         name="description" required rows={3} value={formData.description} onChange={handleInputChange}
-                        placeholder="Detailed overview of PG layout, rules, and facilities..." className="input-field py-2" 
+                        placeholder="Detailed overview of PG layout, rules, and facilities..." className="input-field py-2"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -539,32 +417,32 @@ export default function OwnerDashboard() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-semibold text-slate-500 mb-1">Monthly Rent (₹) *</label>
-                        <input 
+                        <input
                           type="number" name="rent" required value={formData.rent} onChange={handleInputChange}
-                          placeholder="e.g. 7500" className="input-field" 
+                          placeholder="e.g. 7500" className="input-field"
                         />
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-slate-500 mb-1">Security Deposit (₹) *</label>
-                        <input 
+                        <input
                           type="number" name="deposit" required value={formData.deposit} onChange={handleInputChange}
-                          placeholder="e.g. 15000" className="input-field" 
+                          placeholder="e.g. 15000" className="input-field"
                         />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-semibold text-slate-500 mb-1">Total Rooms</label>
-                        <input 
+                        <input
                           type="number" name="total_rooms" value={formData.total_rooms} onChange={handleInputChange}
-                          className="input-field" 
+                          className="input-field"
                         />
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-slate-500 mb-1">Available Rooms Left</label>
-                        <input 
+                        <input
                           type="number" name="available_rooms" value={formData.available_rooms} onChange={handleInputChange}
-                          className="input-field" 
+                          className="input-field"
                         />
                       </div>
                     </div>
@@ -574,8 +452,8 @@ export default function OwnerDashboard() {
                         {formData.images.map((img, i) => (
                           <div key={i} className="relative aspect-video rounded-lg overflow-hidden group">
                             <img src={img} alt={`Preview ${i}`} className="w-full h-full object-cover" />
-                            <button 
-                              type="button" 
+                            <button
+                              type="button"
                               onClick={() => removeImage(i)}
                               className="absolute top-1 right-1 bg-red-500/80 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                             >
@@ -590,8 +468,8 @@ export default function OwnerDashboard() {
                           <span className="text-xs text-slate-500 font-medium">{isUploading ? 'Uploading...' : 'Upload Local Image'}</span>
                           <input type="file" multiple accept="image/*" onChange={handleFileUpload} disabled={isUploading} className="hidden" />
                         </label>
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           onClick={handleAddImageUrl}
                           className="flex-1 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-3 flex flex-col items-center justify-center transition-colors"
                         >
@@ -609,23 +487,23 @@ export default function OwnerDashboard() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="col-span-2">
                         <label className="block text-xs font-semibold text-slate-500 mb-1">Address *</label>
-                        <input 
+                        <input
                           type="text" name="address" required value={formData.address} onChange={handleInputChange}
-                          placeholder="e.g. Flat 12, Baner Road" className="input-field" 
+                          placeholder="e.g. Flat 12, Baner Road" className="input-field"
                         />
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-slate-500 mb-1">City</label>
-                        <input 
+                        <input
                           type="text" name="city" value={formData.city} onChange={handleInputChange}
-                          className="input-field" 
+                          className="input-field"
                         />
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-slate-500 mb-1">Pincode *</label>
-                        <input 
+                        <input
                           type="text" name="pincode" required value={formData.pincode} onChange={handleInputChange}
-                          placeholder="e.g. 411038" className="input-field" 
+                          placeholder="e.g. 411038" className="input-field"
                         />
                       </div>
                     </div>
@@ -659,15 +537,15 @@ export default function OwnerDashboard() {
                           Auto-Detect Location
                         </button>
                       </div>
-                      
+
                       {/* Free Google Maps Embed Preview */}
                       <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 mt-2">
-                        <iframe 
-                          width="100%" 
-                          height="200" 
+                        <iframe
+                          width="100%"
+                          height="200"
                           style={{ border: 0 }}
-                          loading="lazy" 
-                          allowFullScreen 
+                          loading="lazy"
+                          allowFullScreen
                           src={`https://www.google.com/maps?q=${formData.latitude},${formData.longitude}&output=embed`}
                         ></iframe>
                         <div className="p-2 text-center text-[10px] font-semibold text-slate-500 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
@@ -686,12 +564,12 @@ export default function OwnerDashboard() {
                         <input type="text" name="longitude" value={formData.longitude} onChange={handleInputChange} className="input-field py-1 text-xs" />
                       </div>
                     </div>
-                    
+
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 mb-1">Direct Google Maps Link (Optional)</label>
-                      <input 
+                      <input
                         type="url" name="google_maps_url" value={formData.google_maps_url} onChange={handleInputChange}
-                        placeholder="https://maps.app.goo.gl/..." className="input-field text-xs" 
+                        placeholder="https://maps.app.goo.gl/..." className="input-field text-xs"
                       />
                     </div>
 
