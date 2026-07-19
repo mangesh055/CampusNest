@@ -125,6 +125,19 @@ export default function QRScanPage() {
 
       const todayStr = new Date().toISOString().split('T')[0]
       
+      // Fetch plan's daily limit
+      let dailyLimit: number | null = null;
+      if (sub.plan_id) {
+        const { data: planData } = await supabase
+          .from('mess_plans')
+          .select('daily_scan_limit')
+          .eq('id', sub.plan_id)
+          .maybeSingle();
+        if (planData && planData.daily_scan_limit) {
+          dailyLimit = planData.daily_scan_limit;
+        }
+      }
+      
       // Check attendance
       const { data: attendance, error: attError } = await supabase
         .from('student_attendance')
@@ -134,8 +147,20 @@ export default function QRScanPage() {
         .eq('date', todayStr)
         .maybeSingle()
 
-      if (attendance && (attendance as any)[currentMeal]) {
-        throw new Error(`You have already checked in for ${currentMeal} today!`)
+      if (attendance) {
+        if ((attendance as any)[currentMeal]) {
+          throw new Error(`You have already checked in for ${currentMeal} today!`)
+        }
+        
+        let scansToday = 0;
+        if ((attendance as any).breakfast) scansToday++;
+        if ((attendance as any).lunch) scansToday++;
+        if ((attendance as any).snack) scansToday++;
+        if ((attendance as any).dinner) scansToday++;
+        
+        if (dailyLimit !== null && scansToday >= dailyLimit) {
+          throw new Error(`Daily scan limit reached (${dailyLimit} meals/day). You cannot scan anymore today.`)
+        }
       }
 
       // Mark attendance

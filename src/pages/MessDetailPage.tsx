@@ -147,6 +147,11 @@ export default function MessDetailPage() {
 
   const serviceHours = mess.service_hours || (mess.meal_types?.includes('breakfast') ? '8:00 AM - 10:30 PM' : '12:30 PM - 10:30 PM')
 
+  const dynamicReviewCount = reviewsList.length
+  const dynamicRating = dynamicReviewCount > 0 
+    ? (reviewsList.reduce((acc, curr) => acc + curr.rating, 0) / dynamicReviewCount).toFixed(1)
+    : (mess.rating || '5.0')
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pt-16">
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -154,40 +159,40 @@ export default function MessDetailPage() {
           <ChevronLeft className="w-4 h-4" /> Back to Mess List
         </Link>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* ── Left: Main Content ── */}
-          <div className="lg:col-span-2 space-y-5">
+        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-5 sm:gap-8">
+          {/* ── 1. Hero Card (Mobile Order 1) ── */}
+          <div className="lg:col-span-2 order-1">
 
             {/* Hero Card */}
             <div className="card overflow-hidden">
-              <div className="relative h-64">
+              <div className="relative h-48 sm:h-64">
                 <img
                   src={photos[0]}
                   alt={mess.name}
                   className="w-full h-full object-cover"
                 />
                 <div className="hero-overlay absolute inset-0" />
-                <div className="absolute bottom-4 left-4 text-white">
-                  <h1 className="text-3xl font-display font-bold drop-shadow">{mess.name}</h1>
-                  <div className="flex items-center gap-2 mt-1 text-sm opacity-90">
-                    <MapPin className="w-4 h-4" />{mess.address}, {mess.city}
+                <div className="absolute bottom-3 left-3 text-white">
+                  <h1 className="text-xl sm:text-3xl font-serif italic font-bold drop-shadow tracking-tight">{mess.name}</h1>
+                  <div className="flex items-center gap-1.5 mt-0.5 text-xs opacity-90">
+                    <MapPin className="w-3 h-3" />{mess.address}, {mess.city}
                   </div>
-                  <div className="flex items-center gap-2 mt-1 text-xs opacity-80 font-medium">
+                  <div className="flex items-center gap-1.5 mt-0.5 text-[10px] sm:text-xs opacity-80 font-medium">
                     <Clock className="w-3 h-3" /> Service Hours: {serviceHours}
                   </div>
                 </div>
-                <div className="absolute top-4 left-4 flex gap-2">
+                <div className="absolute top-3 left-3 flex gap-2">
                   <span className={cn('badge', statusCfg.color)}>{statusCfg.dot} {statusCfg.label}</span>
                   {mess.verified && <span className="badge badge-green">✓ Verified</span>}
                 </div>
               </div>
 
-              <div className="p-5">
-                <div className="flex flex-wrap gap-4 mb-3">
+              <div className="p-3 sm:p-5">
+                <div className="flex flex-wrap gap-2.5 mb-2">
                   <div className="flex items-center gap-1.5">
                     <Star className="w-4 h-4 star-filled" />
-                    <span className="font-bold">{mess.rating}</span>
-                    <span className="text-slate-400 text-sm">({mess.review_count} reviews)</span>
+                    <span className="font-bold">{dynamicRating}</span>
+                    <span className="text-slate-400 text-sm">({dynamicReviewCount} reviews)</span>
                   </div>
                   <span className="text-sm text-slate-600 dark:text-slate-400">
                     <span className="font-semibold text-slate-900 dark:text-white">{formatCurrency(mess.monthly_charge)}</span>/month
@@ -198,34 +203,47 @@ export default function MessDetailPage() {
                     </span>
                   )}
                 </div>
-                <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">{mess.description}</p>
-                <div className="flex flex-wrap gap-2 mt-3">
+                <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm leading-relaxed">{mess.description}</p>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {mess.food_type && mess.food_type !== 'both' && (
+                    <span className={cn('tag border', mess.food_type === 'veg' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800')}>
+                      {mess.food_type === 'veg' ? 'Pure Veg' : 'Non-Veg'}
+                    </span>
+                  )}
+                  {mess.food_type === 'both' && (
+                    <span className="tag border bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-800">
+                      Veg & Non-Veg
+                    </span>
+                  )}
                   {mess.meal_types.map((m: any) => <span key={m} className="tag">{mealTypeLabels[m as MealType]}</span>)}
                 </div>
 
                 {/* CALL + DIRECTION */}
-                <div className="grid grid-cols-2 gap-3 mt-5 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                   <a href={`tel:${mess.contact_phone}`}
-                    className="flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-brand-500 text-brand-600 dark:text-brand-400 font-bold text-sm hover:bg-brand-500 hover:text-white transition-all">
-                    <Phone className="w-4 h-4" /> CALL
+                    className="flex items-center justify-center gap-1.5 py-2 rounded-xl border-2 border-brand-500 text-brand-600 dark:text-brand-400 font-bold text-[10px] sm:text-sm hover:bg-brand-500 hover:text-white transition-all">
+                    <Phone className="w-3 h-3" /> CALL
                   </a>
                   <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-orange-500 text-orange-600 font-bold text-sm hover:bg-orange-500 hover:text-white transition-all">
-                    <Navigation2 className="w-4 h-4" /> DIRECTION
+                    className="flex items-center justify-center gap-1.5 py-2 rounded-xl border-2 border-orange-500 text-orange-600 font-bold text-[10px] sm:text-sm hover:bg-orange-500 hover:text-white transition-all">
+                    <Navigation2 className="w-3 h-3" /> DIRECTION
                   </a>
                 </div>
               </div>
             </div>
+          </div>
 
+          {/* ── 4. Tab Sections (Mobile Order 4) ── */}
+          <div className="lg:col-span-2 lg:col-start-1 space-y-5 order-4">
             {/* ── Tab Bar ── */}
-            <div className="card p-2">
-              <div className="grid grid-cols-4 gap-1">
+            <div className="card p-1 sm:p-2 sticky top-16 z-20 shadow-sm">
+              <div className="grid grid-cols-4 gap-0.5 sm:gap-1">
                 {TABS.map(tab => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={cn(
-                      'flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl font-bold text-xs transition-all',
+                      'flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1.5 sm:py-2.5 px-1 sm:px-3 rounded-lg sm:rounded-xl font-bold text-[8px] sm:text-xs transition-all',
                       activeTab === tab.id
                         ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30'
                         : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -248,11 +266,11 @@ export default function MessDetailPage() {
                 transition={{ duration: 0.18 }}
               >
 
-                {/* DINE TAB — Menu & Subscription Plans */}
+                {/* DINE TAB — Menu Card */}
                 {activeTab === 'dine' && (
                   <div className="space-y-6">
                     {/* Today's Menu Section */}
-                    <div className="card p-6 space-y-5">
+                    <div className="card p-4 sm:p-6 space-y-4 sm:space-y-5">
                       <h3 className="text-lg font-display font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         🍳 Mess Menu Card
                       </h3>
@@ -274,65 +292,6 @@ export default function MessDetailPage() {
                         <div className="text-center py-6 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800">
                           <p className="text-sm text-slate-500">Menu card is not uploaded yet.</p>
                         </div>
-                      )}
-                    </div>
-
-                    <div className="card p-6 space-y-5">
-                      <h3 className="text-lg font-display font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        💳 Subscription Plans
-                      </h3>
-                      {mess.profiles?.full_name && (
-                        <div className="p-3 rounded-xl bg-brand-50 dark:bg-brand-950/20 border border-brand-100 dark:border-brand-900/40">
-                          <p className="text-xs text-slate-600 dark:text-slate-400">
-                            Available plans offered by <span className="font-bold text-brand-600 dark:text-brand-400">{mess.profiles.full_name}</span>
-                          </p>
-                        </div>
-                      )}
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        {displayPlans.length > 0 ? (
-                          displayPlans.map((plan: any) => (
-                            <motion.div
-                              key={plan.id}
-                              whileHover={{ scale: 1.02 }}
-                              onClick={() => setSelectedPlan(plan.id)}
-                              className={cn(
-                                'p-5 rounded-2xl border-2 cursor-pointer transition-all',
-                                selectedPlan === plan.id
-                                  ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/10'
-                                  : 'border-slate-200 dark:border-slate-700 hover:border-orange-300'
-                              )}
-                            >
-                              <div className="flex justify-between items-start mb-3">
-                                <div>
-                                  <h4 className="font-bold text-slate-900 dark:text-white text-sm">{plan.name}</h4>
-                                  <p className="text-xs text-slate-400 mt-0.5">{plan.duration_days} days</p>
-                                </div>
-                                {selectedPlan === plan.id && <CheckCircle className="w-5 h-5 text-orange-500" />}
-                              </div>
-                              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400 mb-1">{formatCurrency(plan.price)}</div>
-                              <p className="text-xs text-slate-500 mb-3">{plan.description}</p>
-                              <div className="flex flex-wrap gap-1.5">
-                                {(plan.meal_types || []).map((m: any) => (
-                                  <span key={m} className="tag text-[10px]">{mealTypeLabels[m as MealType]}</span>
-                                ))}
-                              </div>
-                            </motion.div>
-                          ))
-                        ) : (
-                          <div className="sm:col-span-2 p-6 text-center">
-                            <p className="text-slate-500 dark:text-slate-400">No subscription plans available at the moment.</p>
-                          </div>
-                        )}
-                      </div>
-                      {selectedPlan && displayPlans.length > 0 && (
-                        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-                          <Link
-                            to={`/dashboard/student/subscription?mess=${mess.id}&plan=${selectedPlan}`}
-                            className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm transition-all shadow-md shadow-orange-500/20"
-                          >
-                            Subscribe to Selected Plan 🎉
-                          </Link>
-                        </motion.div>
                       )}
                     </div>
                   </div>
@@ -410,17 +369,17 @@ export default function MessDetailPage() {
                   <div className="card p-6 space-y-5">
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-display font-bold text-slate-900 dark:text-white">⭐ Reviews</h3>
-                      <span className="badge badge-green text-xs">{mess.review_count} total</span>
+                      <span className="badge badge-green text-xs">{dynamicReviewCount} total</span>
                     </div>
 
                     {/* Rating summary */}
                     {reviewsList.length > 0 && (
                       <div className="flex items-center gap-5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
                         <div className="text-center">
-                          <div className="text-4xl font-bold text-slate-900 dark:text-white">{mess.rating}</div>
+                          <div className="text-4xl font-bold text-slate-900 dark:text-white">{dynamicRating}</div>
                           <div className="flex gap-0.5 mt-1 justify-center">
                             {[1, 2, 3, 4, 5].map(s => (
-                              <Star key={s} className={cn('w-3.5 h-3.5', s <= Math.floor(mess.rating) ? 'star-filled' : 'star-empty')} />
+                              <Star key={s} className={cn('w-3.5 h-3.5', s <= Math.floor(Number(dynamicRating)) ? 'star-filled' : 'star-empty')} />
                             ))}
                           </div>
                           <p className="text-xs text-slate-400 mt-0.5">out of 5</p>
@@ -512,32 +471,9 @@ export default function MessDetailPage() {
             </AnimatePresence>
           </div>
 
-          {/* ── Right Sidebar ── */}
-          <div className="space-y-4">
-            {/* Owner Details */}
-            <div className="card p-5">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5" /> Owner Details
-              </p>
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-brand-400 to-indigo-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                    {((mess.profiles?.full_name || mess.name)?.[0] || 'M').toUpperCase()}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Verified Provider</p>
-                    <p className="font-bold text-slate-900 dark:text-white text-sm truncate">{mess.profiles?.full_name || mess.name}</p>
-                    <p className="text-xs text-slate-500">{mess.contact_phone}</p>
-                  </div>
-                </div>
-                {mess.verified && (
-                  <div className="flex-shrink-0 flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 rounded-full px-2.5 py-1">
-                    <ShieldCheck className="w-3.5 h-3.5" /> VERIFIED
-                  </div>
-                )}
-              </div>
-            </div>
 
+          {/* ── 2 & 3. Info Sidebar (Mobile Order 2) ── */}
+          <div className="space-y-4 order-2 lg:col-start-3 lg:row-span-2 lg:self-start">
             {/* Location Details */}
             <div className="card p-5 space-y-4">
               <div className="flex items-center justify-between">
@@ -554,6 +490,30 @@ export default function MessDetailPage() {
                 className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm transition-all shadow-md shadow-orange-500/20">
                 <Navigation2 className="w-4 h-4" /> Open in Google Maps <ExternalLink className="w-3.5 h-3.5 opacity-80" />
               </a>
+            </div>
+
+            {/* Owner Details */}
+            <div className="card p-5">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5" /> Owner Details
+              </p>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-brand-400 to-indigo-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0 shadow-sm">
+                    {((mess.profiles?.full_name || mess.name)?.[0] || 'M').toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Verified Provider</p>
+                    <p className="font-bold text-slate-900 dark:text-white text-sm truncate">{mess.profiles?.full_name || mess.name}</p>
+                    <p className="text-xs text-slate-500">{mess.contact_phone}</p>
+                  </div>
+                </div>
+                {mess.verified && (
+                  <div className="flex-shrink-0 flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 rounded-full px-2.5 py-1">
+                    <ShieldCheck className="w-3.5 h-3.5" /> VERIFIED
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Operating Details */}
@@ -582,8 +542,8 @@ export default function MessDetailPage() {
               </div>
             </div>
 
-            {/* Plan summary */}
-            <div className="card p-4">
+            {/* Plan summary hidden on mobile since full plans are below */}
+            <div className="card p-4 hidden lg:block">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">💳</div>
                 <div>
@@ -595,6 +555,78 @@ export default function MessDetailPage() {
                   </p>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* ── 5. Subscription Plans (Mobile Order 5, absolute bottom) ── */}
+          <div className="lg:col-span-3 order-5 mt-3 sm:mt-8 mb-20 sm:mb-0">
+            <div className="space-y-3 sm:space-y-6 sm:card sm:p-8 sm:border-2 sm:border-orange-500/20 sm:shadow-lg sm:shadow-orange-500/10">
+              <div className="flex items-center justify-between sm:justify-center sm:flex-col">
+                <h3 className="text-base sm:text-3xl font-display font-bold text-slate-900 dark:text-white flex items-center gap-1.5 sm:gap-2">
+                  💳 Subscription Plans
+                </h3>
+                {mess.profiles?.full_name && (
+                  <p className="text-[10px] sm:text-sm text-slate-500 dark:text-slate-400">
+                    <span className="sm:hidden">by </span>
+                    <span className="hidden sm:inline">Available meal plans offered by </span>
+                    <span className="font-bold text-brand-600 dark:text-brand-400">{mess.profiles.full_name}</span>
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-6">
+                {displayPlans.length > 0 ? (
+                  displayPlans.map((plan: any) => (
+                    <motion.div
+                      key={plan.id}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setSelectedPlan(plan.id)}
+                      className={cn(
+                        'p-3 sm:p-6 rounded-xl sm:rounded-3xl border-2 cursor-pointer transition-all bg-white dark:bg-slate-900',
+                        selectedPlan === plan.id
+                          ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-900/10 shadow-sm shadow-orange-500/20'
+                          : 'border-slate-200 dark:border-slate-800 hover:border-orange-300'
+                      )}
+                    >
+                      <div className="flex justify-between items-center mb-1.5 sm:mb-4">
+                        <h4 className="font-bold text-slate-900 dark:text-white text-sm sm:text-lg leading-tight">{plan.name}</h4>
+                        {selectedPlan === plan.id && <CheckCircle className="w-4 h-4 sm:w-6 sm:h-6 text-orange-500 flex-shrink-0 ml-2" />}
+                      </div>
+                      
+                      <div className="flex items-baseline gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                        <span className="text-lg sm:text-3xl font-bold text-orange-600 dark:text-orange-400 leading-none">{formatCurrency(plan.price)}</span>
+                        <span className="text-[10px] sm:text-sm text-slate-400 font-medium">{plan.duration_days} days</span>
+                      </div>
+                      
+                      {plan.description && (
+                        <p className="text-[10px] sm:text-sm text-slate-500 mb-2 sm:mb-4 leading-snug line-clamp-1 sm:line-clamp-2">{plan.description}</p>
+                      )}
+                      
+                      <div className="flex flex-wrap gap-1 sm:gap-2">
+                        {(plan.meal_types || []).map((m: any) => (
+                          <span key={m} className="tag text-[9px] sm:text-xs px-1.5 py-0.5 sm:px-2.5 sm:py-1 bg-slate-100 dark:bg-slate-800">{mealTypeLabels[m as MealType]}</span>
+                        ))}
+                      </div>
+                    </motion.div>
+                  ))
+                ) : (
+                  <div className="sm:col-span-2 lg:col-span-3 p-4 sm:p-8 text-center bg-slate-50 dark:bg-slate-900/50 rounded-2xl sm:rounded-3xl">
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">No subscription plans available at the moment.</p>
+                  </div>
+                )}
+              </div>
+              
+              {selectedPlan && displayPlans.length > 0 && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="pt-2 sm:pt-4">
+                  <Link
+                    to={`/dashboard/student/subscription?mess=${mess.id}&plan=${selectedPlan}`}
+                    className="flex items-center justify-center gap-2 w-full max-w-sm mx-auto py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm sm:text-lg transition-all shadow-lg shadow-orange-500/25 hover:scale-105 active:scale-95"
+                  >
+                    Subscribe to Selected Plan 🎉
+                  </Link>
+                </motion.div>
+              )}
             </div>
           </div>
         </div>

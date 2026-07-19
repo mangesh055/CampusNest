@@ -9,17 +9,17 @@ export default {
     extend: {
       colors: {
         brand: {
-          50: '#f0f4ff',
-          100: '#e0e9ff',
-          200: '#c7d6fe',
-          300: '#a5b8fc',
-          400: '#818cf8',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
-          800: '#3730a3',
-          900: '#312e81',
-          950: '#1e1b4b',
+          50: '#fff5f4',
+          100: '#ffe6e3',
+          200: '#ffccc6',
+          300: '#ffa79d',
+          400: '#ff7769',
+          500: '#f14c38',
+          600: '#db311d',
+          700: '#b82414',
+          800: '#982114',
+          900: '#7e2115',
+          950: '#440d08',
         },
         accent: {
           50: '#fff7ed',
@@ -45,6 +45,10 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         display: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+        serif: ['Playfair Display', 'serif'],
+        cursive: ['Caveat', 'cursive'],
+        pacifico: ['Pacifico', 'cursive'],
+        dancing: ['Dancing Script', 'cursive'],
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

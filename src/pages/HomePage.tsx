@@ -9,32 +9,8 @@ import PropertyCard from '../components/property/PropertyCard'
 import MessCard from '../components/mess/MessCard'
 import { fetchMesses, fetchProperties } from '../lib/platformData'
 import { cn } from '../lib/utils'
-
-const propertyTypes = [
-  { icon: '🏠', label: 'PG', path: '/properties?type=pg', color: 'from-purple-500 to-brand-500' },
-  { icon: '🏨', label: 'Hostel', path: '/properties?type=hostel', color: 'from-blue-500 to-cyan-500' },
-  { icon: '🏢', label: 'Flat', path: '/properties?type=flat', color: 'from-emerald-500 to-teal-500' },
-  { icon: '🛏️', label: 'Shared Room', path: '/properties?type=shared_room', color: 'from-amber-500 to-orange-500' },
-  { icon: '🚪', label: 'Private Room', path: '/properties?type=private_room', color: 'from-pink-500 to-rose-500' },
-  { icon: '🍽️', label: 'Mess', path: '/mess', color: 'from-red-500 to-accent-500' },
-]
-
-const features = [
-  { icon: '🗺️', title: 'GPS Attendance', desc: 'Mark meal attendance with location verification & QR scanning' },
-  { icon: '📱', title: 'Digital Tokens', desc: 'Get unique meal tokens after successful attendance marking' },
-  { icon: '📊', title: 'Smart Analytics', desc: 'Track spending, meals consumed, and attendance patterns' },
-  { icon: '🔔', title: 'Smart Notifications', desc: 'Never miss a subscription renewal or menu update' },
-  { icon: '🤖', title: 'AI Assistant', desc: 'Get personalized PG and mess recommendations using AI' },
-]
-
+import { supabase } from '../lib/supabase'
 const cities = ['Pune', 'Mumbai', 'Bangalore', 'Delhi', 'Hyderabad', 'Chennai', 'Kolkata', 'Ahmedabad']
-
-const stats = [
-  { value: '1,200+', label: 'Properties Listed' },
-  { value: '400+', label: 'Mess Services' },
-  { value: '5,000+', label: 'Happy Students' },
-  { value: '₹2Cr+', label: 'Savings Generated' },
-]
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -42,6 +18,7 @@ export default function HomePage() {
   const [searchTab, setSearchTab] = useState<'property' | 'mess'>('property')
   const [properties, setProperties] = useState<any[]>([])
   const [messes, setMesses] = useState<any[]>([])
+  const [dynamicStats, setDynamicStats] = useState({ properties: '0+', messes: '0+', students: '0+' })
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -50,6 +27,16 @@ export default function HomePage() {
         const [propertyRows, messRows] = await Promise.all([fetchProperties(), fetchMesses()])
         setProperties(propertyRows)
         setMesses(messRows)
+        
+        const { count: propsCount } = await supabase.from('properties').select('*', { count: 'exact', head: true })
+        const { count: messesCount } = await supabase.from('messes').select('*', { count: 'exact', head: true })
+        const { count: studentsCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student')
+        
+        setDynamicStats({
+          properties: `${propsCount || 0}+`,
+          messes: `${messesCount || 0}+`,
+          students: `${studentsCount || 0}+`
+        })
       } catch (error) {
         console.error('Failed to load homepage data from Supabase:', error)
       }
@@ -127,10 +114,10 @@ export default function HomePage() {
               India's #1 Smart Student Housing Platform
             </div>
 
-            <h1 className="text-5xl lg:text-7xl font-display font-bold text-white leading-tight mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-serif italic font-bold text-white leading-tight mb-4 sm:mb-6 tracking-tight">
               Find Your Perfect
               <br />
-              <span className="gradient-text">Campus Home</span>
+              <span className="gradient-text font-pacifico not-italic font-normal text-[1.1em] block mt-2">Campus Home</span>
             </h1>
 
             <p className="text-slate-300 text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
@@ -140,7 +127,9 @@ export default function HomePage() {
 
             {/* Search Tabs */}
             <div className="flex justify-center gap-2.5 mb-4 max-w-xs mx-auto">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 type="button"
                 onClick={() => setSearchTab('property')}
                 className={cn(
@@ -151,8 +140,10 @@ export default function HomePage() {
                 )}
               >
                 🏠 Housing
-              </button>
-              <button
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 type="button"
                 onClick={() => setSearchTab('mess')}
                 className={cn(
@@ -163,34 +154,34 @@ export default function HomePage() {
                 )}
               >
                 🍽️ Mess
-              </button>
+              </motion.button>
             </div>
 
             {/* Search Bar */}
             <form onSubmit={handleSearch} className="max-w-3xl mx-auto">
-              <div className="flex flex-col sm:flex-row gap-3 bg-white dark:bg-slate-800 p-2 rounded-2xl shadow-glass">
-                <div className="flex items-center gap-2 flex-1 px-3">
-                  <Search className="w-5 h-5 text-slate-400 flex-shrink-0" />
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 bg-white dark:bg-slate-800 p-1.5 sm:p-2 rounded-2xl shadow-glass">
+                <div className="flex items-center gap-2 flex-1 px-2 sm:px-3">
+                  <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 flex-shrink-0" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={searchTab === 'mess' ? 'Try "Maa Ki Rasoi" or "veg meals"' : 'Try "PG near MIT College" or "Girls Hostel"'}
-                    className="flex-1 bg-transparent outline-none text-slate-900 dark:text-white placeholder-slate-400 text-sm"
+                    placeholder={searchTab === 'mess' ? 'Try "Jagdamba Mess" or "veg meals"' : 'Try "PG near MIT College"'}
+                    className="flex-1 bg-transparent outline-none text-slate-900 dark:text-white placeholder-slate-400 text-xs sm:text-sm py-2"
                   />
                 </div>
-                <div className="flex items-center gap-2 sm:border-l border-slate-200 dark:border-slate-700 px-3">
+                <div className="flex items-center gap-2 sm:border-l border-slate-200 dark:border-slate-700 px-2 sm:px-3 py-1 sm:py-0 border-t sm:border-t-0">
                   <MapPin className="w-4 h-4 text-slate-400" />
                   <select
                     value={searchCity}
                     onChange={(e) => setSearchCity(e.target.value)}
-                    className="bg-transparent outline-none text-sm text-slate-700 dark:text-slate-300 font-medium"
+                    className="bg-transparent outline-none text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium w-full"
                   >
                     {cities.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-                <button type="submit" className="btn-primary rounded-xl px-6 py-2.5 text-sm whitespace-nowrap">
-                  <Search className="w-4 h-4" />
+                <button type="submit" className="btn-primary rounded-xl px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm whitespace-nowrap mt-1 sm:mt-0">
+                  <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   Search
                 </button>
               </div>
@@ -212,72 +203,44 @@ export default function HomePage() {
       </section>
 
       {/* Stats Bar */}
-      <section className="bg-brand-600 dark:bg-brand-700 py-8">
+      <section className="bg-brand-600 dark:bg-brand-700 py-5 sm:py-8">
         <div className="max-w-5xl mx-auto px-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            {stats.map((stat, i) => (
+          <div className="grid grid-cols-3 gap-2 sm:gap-6 divide-x divide-brand-500/40">
+            {[
+              { value: dynamicStats.properties, label: 'Properties Listed' },
+              { value: dynamicStats.messes, label: 'Mess Services' },
+              { value: dynamicStats.students, label: 'Happy Students' },
+            ].map((stat, i) => (
               <motion.div
                 key={stat.label}
                 initial={{ opacity: 0, y: 10 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="text-center text-white"
+                whileHover={{ scale: 1.1, y: -5 }}
+                className="text-center text-white px-1 sm:px-4 cursor-default transition-all"
               >
-                <div className="text-3xl font-display font-bold">{stat.value}</div>
-                <div className="text-brand-200 text-sm mt-1">{stat.label}</div>
+                <div className="text-2xl sm:text-3xl font-display font-bold">{stat.value}</div>
+                <div className="text-brand-200 text-[10px] sm:text-sm mt-0.5 sm:mt-1 leading-tight">{stat.label}</div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Property Types */}
-      <section className="py-16 bg-slate-50 dark:bg-slate-900/50">
-        <div className="max-w-7xl mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            className="text-center mb-10"
-          >
-            <h2 className="text-3xl font-display font-bold text-slate-900 dark:text-white mb-3">
-              Browse by Category
-            </h2>
-            <p className="text-slate-500 dark:text-slate-400">Find exactly what fits your lifestyle and budget</p>
-          </motion.div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            {propertyTypes.map((type, i) => (
-              <motion.div
-                key={type.label}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.07 }}
-              >
-                <Link
-                  to={type.path}
-                  className="flex flex-col items-center gap-3 p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-400 hover:shadow-card-hover group transition-all"
-                >
-                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${type.color} flex items-center justify-center text-2xl shadow-sm group-hover:scale-110 transition-transform`}>
-                    {type.icon}
-                  </div>
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 group-hover:text-brand-600 transition-colors">{type.label}</span>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+
+
 
       {/* Featured Properties */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between mb-10">
-            <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }}>
-              <h2 className="text-3xl font-display font-bold text-slate-900 dark:text-white">
+          <div className="flex flex-col sm:flex-row items-center justify-between mb-8 sm:mb-10 text-center sm:text-left">
+            <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }}>
+              <h2 className="text-4xl sm:text-5xl font-dancing font-bold text-brand-600 dark:text-brand-400">
                 🏠 Featured Properties
               </h2>
-              <p className="text-slate-500 dark:text-slate-400 mt-1">Top-rated, verified accommodations near colleges</p>
+              <p className="text-slate-500 dark:text-slate-400 mt-2 sm:mt-1">Top-rated, verified accommodations near colleges</p>
             </motion.div>
-            <Link to="/properties" className="btn-secondary hidden sm:flex text-sm">
+            <Link to="/properties" className="btn-secondary hidden sm:flex text-sm mt-4 sm:mt-0">
               View All <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -297,14 +260,14 @@ export default function HomePage() {
       {/* Mess Section */}
       <section className="py-16 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900/50 dark:to-slate-950">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between mb-10">
-            <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }}>
-              <h2 className="text-3xl font-display font-bold text-slate-900 dark:text-white">
+          <div className="flex flex-col sm:flex-row items-center justify-between mb-8 sm:mb-10 text-center sm:text-left">
+            <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }}>
+              <h2 className="text-4xl sm:text-5xl font-dancing font-bold text-accent-600 dark:text-accent-400">
                 🍽️ Top Mess Services
               </h2>
-              <p className="text-slate-500 dark:text-slate-400 mt-1">Verified messes with digital attendance system</p>
+              <p className="text-slate-500 dark:text-slate-400 mt-2 sm:mt-1">Verified messes with digital attendance system</p>
             </motion.div>
-            <Link to="/mess" className="btn-secondary hidden sm:flex text-sm">
+            <Link to="/mess" className="btn-secondary hidden sm:flex text-sm mt-4 sm:mt-0">
               View All <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -317,31 +280,52 @@ export default function HomePage() {
       </section>
 
       {/* Smart Mess System Explainer */}
-      <section className="py-20 bg-gradient-to-br from-brand-950 to-slate-900 text-white relative overflow-hidden">
+      <section className="py-10 sm:py-20 bg-gradient-to-br from-brand-950 to-slate-900 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-grid opacity-10" />
         <div className="max-w-6xl mx-auto px-4 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }}>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent-500/20 border border-accent-500/30 text-accent-300 text-sm mb-6">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+            <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} className="text-center sm:text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-500/20 border border-accent-500/30 text-accent-300 text-xs sm:text-sm mb-3 sm:mb-6 animate-pulse-slow shadow-[0_0_15px_rgba(249,115,22,0.3)]">
                 🚀 Revolutionary Feature
               </div>
-              <h2 className="text-4xl font-display font-bold mb-6 leading-tight">
+              <h2 className="text-3xl sm:text-5xl font-serif italic font-bold mb-3 sm:mb-6 leading-tight">
                 Smart Digital Mess<br />
-                <span className="gradient-text-orange">Attendance System</span>
+                <span className="gradient-text-orange font-dancing not-italic font-normal block mt-1">Attendance System</span>
               </h2>
-              <p className="text-slate-300 text-lg mb-8 leading-relaxed">
-                No more paper registers. Our GPS + QR-based attendance system ensures authentic meal tracking with fraud prevention built-in.
+              {/* Description — hidden on mobile to save space */}
+              <p className="hidden sm:block text-slate-300 text-lg mb-8 leading-relaxed">
+                No more paper registers. Our streamlined static QR-based attendance system ensures authentic meal tracking seamlessly linked to your active subscription.
               </p>
-              <div className="space-y-4">
+
+              {/* Mobile: compact 2-col step grid */}
+              <div className="grid grid-cols-2 gap-3 sm:hidden mb-5">
                 {[
-                  { icon: '📍', step: '1', title: 'Arrive at Mess', desc: 'GPS verifies you are within 50 meters of the mess' },
-                  { icon: '📷', step: '2', title: 'Scan QR Code', desc: 'Scan the daily rotating QR code generated by the owner' },
-                  { icon: '✅', step: '3', title: 'Attendance Recorded', desc: 'Your meal attendance is instantly confirmed' },
-                  { icon: '🎫', step: '4', title: 'Get Meal Token', desc: 'Receive a unique one-time token (e.g., TOKEN-ABC123)' },
+                  { icon: '📱', title: 'Open App' },
+                  { icon: '📷', title: 'Scan QR' },
+                  { icon: '🎫', title: 'Validated' },
+                  { icon: '✅', title: 'Logged!' },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-2 bg-white/5 rounded-xl px-3 py-2.5">
+                    <span className="text-xl">{item.icon}</span>
+                    <div>
+                      <p className="text-[10px] text-brand-300 font-medium">Step {i + 1}</p>
+                      <p className="text-xs text-white font-semibold">{item.title}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop: full step list */}
+              <div className="hidden sm:block space-y-4">
+                {[
+                  { icon: '📱', step: '1', title: 'Open Your App', desc: 'Launch the CampusNest app when you arrive at the mess.' },
+                  { icon: '📷', step: '2', title: 'Scan QR Poster', desc: 'Scan the mess\'s static QR code poster right from your dashboard.' },
+                  { icon: '🎫', step: '3', title: 'System Validation', desc: 'The system instantly verifies your active meal plan and daily limits.' },
+                  { icon: '✅', step: '4', title: 'Attendance Recorded', desc: 'Your meal is automatically logged and your plan count is updated!' },
                 ].map((item) => (
-                  <div key={item.step} className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-full bg-brand-500/30 border border-brand-500/50 flex items-center justify-center flex-shrink-0 text-lg">
-                      {item.icon}
+                  <div key={item.step} className="flex items-start gap-4 group cursor-default">
+                    <div className="w-10 h-10 rounded-full bg-brand-500/30 border border-brand-500/50 flex items-center justify-center flex-shrink-0 text-lg group-hover:scale-110 transition-transform duration-300 shadow-glow">
+                      <span className="group-hover:animate-bounce-subtle">{item.icon}</span>
                     </div>
                     <div>
                       <h4 className="font-semibold text-white">{item.title}</h4>
@@ -350,32 +334,33 @@ export default function HomePage() {
                   </div>
                 ))}
               </div>
-              <div className="mt-8">
-                <Link to="/mess" className="btn-accent">
+
+              <div className="mt-5 sm:mt-8 flex justify-center sm:justify-start">
+                <Link to="/mess" className="btn-accent text-sm sm:text-base hover:scale-105 transition-transform duration-300 shadow-glow-orange">
                   Explore Mess Services <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
             </motion.div>
 
+            {/* Mock phone UI — hidden on mobile */}
             <motion.div
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
-              className="relative"
+              className="relative hidden lg:block"
             >
-              <div className="relative rounded-3xl overflow-hidden bg-slate-800/50 border border-slate-700 p-6">
-                {/* Mock Phone UI */}
+              <div className="relative rounded-3xl overflow-hidden bg-slate-800/50 border border-slate-700 p-6 animate-float shadow-2xl shadow-brand-500/20">
                 <div className="bg-slate-900 rounded-2xl p-4 mb-4">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-full bg-brand-500/30 flex items-center justify-center text-xl">🍽️</div>
                     <div>
-                      <p className="text-white font-semibold text-sm">Maa Ki Rasoi</p>
+                      <p className="text-white font-semibold text-sm">Jagdamba Mess</p>
                       <p className="text-emerald-400 text-xs flex items-center gap-1">🟢 Open Now</p>
                     </div>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between p-3 rounded-xl bg-slate-800">
-                      <span className="text-slate-300 text-sm">📍 Location</span>
-                      <span className="text-emerald-400 text-sm font-medium">✓ Verified (12m away)</span>
+                      <span className="text-slate-300 text-sm">📊 Daily Limit</span>
+                      <span className="text-emerald-400 text-sm font-medium">✓ 1 of 2 scans used</span>
                     </div>
                     <div className="flex items-center justify-between p-3 rounded-xl bg-slate-800">
                       <span className="text-slate-300 text-sm">🎫 Subscription</span>
@@ -390,7 +375,7 @@ export default function HomePage() {
                 </div>
                 <div className="mt-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-center">
                   <p className="text-emerald-400 font-bold">🎉 Lunch Attended!</p>
-                  <p className="text-slate-400 text-xs mt-1">Token: <span className="text-white font-mono">TOKEN-XY42P9</span></p>
+                  <p className="text-slate-400 text-xs mt-1">Meals Left: <span className="text-white font-mono">24</span></p>
                 </div>
               </div>
             </motion.div>
@@ -398,56 +383,22 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-4xl font-display font-bold text-slate-900 dark:text-white mb-4">
-              Everything you need, in one place
-            </h2>
-            <p className="text-slate-500 dark:text-slate-400 text-lg max-w-xl mx-auto">
-              From finding your first PG to managing subscriptions — CampusNest has it all.
-            </p>
-          </motion.div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, i) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08 }}
-                className="card p-6 group hover:border-brand-400"
-              >
-                <div className="w-12 h-12 rounded-2xl bg-brand-50 dark:bg-brand-950/30 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
-                  {feature.icon}
-                </div>
-                <h3 className="font-display font-bold text-slate-900 dark:text-white text-lg mb-2">{feature.title}</h3>
-                <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">{feature.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-brand-600 to-brand-800">
+      <section className="py-10 sm:py-20 bg-gradient-to-br from-brand-600 to-brand-800">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}>
-            <h2 className="text-4xl font-display font-bold text-white mb-4">
+            <h2 className="text-2xl sm:text-4xl font-display font-bold text-white mb-2 sm:mb-4">
               Ready to find your Campus Home?
             </h2>
-            <p className="text-brand-200 text-lg mb-8">
+            <p className="text-brand-200 text-sm sm:text-lg mb-5 sm:mb-8">
               Join 5,000+ students already using CampusNest across India
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/auth?tab=register" className="btn-accent text-base px-8">
-                Get Started Free <ArrowRight className="w-5 h-5" />
+            <div className="flex flex-row gap-3 justify-center">
+              <Link to="/auth?tab=register" className="btn-accent text-sm sm:text-base px-5 sm:px-8">
+                Get Started Free <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </Link>
-              <Link to="/properties" className="px-8 py-3 rounded-xl border-2 border-white/30 text-white font-semibold hover:bg-white/10 transition-all inline-flex items-center gap-2">
+              <Link to="/properties" className="px-5 sm:px-8 py-2.5 sm:py-3 rounded-xl border-2 border-white/30 text-white text-sm sm:text-base font-semibold hover:bg-white/10 transition-all inline-flex items-center gap-2">
                 Browse Properties
               </Link>
             </div>

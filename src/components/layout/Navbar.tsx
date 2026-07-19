@@ -107,8 +107,20 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
 
   useEffect(() => {
     init()
-    const handleScroll = () => setScrolled(window.scrollY > 20)
-    window.addEventListener('scroll', handleScroll)
+    let lastScrollY = window.scrollY
+
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20)
+      
+      // Close dropdowns when scrolling more than 15px
+      if (Math.abs(window.scrollY - lastScrollY) > 15) {
+        setMenuOpen(false)
+        setProfileOpen(false)
+        lastScrollY = window.scrollY
+      }
+    }
+    
+    window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [init])
 
@@ -137,7 +149,7 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
     <header
       className={cn(
         'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
-        scrolled
+        scrolled || menuOpen
           ? 'bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-sm border-b border-slate-200/50 dark:border-slate-700/50'
           : 'bg-transparent'
       )}
@@ -162,7 +174,7 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
                 key={path}
                 to={path}
                 className={cn(
-                  'nav-link text-sm',
+                  'nav-link text-sm hover:scale-105 active:scale-95 transition-transform duration-200',
                   location.pathname === path && 'active'
                 )}
               >
@@ -177,7 +189,7 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
             {/* Dark Mode Toggle */}
             <button
               onClick={toggleDarkMode}
-              className="btn-ghost p-2 rounded-xl"
+              className="btn-ghost p-2 rounded-xl hover:scale-110 hover:rotate-12 active:scale-95 transition-all duration-200"
               aria-label="Toggle dark mode"
             >
               {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -214,8 +226,8 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
                 )}
 
                 {/* Notifications */}
-                <Link to="/notifications" className="relative btn-ghost p-2 rounded-xl">
-                  <Bell className="w-4 h-4" />
+                <Link to="/notifications" className="relative btn-ghost p-2 rounded-xl hover:scale-110 active:scale-95 transition-all duration-200 group">
+                  <Bell className="w-4 h-4 group-hover:animate-bounce-subtle" />
                   {unreadCount > 0 && (
                     <span className="notif-dot text-[9px]">{unreadCount > 9 ? '9+' : unreadCount}</span>
                   )}
@@ -296,9 +308,8 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
                 </div>
               </>
             ) : (
-              <div className="flex items-center gap-2">
-                <Link to="/auth" className="btn-ghost text-sm">Sign In</Link>
-                <Link to="/auth?tab=register" className="btn-primary text-sm py-2 px-4">Get Started</Link>
+              <div className="flex items-center gap-1 sm:gap-2">
+                <Link to="/auth?tab=register" className="btn-primary text-xs sm:text-sm py-1.5 px-3 sm:py-2 sm:px-4 whitespace-nowrap">Get Started</Link>
               </div>
             )}
 
@@ -312,29 +323,38 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
           </div>
         </div>
 
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {menuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden border-t border-slate-200 dark:border-slate-700 py-3 bg-white dark:bg-slate-900"
-            >
+      </nav>
+
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+            transition={{ duration: 0.15 }}
+            className="md:hidden absolute top-[70px] right-4 w-60 bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 overflow-hidden z-50"
+          >
+            <div className="p-2">
               {navLinks.map(({ label, path, icon: Icon }) => (
                 <Link
                   key={path}
                   to={path}
-                  className={cn('nav-link text-sm mx-2 mb-1', location.pathname === path && 'active')}
+                  className={cn(
+                    'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors mb-1',
+                    location.pathname === path
+                      ? 'bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                  )}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-5 h-5" />
                   {label}
                 </Link>
               ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </nav>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   )
 }

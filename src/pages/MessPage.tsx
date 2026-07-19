@@ -10,9 +10,9 @@ import type { MessStatus } from '../types'
 export default function MessPage() {
   const [searchParams] = useSearchParams()
   const [search, setSearch] = useState(searchParams.get('q') || '')
+  const [foodType, setFoodType] = useState('')
   const [status, setStatus] = useState<MessStatus | ''>('')
   const [maxPrice, setMaxPrice] = useState('')
-  const [mealFilter, setMealFilter] = useState('')
   const [city, setCity] = useState(searchParams.get('city') || '')
 
   const [allMesses, setAllMesses] = useState<any[]>([])
@@ -33,61 +33,123 @@ export default function MessPage() {
   const filtered = allMesses.filter(m => {
     if (search && !m.name.toLowerCase().includes(search.toLowerCase()) && !m.address.toLowerCase().includes(search.toLowerCase())) return false
     if (city && m.city.toLowerCase() !== city.toLowerCase()) return false
+    if (foodType && m.food_type !== foodType && m.food_type !== 'both') return false
     if (status && m.status !== status) return false
-    if (maxPrice && m.monthly_charge > Number(maxPrice)) return false
-    if (mealFilter && !m.meal_types.includes(mealFilter as never)) return false
+    if (maxPrice && Number(m.monthly_charge || 0) > Number(maxPrice)) return false
     return true
   })
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pt-20">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pt-16">
       {/* Hero */}
-      <div className="bg-gradient-to-br from-accent-600 to-red-700 text-white py-12">
+      <div className="bg-gradient-to-br from-accent-600 to-red-700 text-white py-6 sm:py-12">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="text-4xl font-display font-bold mb-3">🍽️ Find Your Perfect Mess</h1>
-            <p className="text-accent-100 text-lg mb-6">Digital attendance, QR meal tokens, daily menus — all in one place</p>
-            <div className="max-w-xl mx-auto relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <h1 className="text-3xl sm:text-5xl font-serif italic font-bold mb-1 sm:mb-2 leading-tight tracking-tight drop-shadow-md">Find Your Perfect Mess</h1>
+            <p className="text-white/90 font-cursive text-xl sm:text-3xl mb-4 sm:mb-8 mx-auto leading-relaxed font-medium tracking-wide">Digital attendance & daily menus — all in one place ✨</p>
+            <div className="max-w-xl mx-auto relative group">
+              <Search className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-focus-within:text-brand-500 transition-colors" />
               <input type="text" value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Search mess by name or location..."
-                className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white text-slate-900 placeholder-slate-400 outline-none shadow-lg" />
+                className="w-full pl-10 sm:pl-14 pr-3 sm:pr-4 py-2.5 sm:py-4 rounded-xl sm:rounded-2xl bg-white text-slate-900 placeholder-slate-400 outline-none shadow-md sm:shadow-lg focus:shadow-xl focus:ring-2 sm:focus:ring-4 focus:ring-brand-500/20 transition-all text-sm sm:text-base" />
             </div>
           </motion.div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Filters */}
-        <div className="flex flex-wrap gap-3 mb-8">
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Status</label>
-            <div className="flex flex-wrap gap-2">
-              {(['' , 'open', 'busy', 'closed'] as const).map(s => (
-                <button key={s} onClick={() => setStatus(s)}
-                  className={cn('px-3 py-1.5 rounded-xl text-xs font-medium border transition-all',
-                    status === s ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 text-brand-600' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400')}>
-                  {s ? `${messStatusConfig[s].dot} ${messStatusConfig[s].label}` : 'All Status'}
-                </button>
-              ))}
-            </div>
+        {/* Zomato Style Filters */}
+        <div className="flex items-center gap-3 mb-6 overflow-x-auto no-scrollbar pb-2 pt-2">
+          {/* Filter Icon button */}
+          <button className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm">
+            <SlidersHorizontal className="w-4 h-4" /> Filters
+          </button>
+          
+          {/* Food Type Segmented Control (Zomato style) */}
+          <div className="flex-shrink-0 flex items-center bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-full shadow-sm overflow-hidden p-0.5">
+            <button 
+              onClick={() => setFoodType('veg')}
+              className={cn(
+                "px-4 py-1 text-sm font-medium transition-all rounded-full",
+                foodType === 'veg' 
+                  ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400" 
+                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+              )}
+            >
+              Pure Veg
+            </button>
+            <button 
+              onClick={() => setFoodType('')}
+              className={cn(
+                "px-4 py-1 text-sm font-medium transition-all rounded-full",
+                foodType === '' 
+                  ? "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-white" 
+                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+              )}
+            >
+              Both
+            </button>
+            <button 
+              onClick={() => setFoodType('non_veg')}
+              className={cn(
+                "px-4 py-1 text-sm font-medium transition-all rounded-full",
+                foodType === 'non_veg' 
+                  ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400" 
+                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+              )}
+            >
+              Non-Veg
+            </button>
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Meals</label>
-            <div className="flex flex-wrap gap-2">
-              {[{v:'',l:'All Meals'},{v:'breakfast',l:'☀️ Breakfast'},{v:'lunch',l:'🌤 Lunch'},{v:'dinner',l:'🌙 Dinner'},{v:'snack',l:'🍪 Snack'}].map(m => (
-                <button key={m.v} onClick={() => setMealFilter(m.v)}
-                  className={cn('px-3 py-1.5 rounded-xl text-xs font-medium border transition-all',
-                    mealFilter === m.v ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 text-brand-600' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400')}>
-                  {m.l}
-                </button>
-              ))}
+
+          {/* Status Toggle - Open */}
+          <button 
+            onClick={() => setStatus(status === 'open' ? '' : 'open')}
+            className={cn(
+              "flex-shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-sm font-medium transition-colors shadow-sm",
+              status === 'open' 
+                ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" 
+                : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+            )}
+          >
+            Open Now
+          </button>
+
+          {/* Status Toggle - Closed */}
+          <button 
+            onClick={() => setStatus(status === 'closed' ? '' : 'closed')}
+            className={cn(
+              "flex-shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-sm font-medium transition-colors shadow-sm",
+              status === 'closed' 
+                ? "border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400" 
+                : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+            )}
+          >
+            Closed
+          </button>
+
+          {/* Max Price Dropdown styled as pill */}
+          <div className="flex-shrink-0 relative">
+            <select 
+              value={maxPrice} 
+              onChange={e => setMaxPrice(e.target.value)}
+              className={cn(
+                "appearance-none pl-3.5 pr-8 py-1.5 rounded-full border text-sm font-medium transition-colors outline-none cursor-pointer shadow-sm",
+                maxPrice 
+                  ? "border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400" 
+                  : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+              )}
+            >
+              <option value="">Price: Any</option>
+              <option value="2500">Under ₹2500</option>
+              <option value="3000">Under ₹3000</option>
+              <option value="3500">Under ₹3500</option>
+              <option value="4000">Under ₹4000</option>
+              <option value="5000">Under ₹5000</option>
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 text-[10px]">
+              ▼
             </div>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Max Monthly (₹)</label>
-            <input type="number" value={maxPrice} onChange={e => setMaxPrice(e.target.value)}
-              placeholder="e.g. 4000" className="input-field py-1.5 w-32 text-sm" />
           </div>
         </div>
 
@@ -107,7 +169,7 @@ export default function MessPage() {
           <div className="text-center py-20">
             <div className="text-6xl mb-4">🍽️</div>
             <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 mb-2">No mess found</h3>
-            <button onClick={() => { setSearch(''); setStatus(''); setMaxPrice(''); setMealFilter(''); setCity('') }} className="btn-primary mt-4">Clear Filters</button>
+            <button onClick={() => { setSearch(''); setFoodType(''); setStatus(''); setMaxPrice(''); setCity('') }} className="btn-primary mt-4">Clear Filters</button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -117,19 +179,19 @@ export default function MessPage() {
 
         {/* How it works */}
         <div className="mt-16 card p-8">
-          <h3 className="text-2xl font-display font-bold text-slate-900 dark:text-white text-center mb-8">How Digital Mess Works</h3>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <h3 className="text-3xl font-serif italic font-bold text-slate-900 dark:text-white text-center mb-8">How Digital Mess Works</h3>
+          <div className="grid grid-cols-4 gap-2 sm:gap-6">
             {[
-              { icon: '🔍', step: '1', title: 'Find & Subscribe', desc: 'Browse mess services and choose a meal plan that fits your budget' },
-              { icon: '📍', step: '2', title: 'GPS Verification', desc: 'When you arrive, the system verifies your location (within 50m)' },
-              { icon: '📷', step: '3', title: 'Scan QR Code', desc: 'Scan the daily rotating QR code displayed at the mess entrance' },
-              { icon: '🎫', step: '4', title: 'Get Meal Token', desc: 'Receive a unique one-time token and enjoy your meal!' },
+              { icon: '🔍', step: '1', title: 'Find & Subscribe', desc: 'Browse mess services and subscribe to an active meal plan.' },
+              { icon: '📱', step: '2', title: 'Open Your App', desc: 'Launch the CampusNest app when you arrive at the mess.' },
+              { icon: '📷', step: '3', title: 'Scan QR', desc: 'Scan the static QR code poster directly from your dashboard.' },
+              { icon: '✅', step: '4', title: 'Attendance Logged', desc: 'System automatically verifies limits and logs your meal!' },
             ].map(item => (
               <div key={item.step} className="text-center">
-                <div className="w-14 h-14 rounded-2xl bg-brand-50 dark:bg-brand-950/30 flex items-center justify-center text-3xl mx-auto mb-3">{item.icon}</div>
-                <div className="w-6 h-6 rounded-full bg-brand-500 text-white text-xs font-bold flex items-center justify-center mx-auto -mt-1 mb-2">{item.step}</div>
-                <h4 className="font-semibold text-slate-900 dark:text-white mb-1">{item.title}</h4>
-                <p className="text-sm text-slate-500 dark:text-slate-400">{item.desc}</p>
+                <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-brand-50 dark:bg-brand-950/30 flex items-center justify-center text-xl sm:text-3xl mx-auto mb-1.5 sm:mb-3">{item.icon}</div>
+                <div className="w-4 h-4 sm:w-6 sm:h-6 rounded-full bg-brand-500 text-white text-[9px] sm:text-xs font-bold flex items-center justify-center mx-auto -mt-3.5 sm:-mt-4 mb-1.5 sm:mb-2 relative">{item.step}</div>
+                <h4 className="font-bold text-[9px] sm:text-base text-slate-900 dark:text-white mb-0.5 sm:mb-1 leading-tight">{item.title}</h4>
+                <p className="text-[8px] sm:text-sm text-slate-500 dark:text-slate-400 leading-tight">{item.desc}</p>
               </div>
             ))}
           </div>

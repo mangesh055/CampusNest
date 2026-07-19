@@ -25,14 +25,17 @@ export default function MessCard({ mess, index = 0 }: MessCardProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.05 }}
+      whileHover={{ y: -8, scale: 1.01 }}
+      whileTap={{ scale: 0.98 }}
+      className="h-full"
     >
-      <Link to={`/mess/${mess.id}`} className="card-property group block">
+      <Link to={`/mess/${mess.id}`} className="card-property group flex flex-col h-full p-2 transition-all duration-300 hover:shadow-xl hover:shadow-brand-500/10 border border-transparent hover:border-brand-500/20">
         {/* Image */}
-        <div className="relative overflow-hidden h-48">
+        <div className="relative overflow-hidden h-40 sm:h-48 rounded-xl shrink-0">
           <img
             src={photoUrl}
             alt={mess.name}
-            className="property-image w-full h-full object-cover"
+            className="property-image w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
           />
           {/* Status Badge */}
           <div className="absolute top-3 left-3 flex gap-2">
@@ -62,7 +65,7 @@ export default function MessCard({ mess, index = 0 }: MessCardProps) {
         </div>
 
         {/* Content */}
-        <div className="p-4">
+        <div className="px-2 pt-3 pb-1 flex flex-col flex-1">
           <div className="flex items-start justify-between gap-2 mb-1">
             <h3 className="font-semibold text-slate-900 dark:text-white text-sm leading-tight group-hover:text-brand-600 transition-colors">
               {mess.name}
@@ -81,6 +84,16 @@ export default function MessCard({ mess, index = 0 }: MessCardProps) {
 
           {/* Meal Types */}
           <div className="flex flex-wrap gap-1.5 mb-3">
+            {mess.food_type && mess.food_type !== 'both' && (
+              <span className={cn('tag text-[10px] border', mess.food_type === 'veg' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800')}>
+                {mess.food_type === 'veg' ? 'Pure Veg' : 'Non-Veg'}
+              </span>
+            )}
+            {mess.food_type === 'both' && (
+              <span className="tag text-[10px] border bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-800">
+                Veg & Non-Veg
+              </span>
+            )}
             {mess.meal_types.map(meal => (
               <span key={meal} className="tag text-[10px]">
                 {mealTypeLabels[meal]}
@@ -89,7 +102,7 @@ export default function MessCard({ mess, index = 0 }: MessCardProps) {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700">
+          <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700 mt-auto">
             <div>
               <div className="flex items-baseline gap-1">
                 <span className="text-lg font-bold text-slate-900 dark:text-white">

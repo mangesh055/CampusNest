@@ -22,9 +22,9 @@ export default function Footer() {
   return (
     <footer className="bg-slate-900 text-slate-400 pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">
           {/* Brand */}
-          <div className="lg:col-span-2">
+          <div className="col-span-2 md:col-span-4 lg:col-span-2">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
                 <Building2 className="w-5 h-5 text-white" />
@@ -51,7 +51,7 @@ export default function Footer() {
           </div>
 
           {/* Quick Links */}
-          <div>
+          <div className="col-span-1">
             <h4 className="text-white font-semibold mb-4">Explore</h4>
             <ul className="space-y-3 text-sm">
               {['Find PG', 'Find Hostel', 'Find Flat', 'Mess Services', 'Tiffin Services', 'Roommate Finder'].map(item => (
@@ -63,7 +63,7 @@ export default function Footer() {
           </div>
 
           {/* For Owners */}
-          <div>
+          <div className="col-span-1">
             <h4 className="text-white font-semibold mb-4">For Owners</h4>
             <ul className="space-y-3 text-sm">
               {['List Property', 'Register Mess', 'Owner Dashboard', 'Analytics', 'Pricing', 'Success Stories'].map(item => (
@@ -75,7 +75,7 @@ export default function Footer() {
           </div>
 
           {/* Contact */}
-          <div>
+          <div className="col-span-2 md:col-span-2 lg:col-span-1">
             <h4 className="text-white font-semibold mb-4">Contact Us</h4>
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-2">

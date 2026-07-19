@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, Navigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Users, Building2, Utensils, TrendingUp, Shield, AlertTriangle, CheckCircle, XCircle, RefreshCw } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { formatCurrency } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
+import { useAuthStore } from '../../store/authStore'
 
 export interface UserProfile {
   id: string
@@ -24,7 +25,13 @@ const growthData = [
 ]
 
 export default function AdminDashboard() {
+  const { profile } = useAuthStore()
   const location = useLocation()
+  
+  if (!profile || profile.role !== 'admin') {
+    return <Navigate to="/dashboard" replace />
+  }
+
   const currentTab = location.pathname.split('/').pop() || 'admin'
   const [users, setUsers] = useState<UserProfile[]>([])
   const [messes, setMesses] = useState<any[]>([])

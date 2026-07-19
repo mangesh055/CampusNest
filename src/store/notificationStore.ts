@@ -18,8 +18,10 @@ interface NotificationState {
   addNotification: (notif: Omit<AppNotification, 'id' | 'read' | 'createdAt'>) => void
   markAsRead: (id: string) => void
   markAllAsRead: () => void
+  deleteNotification: (id: string) => void
   clearAll: () => void
   fetchServerNotifications: (userId: string) => Promise<void>
+  subscribeToRealtime: (userId: string) => () => void
 }
 
 const defaultNotifications: AppNotification[] = [
@@ -81,15 +83,34 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     const updated = get().notifications.map(n => n.id === id ? { ...n, read: true } : n)
     set({ notifications: updated, unreadCount: updated.filter(n => !n.read).length })
     localStorage.setItem('campusnest-notifications', JSON.stringify(updated))
+    // Sync read status to server
+    supabase.from('app_notifications').update({ read: true }).eq('id', id).then()
   },
   markAllAsRead: () => {
+    const unreadIds = get().notifications.filter(n => !n.read).map(n => n.id)
     const updated = get().notifications.map(n => ({ ...n, read: true }))
     set({ notifications: updated, unreadCount: 0 })
     localStorage.setItem('campusnest-notifications', JSON.stringify(updated))
+    // Sync all unread to server
+    if (unreadIds.length > 0) {
+      supabase.from('app_notifications').update({ read: true }).in('id', unreadIds).then()
+    }
+  },
+  deleteNotification: (id: string) => {
+    const updated = get().notifications.filter(n => n.id !== id)
+    set({ notifications: updated, unreadCount: updated.filter(n => !n.read).length })
+    localStorage.setItem('campusnest-notifications', JSON.stringify(updated))
+    // Also remove from Supabase if it's a server notification
+    supabase.from('app_notifications').delete().eq('id', id).then()
   },
   clearAll: () => {
+    const ids = get().notifications.map(n => n.id)
     set({ notifications: [], unreadCount: 0 })
     localStorage.setItem('campusnest-notifications', JSON.stringify([]))
+    // Also remove from Supabase
+    if (ids.length > 0) {
+      supabase.from('app_notifications').delete().in('id', ids).then()
+    }
   },
   fetchServerNotifications: async (userId: string) => {
     try {
@@ -126,15 +147,47 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
         
         set({ notifications: merged, unreadCount: merged.filter(n => !n.read).length })
         localStorage.setItem('campusnest-notifications', JSON.stringify(merged))
-        
-        // Mark as read in server so we don't fetch as unread again
-        const unreadIds = data.filter(n => !n.read).map(n => n.id)
-        if (unreadIds.length > 0) {
-           await supabase.from('app_notifications').update({ read: true }).in('id', unreadIds)
-        }
+        // NOTE: We do NOT auto-mark as read here — user must see and read them explicitly
       }
     } catch (e) {
       console.error('Failed to fetch server notifications', e)
+    }
+  },
+  subscribeToRealtime: (userId: string) => {
+    const channel = supabase
+      .channel(`notifications:${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'app_notifications',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          const n = payload.new as any
+          const newNotif: AppNotification = {
+            id: n.id,
+            title: n.title,
+            message: n.message,
+            type: n.type as 'info' | 'success' | 'warning' | 'error',
+            read: false,
+            createdAt: n.created_at,
+            link: n.link,
+          }
+          const existing = get().notifications
+          // Avoid duplicates
+          if (existing.some(e => e.id === newNotif.id)) return
+          const updated = [newNotif, ...existing]
+          set({ notifications: updated, unreadCount: updated.filter(n => !n.read).length })
+          localStorage.setItem('campusnest-notifications', JSON.stringify(updated))
+        }
+      )
+      .subscribe()
+
+    // Return an unsubscribe function
+    return () => {
+      supabase.removeChannel(channel)
     }
   }
 }))

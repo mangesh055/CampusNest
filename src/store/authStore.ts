@@ -68,6 +68,7 @@ export const useAuthStore = create<AuthState>()(
       }
       clearLocalAuth()
       clearSupabaseAuthStorage()
+      sessionStorage.removeItem('admin_verified')
       set({ user: null, session: null, profile: null })
     }
   })

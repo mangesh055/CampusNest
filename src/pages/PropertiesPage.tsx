@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { Search, SlidersHorizontal, X, Grid3X3, List, Wifi, Zap, Shield, Car, Bath, Book } from 'lucide-react'
 import PropertyCard from '../components/property/PropertyCard'
 import { usePropertyStore } from '../store/propertyStore'
+import { useAuthStore } from '../store/authStore'
 import type { PropertyType } from '../types'
 import { cn, propertyTypeLabels } from '../lib/utils'
 
@@ -47,10 +48,13 @@ export default function PropertiesPage() {
   const [availableOnly, setAvailableOnly] = useState(false)
 
   const { properties, loadProperties } = usePropertyStore()
+  const { initialized } = useAuthStore()
 
   useEffect(() => {
-    void loadProperties()
-  }, [loadProperties])
+    if (initialized) {
+      void loadProperties()
+    }
+  }, [loadProperties, initialized])
 
   const filtered = useMemo(() => {
     let result = [...properties]
@@ -73,7 +77,7 @@ export default function PropertiesPage() {
     else if (sortBy === 'rent_high') result.sort((a, b) => b.rent - a.rent)
     else if (sortBy === 'rating') result.sort((a, b) => b.rating - a.rating)
     return result
-  }, [search, city, selectedType, gender, minRent, maxRent, sortBy, amenityFilters, availableOnly])
+  }, [search, city, selectedType, gender, minRent, maxRent, sortBy, amenityFilters, availableOnly, properties])
 
   const activeFilters = [selectedType, gender, minRent, maxRent, availableOnly, city].filter(Boolean).length + Object.values(amenityFilters).filter(Boolean).length
 

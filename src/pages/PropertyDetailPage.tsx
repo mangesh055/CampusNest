@@ -23,7 +23,7 @@ type ReviewRow = {
 
 export default function PropertyDetailPage() {
   const { id } = useParams()
-  const { properties, loadProperties } = usePropertyStore()
+  const { properties, loadProperties, incrementPropertyViews, updatePropertyRating } = usePropertyStore()
   const property = properties.find(p => p.id === id)
   const [currentImage, setCurrentImage] = useState(0)
   const [favorited, setFavorited] = useState(false)
@@ -53,6 +53,17 @@ export default function PropertyDetailPage() {
     loadReviews()
   }, [id])
 
+  // Track property view
+  useEffect(() => {
+    if (property && id) {
+      const viewedKey = `viewed_${id}`
+      if (!sessionStorage.getItem(viewedKey)) {
+        sessionStorage.setItem(viewedKey, 'true')
+        void incrementPropertyViews(id)
+      }
+    }
+  }, [property?.id, id]) // Run once when property resolves
+
   if (!property) {
     return (
       <div className="min-h-screen pt-24 flex items-center justify-center text-slate-500">
@@ -73,7 +84,12 @@ export default function PropertyDetailPage() {
       console.error('Failed to delete review:', error)
       return
     }
-    setReviewsList(prev => prev.filter(r => r.id !== reviewId))
+    const newReviewsList = reviewsList.filter(r => r.id !== reviewId)
+    setReviewsList(newReviewsList)
+
+    const newCount = newReviewsList.length
+    const newAvgRating = newCount > 0 ? Number((newReviewsList.reduce((acc, curr) => acc + curr.rating, 0) / newCount).toFixed(1)) : 5.0
+    void updatePropertyRating(property.id, newAvgRating, newCount)
   }
 
   const handleAddReview = (e: React.FormEvent) => {
@@ -97,9 +113,14 @@ export default function PropertyDetailPage() {
         return
       }
 
-      setReviewsList([{ ...newR, profiles: { full_name: newR.full_name } }, ...reviewsList])
+      const newReviewsList = [{ ...newR, profiles: { full_name: newR.full_name } }, ...reviewsList]
+      setReviewsList(newReviewsList)
       setNewReview('')
       setNewRating(0)
+
+      const newCount = newReviewsList.length
+      const newAvgRating = Number((newReviewsList.reduce((acc, curr) => acc + curr.rating, 0) / newCount).toFixed(1))
+      void updatePropertyRating(property.id, newAvgRating, newCount)
     })()
   }
 

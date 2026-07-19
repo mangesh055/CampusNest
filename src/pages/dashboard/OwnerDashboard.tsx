@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Users, Building2, TrendingUp, DollarSign, Star, Eye, MessageSquare, 
@@ -17,9 +17,10 @@ const viewsData = [
 ]
 
 export default function OwnerDashboard() {
-  const { properties, addProperty, toggleAvailability, deleteProperty } = usePropertyStore()
+  const { properties, loadProperties, addProperty, updateProperty, toggleAvailability, deleteProperty } = usePropertyStore()
   const [view, setView] = useState<'overview' | 'listings'>('overview')
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [formStep, setFormStep] = useState(1)
   const [isUploading, setIsUploading] = useState(false)
 
@@ -57,7 +58,13 @@ export default function OwnerDashboard() {
     }
   })
 
-  const { profile } = useAuthStore()
+  const { profile, initialized } = useAuthStore()
+
+  useEffect(() => {
+    if (initialized) {
+      loadProperties()
+    }
+  }, [initialized, loadProperties])
 
   // We show properties associated with the active property owner
   const myProperties = properties.filter(p => p.owner_id === (profile?.id || 'owner1'))
@@ -112,11 +119,53 @@ export default function OwnerDashboard() {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleEdit = (property: Property) => {
+    setEditingId(property.id)
+    setFormData({
+      title: property.title,
+      description: property.description || '',
+      property_type: property.property_type,
+      rent: property.rent?.toString() || '0',
+      deposit: property.deposit?.toString() || '0',
+      address: property.address || '',
+      city: property.city || 'Pune',
+      state: property.state || 'Maharashtra',
+      pincode: property.pincode || '',
+      latitude: property.latitude?.toString() || '18.5204',
+      longitude: property.longitude?.toString() || '73.8567',
+      google_maps_url: property.google_maps_url || '',
+      contact_phone: property.contact_phone || '+91 98765 43210',
+      gender_preference: property.gender_preference as any || 'any',
+      total_rooms: property.total_rooms?.toString() || '10',
+      available_rooms: property.available_rooms?.toString() || '5',
+      images: property.images?.length ? property.images : ['https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600'],
+      amenities: {
+        wifi: !!property.amenities?.wifi,
+        ac: !!property.amenities?.ac,
+        laundry: !!property.amenities?.laundry,
+        water: !!property.amenities?.water,
+        electricity: !!property.amenities?.electricity,
+        cctv: !!property.amenities?.cctv,
+        security: !!property.amenities?.security,
+        parking: !!property.amenities?.parking,
+        attached_bathroom: !!property.amenities?.attached_bathroom,
+        study_table: !!property.amenities?.study_table,
+        furnished: !!property.amenities?.furnished,
+      }
+    })
+    setFormStep(1)
+    setIsModalOpen(true)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    addProperty({
-      owner_id: profile?.id || 'owner1',
+    if (!profile?.id) {
+      alert('You must be logged in to create a property.')
+      return
+    }
+
+    const propertyData = {
       title: formData.title || 'Cozy Shared PG Room',
       description: formData.description || 'Clean rooms with complete student amenities.',
       property_type: formData.property_type,
@@ -135,12 +184,28 @@ export default function OwnerDashboard() {
       available_rooms: Number(formData.available_rooms) || 5,
       images: formData.images,
       amenities: formData.amenities,
-      availability: true,
-      featured: false,
-    })
+    }
+
+    let result
+    if (editingId) {
+      result = await updateProperty(editingId, propertyData)
+    } else {
+      result = await addProperty({
+        ...propertyData,
+        owner_id: profile.id,
+        availability: true,
+        featured: false,
+      })
+    }
+
+    if (!result.success) {
+      alert('Failed to save property: ' + result.error)
+      return
+    }
 
     // Reset Form
     setIsModalOpen(false)
+    setEditingId(null)
     setFormStep(1)
     setFormData({
       title: '',
@@ -176,11 +241,24 @@ export default function OwnerDashboard() {
     })
   }
 
+  const totalReviews = displayProperties.reduce((acc, p) => acc + (p.review_count || 0), 0)
+  const avgRating = displayProperties.length > 0
+    ? (displayProperties.reduce((acc, p) => acc + (Number(p.rating) || 0), 0) / displayProperties.length).toFixed(1)
+    : '0.0'
+  const totalViews = displayProperties.reduce((acc, p) => acc + (p.views || 0), 0)
+
   const stats = [
-    { label: 'Total Listings', value: displayProperties.length.toString(), icon: '🏠', color: 'from-brand-400 to-brand-600', change: '+1 this week' },
-    { label: 'Total Views', value: '1,248', icon: '👁️', color: 'from-blue-400 to-blue-600', change: '+18% vs last month' },
-    { label: 'Inquiries', value: '34', icon: '💬', color: 'from-emerald-400 to-emerald-600', change: '+5 this week' },
-    { label: 'Avg Rating', value: '4.5', icon: '⭐', color: 'from-amber-400 to-amber-600', change: 'Based on 45 reviews' },
+    { label: 'Total Listings', value: displayProperties.length.toString(), icon: '🏠', color: 'from-brand-400 to-brand-600', change: displayProperties.length > 0 ? '+1 this week' : 'No listings' },
+    { label: 'Total Views', value: displayProperties.length > 0 ? totalViews.toLocaleString() : '0', icon: '👁️', color: 'from-blue-400 to-blue-600', change: displayProperties.length > 0 ? '+18% vs last month' : 'No views yet' },
+    { label: 'Avg Rating', value: displayProperties.length > 0 ? avgRating : '0.0', icon: '⭐', color: 'from-amber-400 to-amber-600', change: displayProperties.length > 0 ? `Based on ${totalReviews} reviews` : 'No reviews yet' },
+  ]
+
+  const dynamicViewsData = displayProperties.length > 0 ? [
+    { day: 'Mon', views: 24 * displayProperties.length }, { day: 'Tue', views: 38 * displayProperties.length }, { day: 'Wed', views: 52 * displayProperties.length },
+    { day: 'Thu', views: 41 * displayProperties.length }, { day: 'Fri', views: 68 * displayProperties.length }, { day: 'Sat', views: 55 * displayProperties.length }, { day: 'Sun', views: 34 * displayProperties.length },
+  ] : [
+    { day: 'Mon', views: 0 }, { day: 'Tue', views: 0 }, { day: 'Wed', views: 0 },
+    { day: 'Thu', views: 0 }, { day: 'Fri', views: 0 }, { day: 'Sat', views: 0 }, { day: 'Sun', views: 0 },
   ]
 
   return (
@@ -198,7 +276,7 @@ export default function OwnerDashboard() {
           >
             {view === 'overview' ? '📁 Manage Listings' : '📊 View Analytics'}
           </button>
-          <button onClick={() => setIsModalOpen(true)} className="btn-primary text-sm flex items-center gap-1">
+          <button onClick={() => { setEditingId(null); setIsModalOpen(true); }} className="btn-primary text-sm flex items-center gap-1">
             <Plus className="w-4 h-4" /> Add Listing
           </button>
         </div>
@@ -223,7 +301,7 @@ export default function OwnerDashboard() {
       {view === 'overview' ? (
         <>
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {stats.map((s, i) => (
               <motion.div key={s.label} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                 <div className="card p-5">
@@ -243,7 +321,7 @@ export default function OwnerDashboard() {
                 <Eye className="w-4 h-4 text-brand-500" /> Views This Week
               </h3>
               <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={viewsData}>
+                <AreaChart data={dynamicViewsData}>
                   <defs>
                     <linearGradient id="viewGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
@@ -291,35 +369,6 @@ export default function OwnerDashboard() {
               )}
             </div>
           </div>
-
-          {/* Inquiries */}
-          <div className="card p-6">
-            <h3 className="font-display font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-brand-500" /> Recent Inquiries
-            </h3>
-            <div className="space-y-3">
-              {[
-                { name: 'Rahul Sharma', property: 'Sunshine PG for Boys', time: '2 hours ago', msg: 'Is the room still available for August?' },
-                { name: 'Priya Patel', property: 'Sunshine PG for Boys', time: '5 hours ago', msg: 'Can I visit tomorrow for inspection?' },
-                { name: 'Amit Kumar', property: 'Modern 2BHK Flat', time: '1 day ago', msg: 'What are the security deposit terms?' },
-              ].map((inq, i) => (
-                <div key={i} className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                    {inq.name[0]}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between">
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white">{inq.name}</p>
-                      <p className="text-xs text-slate-400">{inq.time}</p>
-                    </div>
-                    <p className="text-xs text-slate-500">{inq.property}</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{inq.msg}</p>
-                  </div>
-                  <button className="btn-ghost text-xs px-2.5 py-1">Reply</button>
-                </div>
-              ))}
-            </div>
-          </div>
         </>
       ) : (
         /* Listings Management Panel */
@@ -329,7 +378,7 @@ export default function OwnerDashboard() {
               <h3 className="font-display font-bold text-xl text-slate-900 dark:text-white">Active Properties</h3>
               <p className="text-xs text-slate-400">Total: {displayProperties.length} active listings</p>
             </div>
-            <button onClick={() => setIsModalOpen(true)} className="btn-primary text-xs flex items-center gap-1.5">
+            <button onClick={() => { setEditingId(null); setIsModalOpen(true); }} className="btn-primary text-xs flex items-center gap-1.5">
               <Plus className="w-3.5 h-3.5" /> Add Property
             </button>
           </div>
@@ -386,10 +435,17 @@ export default function OwnerDashboard() {
                         )}
                       </button>
                     </td>
-                    <td className="py-4 px-4 text-right space-x-1.5">
+                    <td className="py-4 px-4 text-right space-x-1.5 whitespace-nowrap">
+                      <button 
+                        onClick={() => handleEdit(p)}
+                        className="p-1.5 hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-950/20 rounded-lg text-slate-400 transition-colors inline-flex"
+                        title="Edit Listing"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                      </button>
                       <button 
                         onClick={() => deleteProperty(p.id)}
-                        className="p-1.5 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20 rounded-lg text-slate-400 transition-colors"
+                        className="p-1.5 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20 rounded-lg text-slate-400 transition-colors inline-flex"
                         title="Delete Listing"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -427,10 +483,10 @@ export default function OwnerDashboard() {
               {/* Header */}
               <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
                 <div>
-                  <h3 className="text-xl font-display font-bold text-slate-900 dark:text-white">🆕 Add New Rental Listing</h3>
+                  <h3 className="text-xl font-display font-bold text-slate-900 dark:text-white">{editingId ? '✏️ Edit Rental Listing' : '🆕 Add New Rental Listing'}</h3>
                   <p className="text-xs text-slate-400">Step {formStep} of 3</p>
                 </div>
-                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400 hover:text-slate-600">
+                <button onClick={() => { setIsModalOpen(false); setEditingId(null); }} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400 hover:text-slate-600">
                   <X className="w-5 h-5" />
                 </button>
               </div>

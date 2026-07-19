@@ -24,6 +24,7 @@ import ProfilePage from './pages/dashboard/ProfilePage'
 
 // Layouts
 import PublicLayout from './components/layout/PublicLayout'
+import ProtectedRoute from './components/ProtectedRoute'
 
 // Types
 import { useAuthStore } from './store/authStore'
@@ -60,6 +61,7 @@ export default function App() {
 
   useEffect(() => {
     let mounted = true
+    let unsubscribeRealtime: (() => void) | null = null
 
     const hydrate = async () => {
       const { data } = await supabase.auth.getSession()
@@ -71,7 +73,8 @@ export default function App() {
         setSession(session)
         setUser(session.user)
         await fetchProfile(session.user.id)
-        useNotificationStore.getState().fetchServerNotifications(session.user.id)
+        await useNotificationStore.getState().fetchServerNotifications(session.user.id)
+        unsubscribeRealtime = useNotificationStore.getState().subscribeToRealtime(session.user.id)
       } else {
         setSession(null)
         setUser(null)
@@ -85,11 +88,17 @@ export default function App() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!mounted) return
+      // Clean up previous realtime channel if any
+      if (unsubscribeRealtime) {
+        unsubscribeRealtime()
+        unsubscribeRealtime = null
+      }
       if (session?.user) {
         setSession(session)
         setUser(session.user)
         await fetchProfile(session.user.id)
-        useNotificationStore.getState().fetchServerNotifications(session.user.id)
+        await useNotificationStore.getState().fetchServerNotifications(session.user.id)
+        unsubscribeRealtime = useNotificationStore.getState().subscribeToRealtime(session.user.id)
       } else {
         setSession(null)
         setUser(null)
@@ -101,6 +110,7 @@ export default function App() {
     return () => {
       mounted = false
       subscription.unsubscribe()
+      if (unsubscribeRealtime) unsubscribeRealtime()
     }
   }, [setUser, setSession, setLoading])
 
@@ -139,35 +149,51 @@ export default function App() {
 
         {/* Dashboard Routes wrapped in DashboardLayout */}
         <Route path="/dashboard" element={<DashboardLayout />}>
-          <Route path="student" element={<StudentDashboard />} />
-          <Route path="student/scan" element={<QRScanPage />} />
-          <Route path="student/subscription" element={<StudentDashboard />} />
-          <Route path="student/attendance" element={<StudentDashboard />} />
+          {/* Student Routes */}
+          <Route element={<ProtectedRoute allowedRoles={['student']} />}>
+            <Route path="student" element={<StudentDashboard />} />
+            <Route path="student/scan" element={<QRScanPage />} />
+            <Route path="student/subscription" element={<StudentDashboard />} />
+            <Route path="student/attendance" element={<StudentDashboard />} />
+          </Route>
           
-          <Route path="owner" element={<OwnerDashboard />} />
-          <Route path="owner/listings" element={<OwnerDashboard />} />
+          {/* Owner Routes */}
+          <Route element={<ProtectedRoute allowedRoles={['property_owner']} />}>
+            <Route path="owner" element={<OwnerDashboard />} />
+            <Route path="owner/listings" element={<OwnerDashboard />} />
+          </Route>
           
-          <Route path="mess" element={<MessOwnerDashboard />} />
-          <Route path="mess/menu" element={<MessOwnerDashboard />} />
-          <Route path="mess/menucard" element={<MessOwnerDashboard />} />
-          <Route path="mess/plans" element={<MessOwnerDashboard />} />
-          <Route path="mess/subscribers" element={<MessOwnerDashboard />} />
-          <Route path="mess/attendance" element={<MessOwnerDashboard />} />
-          <Route path="mess/qr" element={<MessOwnerDashboard />} />
-          <Route path="mess/analytics" element={<MessOwnerDashboard />} />
-          <Route path="mess/payments" element={<MessOwnerDashboard />} />
-          <Route path="mess/reports" element={<MessOwnerDashboard />} />
-          <Route path="mess/settings" element={<MessOwnerDashboard />} />
+          {/* Mess Owner Routes */}
+          <Route element={<ProtectedRoute allowedRoles={['mess_owner']} />}>
+            <Route path="mess" element={<MessOwnerDashboard />} />
+            <Route path="mess/menu" element={<MessOwnerDashboard />} />
+            <Route path="mess/menucard" element={<MessOwnerDashboard />} />
+            <Route path="mess/plans" element={<MessOwnerDashboard />} />
+            <Route path="mess/subscribers" element={<MessOwnerDashboard />} />
+            <Route path="mess/attendance" element={<MessOwnerDashboard />} />
+            <Route path="mess/qr" element={<MessOwnerDashboard />} />
+            <Route path="mess/analytics" element={<MessOwnerDashboard />} />
+            <Route path="mess/payments" element={<MessOwnerDashboard />} />
+            <Route path="mess/reports" element={<MessOwnerDashboard />} />
+            <Route path="mess/settings" element={<MessOwnerDashboard />} />
+          </Route>
           
-          <Route path="admin" element={<AdminDashboard />} />
-          <Route path="admin/users" element={<AdminDashboard />} />
-          <Route path="admin/properties" element={<AdminDashboard />} />
-          <Route path="admin/messes" element={<AdminDashboard />} />
-          <Route path="admin/analytics" element={<AdminDashboard />} />
-          <Route path="admin/roommates" element={<AdminDashboard />} />
-          <Route path="admin/community" element={<AdminDashboard />} />
-          <Route path="settings" element={<SettingsPage />} />
-          <Route path="profile" element={<ProfilePage />} />
+          {/* Admin Routes */}
+          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+            <Route path="admin" element={<AdminDashboard />} />
+            <Route path="admin/users" element={<AdminDashboard />} />
+            <Route path="admin/properties" element={<AdminDashboard />} />
+            <Route path="admin/messes" element={<AdminDashboard />} />
+            <Route path="admin/analytics" element={<AdminDashboard />} />
+            <Route path="admin/roommates" element={<AdminDashboard />} />
+            <Route path="admin/community" element={<AdminDashboard />} />
+          </Route>
+
+          {/* Shared Authenticated Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="profile" element={<ProfilePage />} />
+          </Route>
         </Route>
 
         {/* Catch All Redirect */}

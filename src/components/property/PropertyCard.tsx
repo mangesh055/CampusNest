@@ -30,14 +30,16 @@ export default function PropertyCard({ property, index = 0 }: PropertyCardProps)
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.05 }}
+      whileHover={{ y: -8, scale: 1.01 }}
+      whileTap={{ scale: 0.98 }}
     >
-      <Link to={`/properties/${property.id}`} className="card-property group block">
+      <Link to={`/properties/${property.id}`} className="card-property group flex flex-col h-full p-2 transition-all duration-300 hover:shadow-xl hover:shadow-brand-500/10 border border-transparent hover:border-brand-500/20">
         {/* Image */}
-        <div className="relative overflow-hidden h-52">
+        <div className="relative overflow-hidden h-48 sm:h-52 rounded-xl shrink-0">
           <img
             src={property.images[0]}
             alt={property.title}
-            className="property-image w-full h-full object-cover"
+            className="property-image w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
           />
           {/* Badges */}
           <div className="absolute top-3 left-3 flex gap-2">
@@ -78,7 +80,7 @@ export default function PropertyCard({ property, index = 0 }: PropertyCardProps)
         </div>
 
         {/* Content */}
-        <div className="p-4">
+        <div className="px-2 pt-3 pb-1 flex flex-col flex-1">
           <div className="flex items-start justify-between gap-2 mb-2">
             <h3 className="font-semibold text-slate-900 dark:text-white text-sm leading-tight line-clamp-2 group-hover:text-brand-600 transition-colors">
               {property.title}
@@ -110,7 +112,7 @@ export default function PropertyCard({ property, index = 0 }: PropertyCardProps)
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700">
+          <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700 mt-auto">
             <div>
               <div className="flex items-baseline gap-1">
                 <span className="text-lg font-bold text-slate-900 dark:text-white">

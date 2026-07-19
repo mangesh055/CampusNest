@@ -348,19 +348,24 @@ export default function RoommatesPage() {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
-                  className="card overflow-hidden hover:shadow-card transition-all flex flex-col cursor-pointer"
-                  onClick={() => navigate(`/roommates/${item.id}`)}
+                  whileHover={{ y: -8, scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="h-full"
                 >
-                  {(descObj.images?.length || 0) > 0 && (
-                    <div className="h-48 w-full bg-slate-200 dark:bg-slate-800 relative">
-                      <img src={descObj.images?.[0]} alt="Room" className="w-full h-full object-cover" />
-                      <div className="absolute top-3 right-3 bg-black/60 text-white text-[10px] px-2 py-1 rounded-lg backdrop-blur-sm font-medium">
-                        1 of {descObj.images?.length || 0}
+                  <div 
+                    className="card-property group flex flex-col h-full p-2 transition-all duration-300 hover:shadow-xl hover:shadow-brand-500/10 border border-transparent hover:border-brand-500/20 cursor-pointer bg-white dark:bg-slate-900 rounded-2xl shadow-sm"
+                    onClick={() => navigate(`/roommates/${item.id}`)}
+                  >
+                    {(descObj.images?.length || 0) > 0 && (
+                      <div className="relative overflow-hidden h-40 sm:h-48 rounded-xl shrink-0">
+                        <img src={descObj.images?.[0]} alt="Room" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                        <div className="absolute top-3 right-3 bg-black/60 text-white text-[10px] px-2 py-1 rounded-lg backdrop-blur-sm font-medium shadow-sm z-10">
+                          1 of {descObj.images?.length || 0}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  <div className="p-6 flex flex-col justify-between flex-1">
-                    <div>
+                    )}
+                    <div className="px-2 pt-3 pb-1 flex flex-col justify-between flex-1">
+                      <div>
                       {/* Header */}
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-3">
@@ -422,6 +427,7 @@ export default function RoommatesPage() {
                           🍲 {item.food_preference}
                         </span>
                       </div>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -445,7 +451,7 @@ export default function RoommatesPage() {
               </div>
 
               <form onSubmit={handleCreateProfile} className="flex-1 overflow-y-auto p-6 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1">Rent per person (₹/mo)</label>
                     <input type="number" value={form.budget_min} onChange={e => setForm(prev => ({ ...prev, budget_min: e.target.value, budget_max: e.target.value }))} className="input-field text-sm" required />
@@ -461,10 +467,10 @@ export default function RoommatesPage() {
                   <input type="text" value={form.location} onChange={e => setForm(prev => ({ ...prev, location: e.target.value }))} className="input-field text-sm" placeholder="e.g. Kothrud, near MIT Gate" required />
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1">Contact Number (Calling)</label>
-                    <input type="tel" value={form.phone} onChange={e => setForm(prev => ({ ...prev, phone: e.target.value }))} className="input-field text-sm" placeholder="e.g. 9876543210" pattern="[0-9]{10}" title="Please enter a 10 digit mobile number" required />
+                    <input type="tel" maxLength={10} value={form.phone} onChange={e => setForm(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, '') }))} className="input-field text-sm" placeholder="e.g. 9876543210" pattern="[0-9]{10}" title="Please enter a 10 digit mobile number" required />
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1">WhatsApp Number</label>
@@ -476,12 +482,12 @@ export default function RoommatesPage() {
                         <option value="+61">+61 (AU)</option>
                         <option value="+971">+971 (UAE)</option>
                       </select>
-                      <input type="tel" value={form.whatsapp} onChange={e => setForm(prev => ({ ...prev, whatsapp: e.target.value.replace(/\D/g, '') }))} className="input-field text-sm flex-1" placeholder="9876543210" pattern="[0-9]{10}" title="Please enter a 10 digit mobile number" required />
+                      <input type="tel" maxLength={10} value={form.whatsapp} onChange={e => setForm(prev => ({ ...prev, whatsapp: e.target.value.replace(/\D/g, '') }))} className="input-field text-sm flex-1" placeholder="9876543210" pattern="[0-9]{10}" title="Please enter a 10 digit mobile number" required />
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1">Total Roommates in Room</label>
                     <input type="number" value={form.total_roommates} onChange={e => setForm(prev => ({ ...prev, total_roommates: e.target.value }))} className="input-field text-sm" placeholder="e.g. 2" required />
@@ -497,7 +503,7 @@ export default function RoommatesPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1">Looking for Gender</label>
                     <select value={form.gender} onChange={e => setForm(prev => ({ ...prev, gender: e.target.value as any }))} className="input-field text-sm">
@@ -511,7 +517,7 @@ export default function RoommatesPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1">Allowed Food / Diet</label>
                     <select value={form.food_preference} onChange={e => setForm(prev => ({ ...prev, food_preference: e.target.value as any }))} className="input-field text-sm">
@@ -567,7 +573,7 @@ export default function RoommatesPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-2">Smoking</label>
                     <div className="flex gap-2">

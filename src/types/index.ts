@@ -61,6 +61,8 @@ export interface Property {
   featured: boolean
   rating: number
   review_count: number
+  views?: number
+  inquiries?: number
   images: string[]
   amenities: PropertyAmenity
   google_maps_url?: string
@@ -97,6 +99,7 @@ export interface Mess {
   latitude?: number
   longitude?: number
   contact_phone: string
+  food_type?: 'veg' | 'non_veg' | 'both'
   contact_email?: string
   monthly_charge: number
   per_meal_charge?: number
@@ -123,6 +126,7 @@ export interface MessPlan {
   price: number
   duration_days: number
   total_meals?: number
+  daily_scan_limit?: number
   meal_types: MealType[]
   is_custom: boolean
   active: boolean

@@ -42,6 +42,7 @@ type PlanRow = {
   price: number
   duration_days: number
   total_meals?: number | null
+  daily_scan_limit?: number | null
   meal_types: string[]
   active: boolean
 }
@@ -145,6 +146,7 @@ export default function MessOwnerDashboard() {
   const [longitude, setLongitude] = useState(73.8567)
   const [googleMapsUrl, setGoogleMapsUrl] = useState('')
   const [photos, setPhotos] = useState<string[]>([])
+  const [foodType, setFoodType] = useState<'veg' | 'non_veg' | 'both'>('both')
   
   const videoRef = React.useRef<HTMLVideoElement>(null)
   const [isCameraOpen, setIsCameraOpen] = useState(false)
@@ -252,7 +254,7 @@ export default function MessOwnerDashboard() {
   const newItemRef = useRef<HTMLInputElement>(null)
   const newItemPriceRef = useRef<HTMLInputElement>(null)
   const [activeMenuCategory, setActiveMenuCategory] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('lunch')
-  const [planForm, setPlanForm] = useState({ name: '', description: '', price: '', duration_days: '30', total_meals: '', meal_types: [] as string[] })
+  const [planForm, setPlanForm] = useState({ name: '', description: '', price: '', duration_days: '30', total_meals: '', daily_scan_limit: '', meal_types: [] as string[] })
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null)
   const [selectedPlan, setSelectedPlan] = useState<PlanRow | null>(null)
   const [paymentForm, setPaymentForm] = useState({ upi_id: '', phone_number: '' })
@@ -262,6 +264,10 @@ export default function MessOwnerDashboard() {
   const [foundUser, setFoundUser] = useState<any>(null)
   const [selectedAddPlanId, setSelectedAddPlanId] = useState('')
   const [searchLoading, setSearchLoading] = useState(false)
+  const [addPlanPaymentStatus, setAddPlanPaymentStatus] = useState<'paid' | 'pending'>('paid')
+  const [addPlanAmountPaid, setAddPlanAmountPaid] = useState('')
+  const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null)
+  const [editPaymentAmount, setEditPaymentAmount] = useState<string>('')
 
   const path = location.pathname
   const view = path.endsWith('/menu') ? 'menu' : path.endsWith('/menucard') ? 'menucard' : path.endsWith('/plans') ? 'plans' : path.endsWith('/subscribers') ? 'subscribers' : path.endsWith('/attendance') ? 'attendance' : path.endsWith('/qr') ? 'qr' : path.endsWith('/analytics') ? 'analytics' : path.endsWith('/payments') ? 'payments' : path.endsWith('/reports') ? 'reports' : path.endsWith('/settings') ? 'settings' : 'overview'
@@ -292,6 +298,7 @@ export default function MessOwnerDashboard() {
       setMonthlyCharge(String(currentMess.monthly_charge || 3200))
       setPerMealCharge(String(currentMess.per_meal_charge || 110))
       setSelectedMealTypes(currentMess.meal_types || ['breakfast', 'lunch', 'dinner'])
+      setFoodType((currentMess as any).food_type || 'both')
       setLatitude(currentMess.latitude || 18.5204)
       setLongitude(currentMess.longitude || 73.8567)
       setGoogleMapsUrl(currentMess.google_maps_url || '')
@@ -462,6 +469,7 @@ export default function MessOwnerDashboard() {
         price: Number(planForm.price),
         duration_days: Number(planForm.duration_days),
         total_meals: planForm.total_meals ? Number(planForm.total_meals) : null,
+        daily_scan_limit: planForm.daily_scan_limit ? Number(planForm.daily_scan_limit) : null,
         meal_types: planForm.meal_types,
       }
       const { error } = await supabase.from('mess_plans').update(payload).eq('id', editingPlanId)
@@ -481,6 +489,7 @@ export default function MessOwnerDashboard() {
         price: Number(planForm.price),
         duration_days: Number(planForm.duration_days),
         total_meals: planForm.total_meals ? Number(planForm.total_meals) : null,
+        daily_scan_limit: planForm.daily_scan_limit ? Number(planForm.daily_scan_limit) : null,
         meal_types: planForm.meal_types,
         active: true,
       }
@@ -492,7 +501,7 @@ export default function MessOwnerDashboard() {
       }
       setPlans((prev) => [payload as PlanRow, ...prev])
     }
-    setPlanForm({ name: '', description: '', price: '', duration_days: '30', total_meals: '', meal_types: [] })
+    setPlanForm({ name: '', description: '', price: '', duration_days: '30', total_meals: '', daily_scan_limit: '', meal_types: [] })
   }
 
   const handleEditPlan = (plan: PlanRow) => {
@@ -503,6 +512,7 @@ export default function MessOwnerDashboard() {
       price: String(plan.price),
       duration_days: String(plan.duration_days),
       total_meals: plan.total_meals ? String(plan.total_meals) : '',
+      daily_scan_limit: plan.daily_scan_limit ? String(plan.daily_scan_limit) : '',
       meal_types: plan.meal_types || [],
     })
   }
@@ -572,6 +582,7 @@ export default function MessOwnerDashboard() {
       featured: mess?.featured || false,
       rating: mess?.rating || 5,
       review_count: mess?.review_count || 0,
+      food_type: foodType,
       meal_types: selectedMealTypes,
       photos: photos.length > 0 ? photos : ['https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600'],
       created_at: mess?.id ? undefined : new Date().toISOString(),
@@ -653,8 +664,8 @@ export default function MessOwnerDashboard() {
       status: 'active',
       start_date: startDate.toISOString().split('T')[0],
       end_date: endDate.toISOString().split('T')[0],
-      amount_paid: plan.price,
-      payment_status: 'paid',
+      amount_paid: addPlanPaymentStatus === 'paid' ? (addPlanAmountPaid ? Number(addPlanAmountPaid) : plan.price) : 0,
+      payment_status: addPlanPaymentStatus,
       remaining_days: plan.total_meals || plan.duration_days,
       total_meals: plan.total_meals || plan.duration_days,
       plan_name: plan.name,
@@ -694,18 +705,54 @@ export default function MessOwnerDashboard() {
     setSearchPhone('')
     setFoundUser(null)
     setSelectedAddPlanId('')
+    setAddPlanPaymentStatus('paid')
+    setAddPlanAmountPaid('')
     await loadDashboard()
+  }
+
+  const handleUpdatePayment = async (subId: string, planPrice: number) => {
+    const newAmount = Number(editPaymentAmount);
+    const newStatus = newAmount >= planPrice ? 'paid' : 'pending';
+    
+    const { error } = await supabase
+      .from('student_subscriptions')
+      .update({ amount_paid: newAmount, payment_status: newStatus })
+      .eq('id', subId);
+      
+    if (!error) {
+      setSubscribers(prev => prev.map(s => s.id === subId ? { ...s, amount_paid: newAmount, payment_status: newStatus } : s));
+      setEditingPaymentId(null);
+      setBannerMsg('Payment updated successfully');
+      setTimeout(() => setBannerMsg(''), 2500);
+    } else {
+      alert(`Error updating payment: ${error.message}`);
+    }
   }
 
   const handleDeleteSubscriber = async (id: string) => {
     if (!window.confirm('Are you sure you want to remove this subscriber? This will immediately revoke their plan.')) return;
-    
+
+    // Find subscriber details before deleting so we can notify them
+    const sub = subscribers.find(s => s.id === id);
+
     const { error } = await supabase.from('student_subscriptions').delete().eq('id', id);
     if (error) {
       alert(`Error deleting subscriber: ${error.message}`);
       return;
     }
-    
+
+    // Send notification to the student about plan removal
+    if (sub?.student_id && mess) {
+      const planName = sub.plan?.name || 'your current plan';
+      await supabase.from('app_notifications').insert({
+        user_id: sub.student_id,
+        type: 'warning',
+        title: 'Subscription Cancelled',
+        message: `Your subscription to "${planName}" at ${mess.name} has been removed by the mess owner. Please contact them for more details.`,
+        read: false,
+      });
+    }
+
     setBannerMsg('Subscriber removed successfully');
     setTimeout(() => setBannerMsg(''), 2500);
     setSubscribers((prev) => prev.filter((sub) => sub.id !== id));
@@ -979,7 +1026,7 @@ export default function MessOwnerDashboard() {
             </h1>
             <p className="text-slate-500 text-sm mt-1">Manage meal plans stored in Supabase.</p>
           </div>
-          <button onClick={() => { setEditingPlanId(null); setPlanForm({ name: '', description: '', price: '', duration_days: '30', total_meals: '', meal_types: [] }) }} className="btn-secondary self-start sm:self-auto">New Plan</button>
+          <button onClick={() => { setEditingPlanId(null); setPlanForm({ name: '', description: '', price: '', duration_days: '30', total_meals: '', daily_scan_limit: '', meal_types: [] }) }} className="btn-secondary self-start sm:self-auto">New Plan</button>
         </div>
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="card p-6 space-y-4">
@@ -1008,15 +1055,51 @@ export default function MessOwnerDashboard() {
             <div>
               <label className="block text-xs font-semibold text-slate-500 uppercase mb-2">Included Meals</label>
               <div className="grid grid-cols-2 gap-2">
-                {(['breakfast', 'lunch', 'dinner', 'snack'] as const).map((meal) => 
-                  <button key={meal} onClick={() => setPlanForm((prev) => ({ ...prev, meal_types: prev.meal_types.includes(meal) ? prev.meal_types.filter((item) => item !== meal) : [...prev.meal_types, meal] }))} className={cn('p-2 rounded-xl border text-xs capitalize', planForm.meal_types.includes(meal) ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-slate-200 text-slate-500 hover:bg-slate-50')}>{meal}</button>
+                {(['lunch', 'dinner'] as const).map((meal) => 
+                  <button 
+                    key={meal} 
+                    type="button"
+                    onClick={() => setPlanForm((prev) => {
+                      const isSelected = prev.meal_types.includes(meal);
+                      const newMeals = isSelected ? prev.meal_types.filter((item) => item !== meal) : [...prev.meal_types, meal];
+                      return { 
+                        ...prev, 
+                        meal_types: newMeals,
+                        daily_scan_limit: newMeals.length > 0 ? newMeals.length.toString() : ''
+                      };
+                    })} 
+                    className={cn('p-2 rounded-xl border text-xs capitalize transition-colors', planForm.meal_types.includes(meal) ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-slate-200 text-slate-500 hover:bg-slate-50')}
+                  >
+                    {meal}
+                  </button>
                 )}
               </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase mb-2">Daily Scan Limit</label>
+              <div className="flex gap-2 items-center">
+                <input 
+                  className="input-field w-32" 
+                  value={planForm.daily_scan_limit} 
+                  onChange={(e) => setPlanForm((prev) => ({ ...prev, daily_scan_limit: e.target.value }))} 
+                  placeholder="e.g. 2" 
+                  type="number" 
+                  disabled={planForm.daily_scan_limit === '' && planForm.meal_types.length === 0}
+                />
+                <button 
+                  type="button"
+                  onClick={() => setPlanForm(prev => ({ ...prev, daily_scan_limit: prev.daily_scan_limit === '' ? (prev.meal_types.length > 0 ? prev.meal_types.length.toString() : '2') : '' }))} 
+                  className={cn('px-4 py-2.5 rounded-xl border text-xs font-medium transition-colors', planForm.daily_scan_limit === '' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-slate-200 text-slate-500 hover:bg-slate-50')}
+                >
+                  Unlimited
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">If unlimited, leave blank or click the button.</p>
             </div>
             <div className="flex gap-2 mt-2">
               <button onClick={savePlan} className="btn-primary flex-1">{editingPlanId ? 'Update Plan' : 'Save Plan'}</button>
               {editingPlanId && (
-                <button onClick={() => { setEditingPlanId(null); setPlanForm({ name: '', description: '', price: '', duration_days: '30', total_meals: '', meal_types: [] }) }} className="btn-secondary">Cancel</button>
+                <button onClick={() => { setEditingPlanId(null); setPlanForm({ name: '', description: '', price: '', duration_days: '30', total_meals: '', daily_scan_limit: '', meal_types: [] }) }} className="btn-secondary">Cancel</button>
               )}
             </div>
           </div>
@@ -1078,32 +1161,94 @@ export default function MessOwnerDashboard() {
           </div>
           
           {foundUser && (
-            <div className="flex flex-col sm:flex-row gap-4 items-end mt-4 p-4 border border-brand-200 dark:border-brand-800 rounded-xl bg-white dark:bg-slate-900">
-              <div className="flex-1 w-full">
-                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Selected User</label>
-                <div className="font-medium">{foundUser.full_name || 'No Name'} ({foundUser.phone})</div>
+            <div className="flex flex-col gap-4 mt-4 p-4 border border-brand-200 dark:border-brand-800 rounded-xl bg-white dark:bg-slate-900">
+              <div className="flex flex-col sm:flex-row gap-4 items-end">
+                <div className="flex-1 w-full">
+                  <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Selected User</label>
+                  <div className="font-medium">{foundUser.full_name || 'No Name'} ({foundUser.phone})</div>
+                </div>
+                <div className="flex-1 w-full">
+                  <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Select Plan</label>
+                  <select 
+                    className="input-field py-2" 
+                    value={selectedAddPlanId} 
+                    onChange={(e) => {
+                      setSelectedAddPlanId(e.target.value);
+                      const p = plans.find(plan => plan.id === e.target.value);
+                      if (p) setAddPlanAmountPaid(p.price.toString());
+                    }}
+                  >
+                    <option value="">-- Choose a Plan --</option>
+                    {plans.filter(p => p.active).map(p => (
+                      <option key={p.id} value={p.id}>{p.name} - ₹{p.price} ({p.duration_days} days)</option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <div className="flex-1 w-full">
-                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Select Plan</label>
-                <select className="input-field py-2" value={selectedAddPlanId} onChange={(e) => setSelectedAddPlanId(e.target.value)}>
-                  <option value="">-- Choose a Plan --</option>
-                  {plans.filter(p => p.active).map(p => (
-                    <option key={p.id} value={p.id}>{p.name} - ₹{p.price} ({p.duration_days} days)</option>
-                  ))}
-                </select>
-              </div>
-              <button 
-                onClick={handleAddSubscriber} 
-                disabled={!selectedAddPlanId}
-                className="btn-primary w-full sm:w-auto"
-              >
-                Add Subscriber
-              </button>
+              
+              {selectedAddPlanId && (
+                <div className="flex flex-col sm:flex-row gap-4 items-end border-t border-slate-100 dark:border-slate-800 pt-4">
+                  <div className="flex-1 w-full">
+                    <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Payment Status</label>
+                    <select className="input-field py-2" value={addPlanPaymentStatus} onChange={(e) => setAddPlanPaymentStatus(e.target.value as any)}>
+                      <option value="paid">Paid</option>
+                      <option value="pending">Pending</option>
+                    </select>
+                  </div>
+                  {addPlanPaymentStatus === 'paid' && (
+                    <div className="flex-1 w-full">
+                      <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Amount Paid (₹)</label>
+                      <input type="number" className="input-field" value={addPlanAmountPaid} onChange={(e) => setAddPlanAmountPaid(e.target.value)} placeholder="e.g. 2000" />
+                    </div>
+                  )}
+                  <button 
+                    onClick={handleAddSubscriber} 
+                    disabled={!selectedAddPlanId}
+                    className="btn-primary w-full sm:w-auto mb-1"
+                  >
+                    Add Subscriber
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        <div className="card p-6 overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b"><th className="text-left py-3 px-3">Student</th><th className="text-left py-3 px-3">Plan</th><th className="text-left py-3 px-3">Expiry</th><th className="text-left py-3 px-3">Status</th><th className="text-right py-3 px-3">Action</th></tr></thead><tbody>{subscribers.map((sub) => <tr key={sub.id} className="border-b"><td className="py-3 px-3">{sub.student?.full_name || sub.student?.email || sub.student_id}</td><td className="py-3 px-3">{sub.plan?.name || sub.plan_id}</td><td className="py-3 px-3">{formatDate(sub.end_date)}</td><td className="py-3 px-3"><span className={cn('badge text-[10px]', sub.payment_status === 'paid' ? 'badge-green' : 'badge-red')}>{sub.payment_status}</span></td><td className="py-3 px-3 text-right"><button onClick={() => handleDeleteSubscriber(sub.id)} className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors" title="Delete Plan"><Trash2 className="w-4 h-4" /></button></td></tr>)}</tbody></table></div>
+        <div className="card p-6 overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b"><th className="text-left py-3 px-3">Student</th><th className="text-left py-3 px-3">Plan</th><th className="text-left py-3 px-3">Expiry</th><th className="text-left py-3 px-3">Paid Amt</th><th className="text-left py-3 px-3">Status</th><th className="text-right py-3 px-3">Action</th></tr></thead><tbody>{subscribers.map((sub) => {
+          const planPrice = sub.plan?.price || 0;
+          const dueAmount = Math.max(0, planPrice - sub.amount_paid);
+          return (
+            <tr key={sub.id} className="border-b">
+              <td className="py-3 px-3">{sub.student?.full_name || sub.student?.email || sub.student_id}</td>
+              <td className="py-3 px-3">{sub.plan?.name || sub.plan_id}</td>
+              <td className="py-3 px-3">{formatDate(sub.end_date)}</td>
+              <td className="py-3 px-3">
+                {editingPaymentId === sub.id ? (
+                  <div className="flex items-center gap-2">
+                    <input type="number" className="input-field py-1 px-2 w-20 text-xs" value={editPaymentAmount} onChange={e => setEditPaymentAmount(e.target.value)} />
+                    <button onClick={() => handleUpdatePayment(sub.id, planPrice)} className="text-brand-600 text-xs font-bold">Save</button>
+                    <button onClick={() => setEditingPaymentId(null)} className="text-slate-500 text-xs">Cancel</button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-slate-700 dark:text-slate-300">₹{sub.amount_paid}</span>
+                    <button onClick={() => { setEditingPaymentId(sub.id); setEditPaymentAmount(sub.amount_paid.toString()); }} className="text-brand-500 hover:text-brand-600 p-1 bg-brand-50 rounded-lg">
+                      <Edit2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+              </td>
+              <td className="py-3 px-3">
+                <span className={cn('badge text-[10px]', sub.payment_status === 'paid' ? 'badge-green' : 'badge-red')}>{sub.payment_status}</span>
+              </td>
+              <td className="py-3 px-3 text-right">
+                <button onClick={() => handleDeleteSubscriber(sub.id)} className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors" title="Delete Plan">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </td>
+            </tr>
+          );
+        })}</tbody></table></div>
       </div>
     )
   }
@@ -1215,6 +1360,14 @@ export default function MessOwnerDashboard() {
         <div className="flex items-center justify-between"><div><h1 className="text-2xl font-display font-bold">Mess Settings</h1><p className="text-slate-500 text-sm mt-1">Edit your mess profile and save it directly to Supabase.</p></div><button onClick={loadDashboard} className="btn-secondary text-xs">Refresh</button></div>
         <div className="card p-6 space-y-4">
           <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Mess Name</label><input className="input-field" value={messName} onChange={(e) => setMessName(e.target.value)} placeholder="Mess name" /></div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Food Type</label>
+            <select className="input-field" value={foodType} onChange={(e) => setFoodType(e.target.value as any)}>
+              <option value="both">Veg & Non-Veg (Both)</option>
+              <option value="veg">Pure Veg</option>
+              <option value="non_veg">Non-Veg</option>
+            </select>
+          </div>
           <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Description</label><textarea className="input-field min-h-24" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" /></div>
           <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Contact Phone</label><input className="input-field" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="Contact Phone" /></div>
           <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Service Hours</label><input className="input-field" value={serviceHours} onChange={(e) => setServiceHours(e.target.value)} placeholder="e.g. 08:00 AM - 10:30 PM" /></div>
