@@ -46,7 +46,6 @@ const adminLinks = [
   { label: 'Properties', path: '/dashboard/admin/properties', icon: Building2 },
   { label: 'Messes', path: '/dashboard/admin/messes', icon: Utensils },
   { label: 'Analytics', path: '/dashboard/admin/analytics', icon: BarChart2 },
-  { label: 'Reports', path: '/dashboard/admin/reports', icon: FileText },
   { label: 'Settings', path: '/dashboard/settings', icon: Settings },
 ]
 

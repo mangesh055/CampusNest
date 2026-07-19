@@ -163,7 +163,9 @@ export default function App() {
           <Route path="admin/users" element={<AdminDashboard />} />
           <Route path="admin/properties" element={<AdminDashboard />} />
           <Route path="admin/messes" element={<AdminDashboard />} />
-          <Route path="admin/reports" element={<AdminDashboard />} />
+          <Route path="admin/analytics" element={<AdminDashboard />} />
+          <Route path="admin/roommates" element={<AdminDashboard />} />
+          <Route path="admin/community" element={<AdminDashboard />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>

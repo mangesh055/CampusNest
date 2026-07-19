@@ -61,6 +61,8 @@ export default function AdminDashboard() {
       fetchCommunity()
     } else if (currentTab === 'admin') {
       fetchOverview()
+    } else if (currentTab === 'analytics') {
+      fetchOverview() // fetch same stats for charts
     }
   }, [currentTab])
 
@@ -373,25 +375,7 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        <div className="card p-6">
-          <h3 className="font-display font-bold text-slate-900 dark:text-white mb-4">Platform Growth</h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={growthData}>
-              <defs>
-                <linearGradient id="userGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip />
-              <Area type="monotone" dataKey="users" stroke="#6366f1" fill="url(#userGrad)" strokeWidth={2.5} name="Users" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-
+      <div className="grid lg:grid-cols-1 gap-6 mt-6">
         <div className="card p-6">
           <h3 className="font-display font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-500" /> Pending Verifications
@@ -421,7 +405,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="card p-6">
+      <div className="card p-6 mt-6">
         <h3 className="font-display font-bold text-slate-900 dark:text-white mb-4">Quick Actions</h3>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {[
@@ -444,6 +428,62 @@ export default function AdminDashboard() {
         </div>
       </div>
     </>
+  )
+
+  const renderAnalytics = () => (
+    <div className="space-y-6">
+      <div className="grid lg:grid-cols-2 gap-6">
+        <div className="card p-6">
+          <h3 className="font-display font-bold text-slate-900 dark:text-white mb-4">Platform Growth (Users)</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={growthData}>
+              <defs>
+                <linearGradient id="userGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" dark:stroke="#334155" />
+              <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#94a3b8" />
+              <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
+              <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+              <Area type="monotone" dataKey="users" stroke="#6366f1" fill="url(#userGrad)" strokeWidth={3} name="Total Users" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="card p-6">
+          <h3 className="font-display font-bold text-slate-900 dark:text-white mb-4">Monthly Revenue (₹)</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={growthData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" dark:stroke="#334155" />
+              <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#94a3b8" />
+              <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" tickFormatter={(val) => `₹${val / 1000}k`} />
+              <Tooltip cursor={{ fill: 'rgba(99, 102, 241, 0.1)' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+              <Bar dataKey="revenue" fill="#10b981" radius={[4, 4, 0, 0]} name="Revenue" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="card p-5 bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
+          <div className="text-sm font-medium opacity-80 mb-1">Total Users</div>
+          <div className="text-3xl font-bold">{overviewStats.totalStudents}</div>
+        </div>
+        <div className="card p-5 bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
+          <div className="text-sm font-medium opacity-80 mb-1">Messes</div>
+          <div className="text-3xl font-bold">{overviewStats.totalMesses}</div>
+        </div>
+        <div className="card p-5 bg-gradient-to-br from-blue-500 to-cyan-600 text-white">
+          <div className="text-sm font-medium opacity-80 mb-1">Properties</div>
+          <div className="text-3xl font-bold">{overviewStats.totalProperties}</div>
+        </div>
+        <div className="card p-5 bg-gradient-to-br from-amber-500 to-orange-600 text-white">
+          <div className="text-sm font-medium opacity-80 mb-1">Subscribers</div>
+          <div className="text-3xl font-bold">{overviewStats.activeSubscriptions}</div>
+        </div>
+      </div>
+    </div>
   )
 
   const renderUsers = () => (
@@ -703,6 +743,7 @@ export default function AdminDashboard() {
       </div>
 
       {currentTab === 'admin' && renderOverview()}
+      {currentTab === 'analytics' && renderAnalytics()}
       {currentTab === 'users' && renderUsers()}
       {currentTab === 'messes' && renderMesses()}
       {currentTab === 'properties' && renderProperties()}
