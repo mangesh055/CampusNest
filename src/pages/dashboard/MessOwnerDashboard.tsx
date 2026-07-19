@@ -6,6 +6,7 @@ import { BarChart, Bar as ReBar, XAxis, YAxis, CartesianGrid, Tooltip, Responsiv
 import { useAuthStore } from '../../store/authStore'
 import { supabase } from '../../lib/supabase'
 import { cn, formatCurrency, formatDate, mealTypeLabels } from '../../lib/utils'
+import { uploadToCloudinary } from '../../utils/cloudinary'
 
 type MessRow = {
   id: string
@@ -129,6 +130,7 @@ export default function MessOwnerDashboard() {
   const [menuCard, setMenuCard] = useState<{name: string, price: string}[]>([])
   const [paymentSettings, setPaymentSettings] = useState<PaymentSettingsRow>({ owner_id: profile?.id || '', upi_id: '', phone_number: '' })
   const [loading, setLoading] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [bannerMsg, setBannerMsg] = useState('')
 
   const [messName, setMessName] = useState('')
@@ -177,9 +179,21 @@ export default function MessOwnerDashboard() {
       const ctx = canvas.getContext('2d')
       if (ctx) {
         ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height)
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8)
-        setPhotos(prev => [...prev, dataUrl])
-        stopCamera()
+        canvas.toBlob(async (blob) => {
+          if (blob) {
+            setIsUploading(true)
+            stopCamera()
+            try {
+              const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' })
+              const url = await uploadToCloudinary(file)
+              setPhotos(prev => [...prev, url])
+            } catch (error: any) {
+              alert('Failed to upload camera photo: ' + error.message)
+            } finally {
+              setIsUploading(false)
+            }
+          }
+        }, 'image/jpeg', 0.8)
       }
     }
   }
@@ -207,17 +221,21 @@ export default function MessOwnerDashboard() {
     </AnimatePresence>
   )
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
     
-    Array.from(files).forEach(file => {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setPhotos(prev => [...prev, reader.result as string])
-      }
-      reader.readAsDataURL(file)
-    })
+    setIsUploading(true)
+    try {
+      const uploadPromises = Array.from(files).map(file => uploadToCloudinary(file))
+      const urls = await Promise.all(uploadPromises)
+      
+      setPhotos(prev => [...prev, ...urls])
+    } catch (error: any) {
+      alert('Failed to upload image: ' + error.message)
+    } finally {
+      setIsUploading(false)
+    }
   }
 
   const handleAddImageUrl = () => {
@@ -796,10 +814,10 @@ export default function MessOwnerDashboard() {
               ))}
             </div>
             <div className="flex gap-2">
-              <label className="flex-1 cursor-pointer bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-3 flex flex-col items-center justify-center transition-colors">
+              <label className={`flex-1 cursor-pointer bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-3 flex flex-col items-center justify-center transition-colors ${isUploading ? 'opacity-50 cursor-wait' : ''}`}>
                 <Plus className="w-5 h-5 text-slate-400 mb-1" />
-                <span className="text-xs text-slate-500 font-medium">Upload Image</span>
-                <input type="file" multiple accept="image/*" onChange={handleFileUpload} className="hidden" />
+                <span className="text-xs text-slate-500 font-medium">{isUploading ? 'Uploading...' : 'Upload Image'}</span>
+                <input type="file" multiple accept="image/*" onChange={handleFileUpload} disabled={isUploading} className="hidden" />
               </label>
               <button 
                 type="button"

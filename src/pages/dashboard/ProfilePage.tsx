@@ -3,9 +3,11 @@ import { motion } from 'framer-motion'
 import { User, Mail, Phone, MapPin, Camera, Save, Shield, Calendar, BookOpen } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { getInitials } from '../../lib/utils'
+import { supabase } from '../../lib/supabase'
+import { uploadToCloudinary } from '../../utils/cloudinary'
 
 export default function ProfilePage() {
-  const { profile } = useAuthStore()
+  const { profile, fetchProfile } = useAuthStore()
   
   const [formData, setFormData] = useState({
     full_name: profile?.full_name || '',
@@ -24,6 +26,31 @@ export default function ProfilePage() {
     alert('Profile updated successfully! (Simulated)')
   }
 
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !profile) return
+
+    setUploadingAvatar(true)
+    try {
+      const publicUrl = await uploadToCloudinary(file)
+
+      const { error: updateError } = await supabase.from('profiles').update({
+        avatar_url: publicUrl
+      }).eq('id', profile.id)
+
+      if (updateError) throw updateError
+      
+      await fetchProfile(profile.id)
+    } catch (error: any) {
+      alert('Failed to upload profile picture: ' + error.message)
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
   if (!profile) return null
 
   return (
@@ -37,13 +64,36 @@ export default function ProfilePage() {
         {/* Left Column - Avatar & Quick Info */}
         <div className="md:col-span-1 space-y-6">
           <div className="card p-6 flex flex-col items-center text-center">
-            <div className="relative mb-4 group">
-              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white text-4xl font-bold shadow-xl overflow-hidden">
-                {getInitials(profile.full_name || 'User')}
+            <div className="relative mb-4 group inline-block">
+              <div className="relative w-32 h-32 rounded-full shadow-xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                {profile.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white text-4xl font-bold">
+                    {getInitials(profile.full_name || 'User')}
+                  </div>
+                )}
+                {uploadingAvatar && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
               </div>
-              <button className="absolute bottom-0 right-0 w-10 h-10 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-lg border border-slate-100 dark:border-slate-700 text-brand-500 hover:text-brand-600 hover:scale-110 transition-transform">
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="absolute bottom-0 right-0 w-10 h-10 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-lg border border-slate-100 dark:border-slate-700 text-brand-500 hover:text-brand-600 hover:scale-110 transition-transform z-10"
+              >
                 <Camera className="w-5 h-5" />
               </button>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleAvatarUpload} 
+                accept="image/*" 
+                capture="user"
+                className="hidden" 
+              />
             </div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">{formData.full_name}</h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm mb-3">{profile.email}</p>

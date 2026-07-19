@@ -8,6 +8,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { usePropertyStore } from '../../store/propertyStore'
 import { useAuthStore } from '../../store/authStore'
 import { formatCurrency } from '../../lib/utils'
+import { uploadToCloudinary } from '../../utils/cloudinary'
 import type { Property, PropertyType } from '../../types'
 
 const viewsData = [
@@ -20,6 +21,7 @@ export default function OwnerDashboard() {
   const [view, setView] = useState<'overview' | 'listings'>('overview')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [formStep, setFormStep] = useState(1)
+  const [isUploading, setIsUploading] = useState(false)
 
   // Form State
   const [formData, setFormData] = useState({
@@ -66,20 +68,24 @@ export default function OwnerDashboard() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
     
-    Array.from(files).forEach(file => {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setFormData(prev => ({
-          ...prev,
-          images: [...prev.images, reader.result as string]
-        }))
-      }
-      reader.readAsDataURL(file)
-    })
+    setIsUploading(true)
+    try {
+      const uploadPromises = Array.from(files).map(file => uploadToCloudinary(file))
+      const urls = await Promise.all(uploadPromises)
+      
+      setFormData(prev => ({
+        ...prev,
+        images: [...prev.images, ...urls]
+      }))
+    } catch (error: any) {
+      alert('Failed to upload image: ' + error.message)
+    } finally {
+      setIsUploading(false)
+    }
   }
 
   const handleAddImageUrl = () => {
@@ -523,10 +529,10 @@ export default function OwnerDashboard() {
                         ))}
                       </div>
                       <div className="flex gap-2">
-                        <label className="flex-1 cursor-pointer bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-3 flex flex-col items-center justify-center transition-colors">
+                        <label className={`flex-1 cursor-pointer bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-3 flex flex-col items-center justify-center transition-colors ${isUploading ? 'opacity-50 cursor-wait' : ''}`}>
                           <Plus className="w-5 h-5 text-slate-400 mb-1" />
-                          <span className="text-xs text-slate-500 font-medium">Upload Local Image</span>
-                          <input type="file" multiple accept="image/*" onChange={handleFileUpload} className="hidden" />
+                          <span className="text-xs text-slate-500 font-medium">{isUploading ? 'Uploading...' : 'Upload Local Image'}</span>
+                          <input type="file" multiple accept="image/*" onChange={handleFileUpload} disabled={isUploading} className="hidden" />
                         </label>
                         <button 
                           type="button" 

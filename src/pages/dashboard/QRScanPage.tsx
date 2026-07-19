@@ -13,9 +13,34 @@ export default function QRScanPage() {
   const [mealType, setMealType] = useState('')
   const [manualCode, setManualCode] = useState('')
   const [myMesses, setMyMesses] = useState<{mess_id: string, messes: {name: string}}[]>([])
+  const [tokenData, setTokenData] = useState<{
+    messName: string;
+    timestamp: string;
+    userName: string;
+    mealsLeft: number;
+    colorIndex: number;
+    mealType?: string;
+  } | null>(null)
 
   useEffect(() => {
     if (profile) {
+      // Check for saved token
+      const savedToken = localStorage.getItem(`meal_token_${profile.id}`)
+      if (savedToken) {
+        try {
+          const parsed = JSON.parse(savedToken)
+          if (parsed && parsed.mealsLeft > 0) {
+            setTokenData(parsed)
+            if (parsed.mealType) setMealType(parsed.mealType)
+            setStatus('success')
+          } else {
+            localStorage.removeItem(`meal_token_${profile.id}`)
+          }
+        } catch (e) {
+          localStorage.removeItem(`meal_token_${profile.id}`)
+        }
+      }
+
       supabase.from('student_subscriptions')
         .select('mess_id, messes(name)')
         .eq('student_id', profile.id)
@@ -74,7 +99,7 @@ export default function QRScanPage() {
       // Check if the user has an active subscription to this mess
       const { data: sub, error: subError } = await supabase
         .from('student_subscriptions')
-        .select('*')
+        .select('*, messes(name)')
         .eq('student_id', profile.id)
         .eq('mess_id', actualMessId)
         .eq('status', 'active')
@@ -134,9 +159,10 @@ export default function QRScanPage() {
       }
 
       // Try to decrement remaining days/meals if column exists
+      let newRemaining = sub.remaining_days;
       try {
         if (sub.remaining_days !== undefined && sub.remaining_days > 0) {
-           const newRemaining = sub.remaining_days - 1;
+           newRemaining = sub.remaining_days - 1;
            const updatePayload: any = { remaining_days: newRemaining };
            if (newRemaining <= 0) {
              updatePayload.status = 'expired';
@@ -151,6 +177,24 @@ export default function QRScanPage() {
         console.error('Exception updating remaining days:', e);
       }
 
+      const now = new Date();
+      // Calculate day index for color cycling (0 to 6)
+      // Since interval is 7 days, we can just use the day of the year or time in days
+      const daysSinceEpoch = Math.floor(now.getTime() / (1000 * 60 * 60 * 24));
+      const colorIndex = daysSinceEpoch % 7;
+
+      const tokenPayload = {
+        messName: sub.messes?.name || 'Mess',
+        timestamp: now.toLocaleString(),
+        userName: profile.full_name,
+        mealsLeft: newRemaining !== undefined ? newRemaining : 0,
+        colorIndex,
+        mealType: currentMeal,
+      }
+      
+      setTokenData(tokenPayload)
+      localStorage.setItem(`meal_token_${profile.id}`, JSON.stringify(tokenPayload))
+
       setStatus('success')
     } catch (error: any) {
       setMessage(error.message || 'Invalid QR Code or Scan Error')
@@ -162,7 +206,18 @@ export default function QRScanPage() {
     setScanResult(null)
     setStatus('scanning')
     setMessage('')
+    setTokenData(null)
   }
+
+  const tokenColors = [
+    'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-500',
+    'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border-orange-500',
+    'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-500',
+    'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-500',
+    'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-500',
+    'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border-indigo-500',
+    'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 border-purple-500',
+  ];
 
   return (
     <div className="p-6 max-w-lg mx-auto space-y-6">
@@ -206,10 +261,39 @@ export default function QRScanPage() {
               <CheckCircle className="w-12 h-12 text-emerald-500" />
             </motion.div>
             <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Check-in Successful!</h3>
-            <p className="text-slate-500 text-sm capitalize">
-              Your attendance for <strong>{mealType}</strong> has been marked.
-            </p>
-            <button onClick={resetScanner} className="btn-secondary w-full justify-center">
+            
+            {tokenData && (
+              <div className={`mt-6 mb-6 p-6 rounded-2xl border-2 text-left relative overflow-hidden ${tokenColors[tokenData.colorIndex]}`}>
+                <div className="absolute top-0 right-0 w-24 h-24 bg-current opacity-5 rounded-bl-full pointer-events-none"></div>
+                <h4 className="font-display text-xl font-bold mb-4 border-b border-current/20 pb-2">
+                  Meal Token
+                </h4>
+                <div className="space-y-2">
+                  <p className="flex justify-between">
+                    <span className="opacity-80">Mess Name:</span>
+                    <span className="font-semibold">{tokenData.messName}</span>
+                  </p>
+                  <p className="flex justify-between">
+                    <span className="opacity-80">Student Name:</span>
+                    <span className="font-semibold">{tokenData.userName}</span>
+                  </p>
+                  <p className="flex justify-between">
+                    <span className="opacity-80">Meal Type:</span>
+                    <span className="font-semibold capitalize">{mealType}</span>
+                  </p>
+                  <p className="flex justify-between">
+                    <span className="opacity-80">Time:</span>
+                    <span className="font-semibold">{tokenData.timestamp}</span>
+                  </p>
+                  <p className="flex justify-between pt-2 mt-2 border-t border-current/20">
+                    <span className="opacity-80 font-medium">Meals Left:</span>
+                    <span className="font-bold text-lg">{tokenData.mealsLeft}</span>
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            <button onClick={resetScanner} className="btn-secondary w-full justify-center mt-4">
               <RefreshCw className="w-4 h-4 mr-2" /> Scan Again
             </button>
           </motion.div>

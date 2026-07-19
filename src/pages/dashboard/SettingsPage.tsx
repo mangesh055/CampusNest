@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { User, Lock, Bell, Moon, Sun, CreditCard, ShieldCheck, Save, Phone, Camera, X } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { supabase } from '../../lib/supabase'
+import { uploadToCloudinary } from '../../utils/cloudinary'
 
 export default function SettingsPage() {
   const { profile, user, fetchProfile } = useAuthStore()
@@ -131,23 +132,7 @@ export default function SettingsPage() {
     setMessage({ type: '', text: '' })
     
     try {
-      const fileExt = file.name.split('.').pop()
-      const filePath = `${profile.id}-${Math.random()}.${fileExt}`
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file)
-
-      if (uploadError) {
-        if (uploadError.message.includes('Bucket not found') || uploadError.message.includes('bucket')) {
-          throw new Error('Please create a storage bucket named "avatars" and set it to public in your Supabase project first.')
-        }
-        throw uploadError
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath)
+      const publicUrl = await uploadToCloudinary(file);
 
       const { error: updateError } = await supabase.from('profiles').update({
         avatar_url: publicUrl
@@ -171,14 +156,8 @@ export default function SettingsPage() {
     setMessage({ type: '', text: '' })
     
     try {
-      try {
-        const urlObj = new URL(profile.avatar_url)
-        const pathParts = urlObj.pathname.split('/')
-        const filePath = pathParts[pathParts.length - 1]
-        await supabase.storage.from('avatars').remove([filePath])
-      } catch (e) {
-        // Ignore storage delete errors
-      }
+      // With Cloudinary from the frontend, we just remove the reference from the database.
+      // Physical deletion requires backend authentication.
 
       const { error } = await supabase.from('profiles').update({ avatar_url: null }).eq('id', profile.id)
       if (error) throw error
@@ -273,13 +252,22 @@ export default function SettingsPage() {
                         {formData.fullName.charAt(0) || 'U'}
                       </div>
                     )}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingAvatar}
+                      className="absolute bottom-0 right-0 bg-brand-500 text-white rounded-full p-1 shadow-md border-2 border-white dark:border-slate-900 hover:bg-brand-600 transition-colors"
+                      title="Upload Photo"
+                    >
+                      <Camera className="w-3 h-3" />
+                    </button>
                   </div>
                   <div>
                     <input 
                       type="file" 
                       ref={fileInputRef} 
                       onChange={handleAvatarUpload} 
-                      accept="image/jpeg, image/png, image/gif" 
+                      accept="image/*" 
+                      capture="user"
                       className="hidden" 
                     />
                     <input 
@@ -297,13 +285,6 @@ export default function SettingsPage() {
                         className="btn-secondary py-1.5 px-3 text-xs"
                       >
                         {uploadingAvatar ? 'Uploading...' : 'Upload File'}
-                      </button>
-                      <button 
-                        onClick={() => cameraInputRef.current?.click()}
-                        disabled={uploadingAvatar}
-                        className="btn-secondary py-1.5 px-3 text-xs flex items-center gap-1"
-                      >
-                        <Camera className="w-3.5 h-3.5" /> Take Photo
                       </button>
                     </div>
                     <p className="text-[10px] text-slate-500 mt-2">JPG, GIF or PNG. Max size of 800K</p>
