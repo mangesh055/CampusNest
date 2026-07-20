@@ -189,9 +189,6 @@ export default function RoommatesPage() {
 
   // Filter roommates feed
   const filteredRoommates = roommates.filter(item => {
-    // Hide our own card in listing
-    if (profile && item.student_id === profile.id) return false
-
     if (search) {
       const q = search.toLowerCase()
       const matchesName = item.full_name?.toLowerCase().includes(q)
@@ -249,6 +246,18 @@ export default function RoommatesPage() {
                     if (parsed.text !== undefined) descObj = { ...descObj, ...parsed }
                   } catch (e) {}
                   
+                  let rawWhatsapp = descObj.whatsapp || descObj.phone || ''
+                  let parsedCode = '+91'
+                  let parsedNumber = rawWhatsapp
+                  const possibleCodes = ['+91', '+1', '+44', '+61', '+971']
+                  for (const c of possibleCodes) {
+                    if (rawWhatsapp.startsWith(c)) {
+                      parsedCode = c
+                      parsedNumber = rawWhatsapp.slice(c.length)
+                      break
+                    }
+                  }
+                  
                   setForm({
                     budget_min: myProfile.budget_min.toString(),
                     budget_max: myProfile.budget_max.toString(),
@@ -266,8 +275,8 @@ export default function RoommatesPage() {
                     images: descObj.images || [],
                     description: descObj.text || '',
                     phone: descObj.phone || '',
-                    whatsapp: (descObj.whatsapp || descObj.phone || '').replace(/^\+\d+/, ''),
-                    whatsapp_code: (descObj.whatsapp?.match(/^\+(\d+)/)?.[0]) || '+91'
+                    whatsapp: parsedNumber,
+                    whatsapp_code: parsedCode
                   })
                   setIsEditing(true)
                   setShowForm(true)

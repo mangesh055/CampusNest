@@ -43,6 +43,50 @@ export default function AuthPage() {
     email: '', password: '', fullName: '', phone: '', gender: 'male'
   })
 
+  const [stats, setStats] = useState({
+    properties: '1,200+',
+    messes: '400+',
+    students: '5,000+',
+    rating: '4.8'
+  })
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const [
+          { count: propsCount },
+          { count: messesCount },
+          { count: studentsCount },
+          { data: reviews }
+        ] = await Promise.all([
+          supabase.from('properties').select('*', { count: 'exact', head: true }),
+          supabase.from('messes').select('*', { count: 'exact', head: true }),
+          supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
+          supabase.from('reviews').select('rating')
+        ])
+
+        let avgRating = 4.8
+        if (reviews && reviews.length > 0) {
+          const validReviews = reviews.filter(r => typeof r.rating === 'number')
+          if (validReviews.length > 0) {
+            const sum = validReviews.reduce((acc, curr) => acc + curr.rating, 0)
+            avgRating = Number((sum / validReviews.length).toFixed(1))
+          }
+        }
+
+        setStats({
+          properties: propsCount ? `${propsCount}+` : '1,200+',
+          messes: messesCount ? `${messesCount}+` : '400+',
+          students: studentsCount ? `${studentsCount}+` : '5,000+',
+          rating: avgRating.toString()
+        })
+      } catch (error) {
+        console.error('Failed to load stats:', error)
+      }
+    }
+    fetchStats()
+  }, [])
+
   const { setUser, setSession, fetchProfile } = useAuthStore()
   const navigate = useNavigate()
 
@@ -190,10 +234,10 @@ export default function AuthPage() {
 
           <div className="grid grid-cols-2 gap-4">
             {[
-              { icon: '🏠', label: '1,200+ Properties', sub: 'PGs, Hostels & Flats' },
-              { icon: '🍽️', label: '400+ Mess Services', sub: 'Digital attendance' },
-              { icon: '👥', label: '5,000+ Students', sub: 'Active community' },
-              { icon: '⭐', label: '4.8 Rating', sub: 'Trusted platform' },
+              { icon: '🏠', label: `${stats.properties} Properties`, sub: 'PGs, Hostels & Flats' },
+              { icon: '🍽️', label: `${stats.messes} Mess Services`, sub: 'Digital attendance' },
+              { icon: '👥', label: `${stats.students} Students`, sub: 'Active community' },
+              { icon: '⭐', label: `${stats.rating} Rating`, sub: 'Trusted platform' },
             ].map((stat) => (
               <div key={stat.label} className="p-4 rounded-2xl bg-white/5 border border-white/10">
                 <div className="text-2xl mb-1">{stat.icon}</div>

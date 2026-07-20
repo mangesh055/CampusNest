@@ -130,7 +130,7 @@ export default function HelpCenterPage() {
           <h2 className="text-2xl font-bold mb-2">Still need help?</h2>
           <p className="text-brand-100 mb-6">Our support team is always ready to assist you with any platform issues.</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a href="mailto:support@flatsnfoods.com" className="btn-secondary w-full sm:w-auto flex items-center justify-center gap-2 border-white/20 hover:bg-white/10 text-white">
+            <a href="mailto:support.flatsnfoods@gmail.com" className="btn-secondary w-full sm:w-auto flex items-center justify-center gap-2 border-white/20 hover:bg-white/10 text-white">
               <MessageCircle className="w-4 h-4" />
               Email Support
             </a>

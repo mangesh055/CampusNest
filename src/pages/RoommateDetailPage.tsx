@@ -132,44 +132,52 @@ export default function RoommateDetailPage() {
               <div className="mb-10">
                 <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4">Amenities & Rules</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center shrink-0">
-                      <Users className="w-4 h-4" />
+                  {roommate.gender && (
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                      <div className="w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand-600 flex items-center justify-center shrink-0">
+                        <Check className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-400 font-semibold uppercase">Gender</p>
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 capitalize">{roommate.gender} Only</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-[10px] text-slate-400 font-semibold uppercase">Gender</p>
-                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 capitalize">{roommate.gender} Only</p>
+                  )}
+                  {roommate.food_preference && roommate.food_preference !== 'both' && (
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                      <div className="w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand-600 flex items-center justify-center shrink-0">
+                        <Check className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-400 font-semibold uppercase">Diet</p>
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 capitalize">{roommate.food_preference}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                    <div className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-900/30 text-orange-600 flex items-center justify-center shrink-0">
-                      <span className="text-sm">🍲</span>
+                  )}
+                  {roommate.sleep_schedule && roommate.sleep_schedule !== 'flexible' && (
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                      <div className="w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand-600 flex items-center justify-center shrink-0">
+                        <Check className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-400 font-semibold uppercase">Schedule</p>
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 capitalize">{roommate.sleep_schedule.replace('_', ' ')}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-[10px] text-slate-400 font-semibold uppercase">Diet</p>
-                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 capitalize">{roommate.food_preference}</p>
+                  )}
+                  {roommate.smoking && (
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                      <div className="w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand-600 flex items-center justify-center shrink-0">
+                        <Check className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-400 font-semibold uppercase">Smoking</p>
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 capitalize">Allowed</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center shrink-0">
-                      <span className="text-sm">🕒</span>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-slate-400 font-semibold uppercase">Schedule</p>
-                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 capitalize">{roommate.sleep_schedule.replace('_', ' ')}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                    <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center shrink-0', roommate.smoking ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600')}>
-                      <span className="text-sm">{roommate.smoking ? '🚬' : '🚭'}</span>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-slate-400 font-semibold uppercase">Smoking</p>
-                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 capitalize">{roommate.smoking ? 'Allowed' : 'Not Allowed'}</p>
-                    </div>
-                  </div>
+                  )}
 
-                  {descObj.amenities?.map(am => (
+                  {descObj.amenities?.filter(Boolean).map(am => (
                     <div key={am} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                       <div className="w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand-600 flex items-center justify-center shrink-0">
                         <Check className="w-4 h-4" />

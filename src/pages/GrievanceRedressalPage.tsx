@@ -75,7 +75,7 @@ export default function GrievanceRedressalPage() {
               </tr>
               <tr className="border-b dark:border-slate-700">
                 <td className="px-4 py-3 font-semibold bg-slate-50 dark:bg-slate-800">Email</td>
-                <td className="px-4 py-3">grievance@flatsnfoods.in</td>
+                <td className="px-4 py-3">support.flatsnfoods@gmail.com</td>
               </tr>
               <tr className="border-b dark:border-slate-700">
                 <td className="px-4 py-3 font-semibold bg-slate-50 dark:bg-slate-800">Phone</td>
@@ -110,7 +110,7 @@ export default function GrievanceRedressalPage() {
             <tbody>
               <tr className="border-b dark:border-slate-700">
                 <td className="px-4 py-3 font-semibold">Email</td>
-                <td className="px-4 py-3">grievance@flatsnfoods.in</td>
+                <td className="px-4 py-3">support.flatsnfoods@gmail.com</td>
               </tr>
               <tr className="border-b dark:border-slate-700">
                 <td className="px-4 py-3 font-semibold">In-App Support</td>
@@ -260,7 +260,7 @@ export default function GrievanceRedressalPage() {
         <h3>7.1 Internal Escalation</h3>
         <p>If you are not satisfied with the resolution provided by the Grievance Officer:</p>
         <ol>
-          <li><strong>Email the founder/management team</strong> at escalations@flatsnfoods.in within <strong>7 days</strong> of receiving the resolution.</li>
+          <li><strong>Email the founder/management team</strong> at support.flatsnfoods@gmail.com within <strong>7 days</strong> of receiving the resolution.</li>
           <li>Include your Grievance ID and the reasons for dissatisfaction.</li>
           <li>The escalation will be reviewed by a senior member within <strong>10 business days</strong>.</li>
         </ol>
@@ -292,7 +292,7 @@ export default function GrievanceRedressalPage() {
         <h3>8.1 Unlawful Content</h3>
         <p>If you believe content on the Platform violates any law or your legal rights:</p>
         <ol>
-          <li>Send a written notice to grievance@flatsnfoods.in with:
+          <li>Send a written notice to support.flatsnfoods@gmail.com with:
             <ul>
               <li>Identification of the content (URL, screenshot, listing ID)</li>
               <li>Specific law or right being violated</li>
@@ -318,7 +318,7 @@ export default function GrievanceRedressalPage() {
         <h2>9. DATA PROTECTION GRIEVANCES</h2>
         <p>For grievances related to your personal data (access, correction, erasure, consent withdrawal):</p>
         <ul>
-          <li>Contact the Grievance Officer at grievance@flatsnfoods.in.</li>
+          <li>Contact the Grievance Officer at support.flatsnfoods@gmail.com.</li>
           <li>Reference the <strong>Privacy Policy, Section 10</strong> (Your Rights as a Data Principal).</li>
           <li>We will respond within <strong>30 days</strong> as required under the DPDP Act, 2023.</li>
         </ul>
@@ -360,9 +360,9 @@ export default function GrievanceRedressalPage() {
       <section id="contact">
         <h2>14. CONTACT</h2>
         <ul>
-          <li><strong>Grievance Officer Email:</strong> grievance@flatsnfoods.in</li>
-          <li><strong>Escalations:</strong> escalations@flatsnfoods.in</li>
-          <li><strong>General Support:</strong> support@flatsnfoods.in</li>
+          <li><strong>Grievance Officer Email:</strong> support.flatsnfoods@gmail.com</li>
+          <li><strong>Escalations:</strong> support.flatsnfoods@gmail.com</li>
+          <li><strong>General Support:</strong> support.flatsnfoods@gmail.com</li>
           <li><strong>Phone:</strong> +91 8999 295 362 / 7517 807 405</li>
           <li><strong>Address:</strong> [Registered Office Address]</li>
         </ul>
