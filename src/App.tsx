@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import HomePage from './pages/HomePage'
 import PropertiesPage from './pages/PropertiesPage'
 import PropertyDetailPage from './pages/PropertyDetailPage'
+import FavoritesPage from './pages/FavoritesPage'
 import MessPage from './pages/MessPage'
 import MessDetailPage from './pages/MessDetailPage'
 import AuthPage from './pages/AuthPage'
@@ -35,6 +36,63 @@ import ProtectedRoute from './components/ProtectedRoute'
 import { useAuthStore } from './store/authStore'
 import { useNotificationStore } from './store/notificationStore'
 import { clearSupabaseAuthStorage } from './lib/localAuth'
+import { motion, AnimatePresence } from 'framer-motion'
+import { QrCode } from 'lucide-react'
+import { Link } from 'react-router-dom'
+
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
+  return null
+}
+
+function StudentQRButton() {
+  const { profile } = useAuthStore()
+  const { pathname } = useLocation()
+  const [isVisible, setIsVisible] = useState(true)
+  const [lastScrollY, setLastScrollY] = useState(0)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+      if (currentScrollY > lastScrollY && currentScrollY > 50) {
+        setIsVisible(false) // scrolling down
+      } else {
+        setIsVisible(true) // scrolling up
+      }
+      setLastScrollY(currentScrollY)
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [lastScrollY])
+
+  if (profile?.role !== 'student') return null;
+  if (pathname !== '/') return null;
+
+  return (
+    <AnimatePresence>
+      {isVisible && (
+        <motion.div
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 100, opacity: 0 }}
+          transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[90]"
+        >
+          <Link
+            to="/dashboard/student/scan"
+            className="flex items-center justify-center w-14 h-14 bg-brand-600 hover:bg-brand-700 text-white rounded-full shadow-[0_8px_30px_rgb(249,115,22,0.4)] transition-transform hover:scale-110 active:scale-95 border-[3px] border-white dark:border-slate-900"
+          >
+            <QrCode className="w-6 h-6" />
+          </Link>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
 
 function DashboardRedirect() {
   const { profile } = useAuthStore()
@@ -58,7 +116,7 @@ import { supabase } from './lib/supabase'
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem('theme') === 'dark' || 
+    return localStorage.getItem('theme') === 'dark' ||
       (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
   })
 
@@ -133,20 +191,28 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
+      <StudentQRButton />
       <Routes>
         {/* Public Routes wrapped in PublicLayout */}
         <Route element={<PublicLayout darkMode={darkMode} toggleDarkMode={toggleDarkMode} />}>
           <Route path="/" element={<HomePage />} />
-          <Route path="/properties" element={<PropertiesPage />} />
-          <Route path="/properties/:id" element={<PropertyDetailPage />} />
-          <Route path="/mess" element={<MessPage />} />
-          <Route path="/mess/:id" element={<MessDetailPage />} />
+          
+          {/* Protected Platform Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/properties" element={<PropertiesPage />} />
+            <Route path="/properties/:id" element={<PropertyDetailPage />} />
+            <Route path="/mess" element={<MessPage />} />
+            <Route path="/mess/:id" element={<MessDetailPage />} />
+            <Route path="/roommates" element={<RoommatesPage />} />
+            <Route path="/roommates/:id" element={<RoommateDetailPage />} />
+            <Route path="/community" element={<CommunityPage />} />
+            <Route path="/favorites" element={<FavoritesPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
+          </Route>
+
+          {/* Public Legal/Auth Routes */}
           <Route path="/auth" element={<AuthPage />} />
-          <Route path="/roommates" element={<RoommatesPage />} />
-          <Route path="/roommates/:id" element={<RoommateDetailPage />} />
-          <Route path="/community" element={<CommunityPage />} />
-          <Route path="/favorites" element={<PropertiesPage />} />
-          <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/terms-conditions" element={<TermsConditionsPage />} />
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="/community-guidelines" element={<CommunityGuidelinesPage />} />
@@ -166,13 +232,13 @@ export default function App() {
             <Route path="student/subscription" element={<StudentDashboard />} />
             <Route path="student/attendance" element={<StudentDashboard />} />
           </Route>
-          
+
           {/* Owner Routes */}
           <Route element={<ProtectedRoute allowedRoles={['property_owner']} />}>
             <Route path="owner" element={<OwnerDashboard />} />
             <Route path="owner/listings" element={<OwnerDashboard />} />
           </Route>
-          
+
           {/* Mess Owner Routes */}
           <Route element={<ProtectedRoute allowedRoles={['mess_owner']} />}>
             <Route path="mess" element={<MessOwnerDashboard />} />
@@ -187,7 +253,7 @@ export default function App() {
             <Route path="mess/reports" element={<MessOwnerDashboard />} />
             <Route path="mess/settings" element={<MessOwnerDashboard />} />
           </Route>
-          
+
           {/* Admin Routes */}
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
             <Route path="admin" element={<AdminDashboard />} />

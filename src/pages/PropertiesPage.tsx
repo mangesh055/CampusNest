@@ -51,13 +51,12 @@ export default function PropertiesPage() {
   const { initialized } = useAuthStore()
 
   useEffect(() => {
-    if (initialized) {
-      void loadProperties()
-    }
-  }, [loadProperties, initialized])
+    void loadProperties()
+  }, [loadProperties])
 
   const filtered = useMemo(() => {
     let result = [...properties]
+    
     if (search) {
       const q = search.toLowerCase()
       result = result.filter(p => p.title.toLowerCase().includes(q) || p.address.toLowerCase().includes(q) || p.city.toLowerCase().includes(q))

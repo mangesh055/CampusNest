@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { MapPin, Star, Heart, Clock, Phone } from 'lucide-react'
@@ -7,18 +7,32 @@ import type { Mess } from '../../types'
 import { useAuthStore } from '../../store/authStore'
 import { supabase } from '../../lib/supabase'
 
+import { useFavoriteStore } from '../../store/favoriteStore'
+
 interface MessCardProps {
   mess: Mess
   index?: number
 }
 
 export default function MessCard({ mess, index = 0 }: MessCardProps) {
-  const [favorited, setFavorited] = React.useState(false)
+  const { isMessFavorite, toggleMessFavorite } = useFavoriteStore()
+  const favorited = isMessFavorite(mess.id)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+
+  useEffect(() => {
+    if (!mess.photos || mess.photos.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentImageIndex(prev => (prev + 1) % mess.photos.length)
+    }, 3000 + (index * 500));
+
+    return () => clearInterval(interval);
+  }, [mess.photos, index])
+
   const { profile } = useAuthStore()
   const statusCfg = messStatusConfig[mess.status]
 
   const defaultPhoto = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600'
-  const photoUrl = (mess.photos && mess.photos.length > 0) ? mess.photos[0] : defaultPhoto
+  const photoUrl = (mess.photos && mess.photos.length > 0) ? mess.photos[currentImageIndex] : defaultPhoto
 
   return (
     <motion.div
@@ -33,10 +47,24 @@ export default function MessCard({ mess, index = 0 }: MessCardProps) {
         {/* Image */}
         <div className="relative overflow-hidden h-40 sm:h-48 rounded-xl shrink-0">
           <img
+            key={photoUrl}
             src={photoUrl}
             alt={mess.name}
-            className="property-image w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+            className="property-image w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out animate-in fade-in"
           />
+          {/* Slideshow Dots */}
+          {mess.photos && mess.photos.length > 1 && (
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10 bg-black/20 p-1 rounded-full backdrop-blur-sm">
+              {mess.photos.map((_, i) => (
+                <div
+                  key={i}
+                  className={cn("w-1.5 h-1.5 rounded-full transition-all duration-300",
+                    i === currentImageIndex ? "bg-white scale-125" : "bg-white/50"
+                  )}
+                />
+              ))}
+            </div>
+          )}
           {/* Status Badge */}
           <div className="absolute top-3 left-3 flex gap-2">
             <span className={cn('badge shadow-sm text-[10px]', statusCfg.color)}>
@@ -48,7 +76,7 @@ export default function MessCard({ mess, index = 0 }: MessCardProps) {
           </div>
           {/* Favorite */}
           <button
-            onClick={(e) => { e.preventDefault(); setFavorited(!favorited) }}
+            onClick={(e) => { e.preventDefault(); toggleMessFavorite(mess.id) }}
             className={cn(
               'absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-sm',
               favorited ? 'bg-red-500 text-white' : 'bg-white/90 text-slate-600 hover:bg-white hover:text-red-500'

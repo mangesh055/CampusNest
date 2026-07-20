@@ -16,7 +16,7 @@ const navLinks = [
   { label: 'Properties', path: '/properties', icon: Building2 },
   { label: 'Mess', path: '/mess', icon: Utensils },
   { label: 'Roommates', path: '/roommates', icon: Users },
-  { label: 'Community', path: '/community', icon: MessageCircle },
+  { label: 'Marketplace', path: '/community', icon: MessageCircle },
 ]
 
 interface NavbarProps {
@@ -287,6 +287,11 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
                           <Link to={getDashboardPath()} className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors">
                             <LayoutDashboard className="w-4 h-4" /> Dashboard
                           </Link>
+                          {profile.role === 'student' && (
+                            <Link to="/dashboard/student/scan" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors">
+                              <QrCode className="w-4 h-4" /> Scan QR
+                            </Link>
+                          )}
                           <Link to="/dashboard/profile" className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors">
                             <User className="w-4 h-4" /> Profile
                           </Link>

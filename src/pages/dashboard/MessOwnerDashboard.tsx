@@ -346,7 +346,7 @@ export default function MessOwnerDashboard() {
       setMenu(menuRows[0] || null)
     } catch (error) {
       console.error('Failed to load mess owner dashboard data:', error)
-      setBannerMsg('Failed to load Supabase data')
+      setBannerMsg('Failed to load database data')
     } finally {
       setLoading(false)
     }
@@ -432,7 +432,7 @@ export default function MessOwnerDashboard() {
       alert(`Database Error: ${error.message}. Please make sure you added the 'menu_card' column to the 'messes' table!`)
       return
     }
-    setBannerMsg('Menu Card saved to Supabase')
+    setBannerMsg('Menu Card saved successfully')
     setTimeout(() => setBannerMsg(''), 2500)
   }
 
@@ -455,7 +455,7 @@ export default function MessOwnerDashboard() {
       return
     }
     setMenu(payload as MenuRow)
-    setBannerMsg('Daily Menu saved to Supabase')
+    setBannerMsg('Daily Menu saved successfully')
     setTimeout(() => setBannerMsg(''), 2500)
   }
 
@@ -538,7 +538,7 @@ export default function MessOwnerDashboard() {
     const { error } = await supabase.from('mess_payment_settings').upsert(payload)
     if (error) return console.error('Failed to save payment settings:', error)
     setPaymentSettings(payload)
-    setBannerMsg('Payment settings saved to Supabase')
+    setBannerMsg('Payment settings saved successfully')
     setTimeout(() => setBannerMsg(''), 2500)
   }
 
@@ -589,6 +589,8 @@ export default function MessOwnerDashboard() {
       updated_at: new Date().toISOString(),
     }
 
+    const isNewMess = !mess?.id;
+
     const { error } = await supabase.from('messes').upsert(payload)
     if (error) {
       console.error('Failed to save mess profile:', error)
@@ -596,7 +598,17 @@ export default function MessOwnerDashboard() {
       return
     }
 
-    setBannerMsg('Mess profile saved to Supabase')
+    if (isNewMess) {
+      await supabase.from('app_notifications').insert({
+        user_id: profile.id,
+        type: 'success',
+        title: 'Mess Registered',
+        message: 'Your mess has been successfully registered and is now live on FlatsNFoods!',
+        read: false,
+      })
+    }
+
+    setBannerMsg('Mess profile saved successfully')
     setTimeout(() => setBannerMsg(''), 2500)
     await loadDashboard()
   }
@@ -1256,7 +1268,7 @@ export default function MessOwnerDashboard() {
   if (view === 'attendance') {
     return (
       <div className="p-6 space-y-6">
-        <div><h1 className="text-2xl font-display font-bold">Attendance Scan Logs</h1><p className="text-slate-500 text-sm mt-1">Loaded from Supabase attendance rows.</p></div>
+        <div><h1 className="text-2xl font-display font-bold">Attendance Scan Logs</h1><p className="text-slate-500 text-sm mt-1">Loaded from the database.</p></div>
         <div className="card p-6 overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b"><th className="text-left py-3 px-3">Date</th><th className="text-left py-3 px-3">Student</th><th className="text-center py-3 px-3">Meal</th></tr></thead><tbody>{attendance.slice(0, 20).map((row) => <tr key={row.id} className="border-b"><td className="py-3 px-3">{formatDate(row.date)}</td><td className="py-3 px-3">{subscribers.find((sub) => sub.student_id === row.student_id)?.student?.full_name || row.student_id}</td><td className="py-3 px-3 text-center">{['breakfast', 'lunch', 'dinner', 'snack'].filter((meal) => row[meal as keyof AttendanceRow]).map((meal) => mealTypeLabels[meal as keyof typeof mealTypeLabels]).join(', ')}</td></tr>)}</tbody></table></div>
       </div>
     )
@@ -1357,7 +1369,7 @@ export default function MessOwnerDashboard() {
   if (view === 'settings') {
     return (
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between"><div><h1 className="text-2xl font-display font-bold">Mess Settings</h1><p className="text-slate-500 text-sm mt-1">Edit your mess profile and save it directly to Supabase.</p></div><button onClick={loadDashboard} className="btn-secondary text-xs">Refresh</button></div>
+        <div className="flex items-center justify-between"><div><h1 className="text-2xl font-display font-bold">Mess Settings</h1><p className="text-slate-500 text-sm mt-1">Edit your mess profile and save it to the database.</p></div><button onClick={loadDashboard} className="btn-secondary text-xs">Refresh</button></div>
         <div className="card p-6 space-y-4">
           <div><label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Mess Name</label><input className="input-field" value={messName} onChange={(e) => setMessName(e.target.value)} placeholder="Mess name" /></div>
           <div>

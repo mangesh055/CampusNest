@@ -47,7 +47,12 @@ export default function AuthPage() {
   const navigate = useNavigate()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
+    const { name, value } = e.target
+    if (name === 'phone') {
+      setForm(prev => ({ ...prev, [name]: value.replace(/\D/g, '').slice(0, 10) }))
+    } else {
+      setForm(prev => ({ ...prev, [name]: value }))
+    }
     setError('')
   }
 
@@ -83,7 +88,7 @@ export default function AuthPage() {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Login failed. Please try again.'
       if (errorMessage === 'Invalid login credentials') {
-        setError('Account not exist, please sign up first')
+        setError('Incorrect email or password. Please try again.')
       } else {
         setError(errorMessage)
       }
@@ -343,6 +348,7 @@ export default function AuthPage() {
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <input name="phone" type="tel" value={form.phone} onChange={handleChange}
                         placeholder="9876543210" className="input-field pl-10" 
+                        maxLength={10} minLength={10}
                         pattern="[0-9]{10}" title="Please enter a valid 10-digit mobile number" required />
                     </div>
                   </div>

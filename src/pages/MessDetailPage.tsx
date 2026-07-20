@@ -28,6 +28,7 @@ export default function MessDetailPage() {
   const [newRating, setNewRating] = useState(0)
   const [reviewsList, setReviewsList] = useState<any[]>([])
   const [showAllReviews, setShowAllReviews] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [mess, setMess] = useState<any | null>(null)
   const [displayPlans, setDisplayPlans] = useState<any[]>([])
   const [todayMenu, setTodayMenu] = useState<Record<MealType, string[]>>({ breakfast: [], lunch: [], dinner: [], snack: [] })
@@ -103,9 +104,16 @@ export default function MessDetailPage() {
         return
       }
 
-      setReviewsList([{ ...newR, profiles: { full_name: newR.full_name } }, ...reviewsList])
+      const newReviewsList = [{ ...newR, profiles: { full_name: newR.full_name } }, ...reviewsList]
+      setReviewsList(newReviewsList)
       setNewReview('')
       setNewRating(0)
+
+      const newCount = newReviewsList.length
+      const newAvgRating = Number((newReviewsList.reduce((acc, curr) => acc + curr.rating, 0) / newCount).toFixed(1))
+      setMess((prev: any) => ({ ...prev, rating: newAvgRating, review_count: newCount }))
+      
+      invalidatePlatformCache()
     })()
   }
 
@@ -116,14 +124,21 @@ export default function MessDetailPage() {
       console.error('Failed to delete review', error)
       return
     }
-    setReviewsList(prev => prev.filter(r => r.id !== reviewId))
-    setMess((prev: any) => ({ ...prev, review_count: Math.max(0, (prev?.review_count || 1) - 1) }))
+    const newReviewsList = reviewsList.filter(r => r.id !== reviewId)
+    setReviewsList(newReviewsList)
+    
+    const newCount = newReviewsList.length
+    const newAvgRating = newCount > 0 ? Number((newReviewsList.reduce((acc, curr) => acc + curr.rating, 0) / newCount).toFixed(1)) : 5.0
+    
+    setMess((prev: any) => ({ ...prev, rating: newAvgRating, review_count: newCount }))
+    
+    invalidatePlatformCache()
   }
 
   if (!mess) {
     return (
       <div className="min-h-screen pt-24 flex items-center justify-center text-slate-500">
-        Loading mess details from Supabase...
+        Loading mess details...
       </div>
     )
   }
@@ -131,7 +146,7 @@ export default function MessDetailPage() {
   const statusCfg = messStatusConfig[mess.status as keyof typeof messStatusConfig] || messStatusConfig.open
 
   const photos = mess.photos && mess.photos.length > 0
-    ? [...mess.photos, ...mess.photos]
+    ? mess.photos
     : [
       'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400',
       'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400',
@@ -148,7 +163,7 @@ export default function MessDetailPage() {
   const serviceHours = mess.service_hours || (mess.meal_types?.includes('breakfast') ? '8:00 AM - 10:30 PM' : '12:30 PM - 10:30 PM')
 
   const dynamicReviewCount = reviewsList.length
-  const dynamicRating = dynamicReviewCount > 0 
+  const dynamicRating = dynamicReviewCount > 0
     ? (reviewsList.reduce((acc, curr) => acc + curr.rating, 0) / dynamicReviewCount).toFixed(1)
     : (mess.rating || '5.0')
 
@@ -309,6 +324,7 @@ export default function MessDetailPage() {
                         <motion.div
                           key={i}
                           whileHover={{ scale: 1.03 }}
+                          onClick={() => setSelectedImage(photo)}
                           className="relative rounded-2xl overflow-hidden aspect-square cursor-pointer group"
                         >
                           <img src={photo} alt={`${mess.name} ${i + 1}`} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
@@ -593,16 +609,16 @@ export default function MessDetailPage() {
                         <h4 className="font-bold text-slate-900 dark:text-white text-sm sm:text-lg leading-tight">{plan.name}</h4>
                         {selectedPlan === plan.id && <CheckCircle className="w-4 h-4 sm:w-6 sm:h-6 text-orange-500 flex-shrink-0 ml-2" />}
                       </div>
-                      
+
                       <div className="flex items-baseline gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
                         <span className="text-lg sm:text-3xl font-bold text-orange-600 dark:text-orange-400 leading-none">{formatCurrency(plan.price)}</span>
                         <span className="text-[10px] sm:text-sm text-slate-400 font-medium">{plan.duration_days} days</span>
                       </div>
-                      
+
                       {plan.description && (
                         <p className="text-[10px] sm:text-sm text-slate-500 mb-2 sm:mb-4 leading-snug line-clamp-1 sm:line-clamp-2">{plan.description}</p>
                       )}
-                      
+
                       <div className="flex flex-wrap gap-1 sm:gap-2">
                         {(plan.meal_types || []).map((m: any) => (
                           <span key={m} className="tag text-[9px] sm:text-xs px-1.5 py-0.5 sm:px-2.5 sm:py-1 bg-slate-100 dark:bg-slate-800">{mealTypeLabels[m as MealType]}</span>
@@ -616,17 +632,8 @@ export default function MessDetailPage() {
                   </div>
                 )}
               </div>
-              
-              {selectedPlan && displayPlans.length > 0 && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="pt-2 sm:pt-4">
-                  <Link
-                    to={`/dashboard/student/subscription?mess=${mess.id}&plan=${selectedPlan}`}
-                    className="flex items-center justify-center gap-2 w-full max-w-sm mx-auto py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm sm:text-lg transition-all shadow-lg shadow-orange-500/25 hover:scale-105 active:scale-95"
-                  >
-                    Subscribe to Selected Plan 🎉
-                  </Link>
-                </motion.div>
-              )}
+
+
             </div>
           </div>
         </div>
@@ -694,6 +701,39 @@ export default function MessDetailPage() {
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Fullscreen Image Modal */}
+      <AnimatePresence>
+        {selectedImage && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedImage(null)}
+              className="absolute inset-0 bg-black/90 backdrop-blur-sm cursor-pointer"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="relative z-10 max-w-5xl w-full h-full flex flex-col items-center justify-center pointer-events-none"
+            >
+              <button
+                onClick={() => setSelectedImage(null)}
+                className="absolute top-0 right-0 sm:-right-4 sm:-top-4 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full backdrop-blur-md transition-colors pointer-events-auto"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <img
+                src={selectedImage}
+                alt="Fullscreen view"
+                className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl pointer-events-auto"
+              />
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

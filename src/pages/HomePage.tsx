@@ -249,9 +249,9 @@ export default function HomePage() {
               <PropertyCard key={property.id} property={property} index={i} />
             ))}
           </div>
-          <div className="text-center mt-8">
-            <Link to="/properties" className="btn-primary">
-              Explore All Properties <ArrowRight className="w-4 h-4" />
+          <div className="text-center mt-6 sm:hidden">
+            <Link to="/properties" className="btn-secondary text-sm w-full justify-center">
+              View All <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
@@ -271,10 +271,15 @@ export default function HomePage() {
               View All <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {messes.map((mess, i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {messes.slice(0, 3).map((mess, i) => (
               <MessCard key={mess.id} mess={mess} index={i} />
             ))}
+          </div>
+          <div className="text-center mt-6 sm:hidden">
+            <Link to="/mess" className="btn-secondary text-sm w-full justify-center">
+              View All <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
         </div>
       </section>

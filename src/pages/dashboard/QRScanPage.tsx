@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Html5QrcodeScanner } from 'html5-qrcode'
+import { Html5Qrcode } from 'html5-qrcode'
 import { motion, AnimatePresence } from 'framer-motion'
 import { QrCode, CheckCircle, XCircle, RefreshCw } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
@@ -11,6 +11,7 @@ export default function QRScanPage() {
   const [status, setStatus] = useState<'scanning' | 'processing' | 'success' | 'error'>('scanning')
   const [message, setMessage] = useState('')
   const [mealType, setMealType] = useState('')
+  const [camError, setCamError] = useState('')
   const [manualCode, setManualCode] = useState('')
   const [myMesses, setMyMesses] = useState<{mess_id: string, messes: {name: string}}[]>([])
   const [tokenData, setTokenData] = useState<{
@@ -52,25 +53,42 @@ export default function QRScanPage() {
   }, [profile])
 
   useEffect(() => {
-    if (status === 'scanning') {
-      const scanner = new Html5QrcodeScanner('reader', {
-        qrbox: { width: 250, height: 250 },
-        fps: 5,
-      }, false)
+    let html5QrCode: Html5Qrcode | null = null;
+    let isMounted = true;
 
-      scanner.render(
-        (decodedText) => {
-          scanner.clear()
-          setScanResult(decodedText)
-          setStatus('processing')
-        },
-        (error) => {
-          // ignore scan errors
+    if (status === 'scanning') {
+      setCamError('');
+      // Delay prevents React StrictMode double-initialization clash
+      const timer = setTimeout(() => {
+        if (!isMounted) return;
+        
+        try {
+          html5QrCode = new Html5Qrcode("reader");
+          html5QrCode.start(
+            { facingMode: "environment" },
+            { fps: 5, qrbox: { width: 250, height: 250 } },
+            (decodedText) => {
+              if (html5QrCode?.isScanning) {
+                html5QrCode.stop().then(() => html5QrCode?.clear()).catch(()=>{})
+              }
+              setScanResult(decodedText)
+              setStatus('processing')
+            },
+            () => {} // ignore frame errors
+          ).catch(() => {
+             if (isMounted) setCamError("Please allow camera permissions in your browser to scan the QR code.")
+          });
+        } catch (e) {
+          console.error("QR Init Error:", e)
         }
-      )
+      }, 300);
 
       return () => {
-        scanner.clear().catch(() => {})
+        isMounted = false;
+        clearTimeout(timer);
+        if (html5QrCode?.isScanning) {
+          html5QrCode.stop().then(() => html5QrCode?.clear()).catch(()=>{})
+        }
       }
     }
   }, [status])
@@ -255,9 +273,16 @@ export default function QRScanPage() {
         {status === 'scanning' && (
           <motion.div key="scanning" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
             <div className="card p-4 overflow-hidden rounded-3xl bg-slate-50 dark:bg-slate-800">
-              <div id="reader" className="w-full rounded-2xl overflow-hidden [&>div]:border-none [&_video]:rounded-2xl bg-black" />
+              <div id="reader" className="w-full rounded-2xl overflow-hidden bg-black min-h-[300px] flex items-center justify-center" />
             </div>
-            <p className="text-center text-xs text-slate-500 mt-4">Point your camera at the mess QR code</p>
+            
+            {camError ? (
+              <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm font-medium text-center border border-red-200 dark:border-red-800/50">
+                ⚠️ {camError}
+              </div>
+            ) : (
+              <p className="text-center text-xs text-slate-500 mt-4">Point your camera at the mess QR code</p>
+            )}
           </motion.div>
         )}
 

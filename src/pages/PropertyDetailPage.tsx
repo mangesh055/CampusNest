@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { MapPin, Phone, Mail, Star, Heart, Share2, ChevronLeft, ChevronRight, CheckCircle, Navigation2, ExternalLink, ShieldCheck, Trash2, X } from 'lucide-react'
 
 import { usePropertyStore } from '../store/propertyStore'
@@ -27,13 +27,14 @@ export default function PropertyDetailPage() {
   const property = properties.find(p => p.id === id)
   const [currentImage, setCurrentImage] = useState(0)
   const [favorited, setFavorited] = useState(false)
-  
+
   const { profile } = useAuthStore()
   const [reviewsList, setReviewsList] = useState<ReviewRow[]>([])
   const [showAllReviews, setShowAllReviews] = useState(false)
   const [newReview, setNewReview] = useState('')
   const [newRating, setNewRating] = useState(0)
   const [showReviewForm, setShowReviewForm] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
   useEffect(() => {
     void loadProperties()
@@ -68,7 +69,7 @@ export default function PropertyDetailPage() {
   if (!property) {
     return (
       <div className="min-h-screen pt-24 flex items-center justify-center text-slate-500">
-        Loading property details from Supabase...
+        Loading property details...
       </div>
     )
   }
@@ -158,7 +159,7 @@ export default function PropertyDetailPage() {
             {/* Image Gallery */}
             <div className="card overflow-hidden">
               <div className="relative h-80">
-                <img src={property.images[currentImage]} alt={property.title} className="w-full h-full object-cover" />
+                <img onClick={() => setSelectedImage(property.images[currentImage])} src={property.images[currentImage]} alt={property.title} className="w-full h-full object-cover cursor-pointer" />
                 {property.images.length > 1 && (
                   <>
                     <button onClick={() => setCurrentImage(i => Math.max(0, i - 1))}
@@ -263,7 +264,7 @@ export default function PropertyDetailPage() {
                           <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">{label}</span>
                           <CheckCircle className="w-3 h-3 text-emerald-500 ml-auto" />
                         </div>
-                    ))}
+                      ))}
                   </div>
                 </>
               )}
@@ -281,32 +282,33 @@ export default function PropertyDetailPage() {
                   <div className="text-center">
                     <div className="text-4xl sm:text-5xl font-bold text-slate-900 dark:text-white">{dynamicRating}</div>
                     <div className="flex justify-center gap-0.5 my-1">
-                      {[1,2,3,4,5].map(s => (
+                      {[1, 2, 3, 4, 5].map(s => (
                         <Star key={s} className={cn('w-4 h-4', s <= Math.floor(Number(dynamicRating)) ? 'star-filled' : 'star-empty')} />
                       ))}
                     </div>
                     <p className="text-xs text-slate-500">{dynamicReviewCount} reviews</p>
                   </div>
                   <div className="flex-1 space-y-2">
-                    {[5,4,3,2,1].map(star => {
+                    {[5, 4, 3, 2, 1].map(star => {
                       const count = reviewsList.filter(r => r.rating === star).length;
                       const percentage = dynamicReviewCount > 0 ? (count / dynamicReviewCount) * 100 : 0;
                       return (
-                      <div key={star} className="flex items-center gap-2">
-                        <span className="text-xs text-slate-500 w-2">{star}</span>
-                        <Star className="w-3 h-3 text-amber-400" />
-                        <div className="flex-1 progress-bar">
-                          <div className="progress-fill" style={{ width: `${percentage}%` }} />
+                        <div key={star} className="flex items-center gap-2">
+                          <span className="text-xs text-slate-500 w-2">{star}</span>
+                          <Star className="w-3 h-3 text-amber-400" />
+                          <div className="flex-1 progress-bar">
+                            <div className="progress-fill" style={{ width: `${percentage}%` }} />
+                          </div>
                         </div>
-                      </div>
-                    )})}
+                      )
+                    })}
                   </div>
                 </div>
               )}
 
               {/* Add Review Form */}
               {!showReviewForm ? (
-                <button 
+                <button
                   onClick={() => setShowReviewForm(true)}
                   className="w-full py-3 mb-4 sm:mb-6 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
                 >
@@ -316,7 +318,7 @@ export default function PropertyDetailPage() {
                 <div className="mb-4 sm:mb-6 p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-200">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-bold text-slate-900 dark:text-white text-sm">Write a Review</h4>
-                    <button type="button" onClick={() => setShowReviewForm(false)} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4"/></button>
+                    <button type="button" onClick={() => setShowReviewForm(false)} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
                   </div>
                   <form onSubmit={(e) => { handleAddReview(e); setShowReviewForm(false); }} className="space-y-3">
                     <div className="flex gap-1">
@@ -337,8 +339,8 @@ export default function PropertyDetailPage() {
                       value={newReview}
                       onChange={(e) => setNewReview(e.target.value)}
                     />
-                    <button 
-                      type="submit" 
+                    <button
+                      type="submit"
                       disabled={!newReview.trim() || newRating === 0}
                       className="btn-primary w-full text-sm py-2 disabled:opacity-50"
                     >
@@ -363,7 +365,7 @@ export default function PropertyDetailPage() {
                           </div>
                           <div className="flex items-center justify-between my-1">
                             <div className="flex gap-0.5">
-                              {[1,2,3,4,5].map(s => (
+                              {[1, 2, 3, 4, 5].map(s => (
                                 <Star key={s} className={cn('w-3 h-3', s <= review.rating ? 'star-filled' : 'star-empty')} />
                               ))}
                             </div>
@@ -388,8 +390,8 @@ export default function PropertyDetailPage() {
               )}
 
               {reviewsList.length > 3 && (
-                <button 
-                  onClick={() => setShowAllReviews(true)} 
+                <button
+                  onClick={() => setShowAllReviews(true)}
                   className="w-full py-3 mt-4 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
                 >
                   Show all {dynamicReviewCount} reviews
@@ -468,8 +470,8 @@ export default function PropertyDetailPage() {
               <h3 className="font-display font-bold text-xl text-slate-900 dark:text-white flex items-center gap-2">
                 <Star className="w-5 h-5 text-amber-400 star-filled" /> All Reviews ({dynamicReviewCount})
               </h3>
-              <button 
-                onClick={() => setShowAllReviews(false)} 
+              <button
+                onClick={() => setShowAllReviews(false)}
                 className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -489,7 +491,7 @@ export default function PropertyDetailPage() {
                       </div>
                       <div className="flex items-center justify-between my-1">
                         <div className="flex gap-0.5">
-                          {[1,2,3,4,5].map(s => (
+                          {[1, 2, 3, 4, 5].map(s => (
                             <Star key={s} className={cn('w-3 h-3', s <= review.rating ? 'star-filled' : 'star-empty')} />
                           ))}
                         </div>
@@ -512,6 +514,39 @@ export default function PropertyDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Fullscreen Image Modal */}
+      <AnimatePresence>
+        {selectedImage && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedImage(null)}
+              className="absolute inset-0 bg-black/90 backdrop-blur-sm cursor-pointer"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="relative z-10 max-w-5xl w-full h-full flex flex-col items-center justify-center pointer-events-none"
+            >
+              <button
+                onClick={() => setSelectedImage(null)}
+                className="absolute top-0 right-0 sm:-right-4 sm:-top-4 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full backdrop-blur-md transition-colors pointer-events-auto"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <img
+                src={selectedImage}
+                alt="Fullscreen view"
+                className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl pointer-events-auto"
+              />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

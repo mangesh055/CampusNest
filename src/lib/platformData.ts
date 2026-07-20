@@ -26,7 +26,7 @@ export function invalidatePlatformCache() {
 export async function fetchProperties(forceRefresh = false) {
   if (forceRefresh) cache.propertiesPromise = null
   if (cache.properties && !forceRefresh) return cache.properties
-  
+
   if (!cache.propertiesPromise) {
     cache.propertiesPromise = (async () => {
       const { data, error } = await supabase

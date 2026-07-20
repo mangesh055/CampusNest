@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { MapPin, Wifi, Star, Heart, BedDouble, Bath, Shield, Zap, Car, Dumbbell, X } from 'lucide-react'
@@ -7,13 +7,26 @@ import type { Property } from '../../types'
 import { useAuthStore } from '../../store/authStore'
 import { usePropertyStore } from '../../store/propertyStore'
 
+import { useFavoriteStore } from '../../store/favoriteStore'
+
 interface PropertyCardProps {
   property: Property
   index?: number
 }
 
 export default function PropertyCard({ property, index = 0 }: PropertyCardProps) {
-  const [favorited, setFavorited] = React.useState(false)
+  const { isPropertyFavorite, togglePropertyFavorite } = useFavoriteStore()
+  const favorited = isPropertyFavorite(property.id)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+
+  useEffect(() => {
+    if (!property.images || property.images.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentImageIndex(prev => (prev + 1) % property.images.length)
+    }, 3000 + (index * 500)); // Stagger based on index to prevent all sliding at once
+
+    return () => clearInterval(interval);
+  }, [property.images, index])
   const { profile } = useAuthStore()
   const { deleteProperty } = usePropertyStore()
 
@@ -37,10 +50,24 @@ export default function PropertyCard({ property, index = 0 }: PropertyCardProps)
         {/* Image */}
         <div className="relative overflow-hidden h-48 sm:h-52 rounded-xl shrink-0">
           <img
-            src={property.images[0]}
+            key={property.images[currentImageIndex]}
+            src={property.images[currentImageIndex]}
             alt={property.title}
-            className="property-image w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+            className="property-image w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out animate-in fade-in"
           />
+          {/* Slideshow Dots */}
+          {property.images && property.images.length > 1 && (
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10 bg-black/20 p-1 rounded-full backdrop-blur-sm">
+              {property.images.map((_, i) => (
+                <div
+                  key={i}
+                  className={cn("w-1.5 h-1.5 rounded-full transition-all duration-300",
+                    i === currentImageIndex ? "bg-white scale-125" : "bg-white/50"
+                  )}
+                />
+              ))}
+            </div>
+          )}
           {/* Badges */}
           <div className="absolute top-3 left-3 flex gap-2">
             <span className="badge badge-purple text-[10px] shadow-sm">
@@ -55,7 +82,7 @@ export default function PropertyCard({ property, index = 0 }: PropertyCardProps)
           </div>
           {/* Favorite Button */}
           <button
-            onClick={(e) => { e.preventDefault(); setFavorited(!favorited) }}
+            onClick={(e) => { e.preventDefault(); togglePropertyFavorite(property.id) }}
             className={cn(
               'absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-sm',
               favorited
@@ -70,11 +97,11 @@ export default function PropertyCard({ property, index = 0 }: PropertyCardProps)
             <span className={cn(
               'badge text-[10px] shadow-sm',
               property.gender_preference === 'male' ? 'bg-blue-500/90 text-white' :
-              property.gender_preference === 'female' ? 'bg-pink-500/90 text-white' :
-              'bg-emerald-500/90 text-white'
+                property.gender_preference === 'female' ? 'bg-pink-500/90 text-white' :
+                  'bg-emerald-500/90 text-white'
             )}>
               {property.gender_preference === 'male' ? '👨 Boys' :
-               property.gender_preference === 'female' ? '👩 Girls' : '👥 Any'}
+                property.gender_preference === 'female' ? '👩 Girls' : '👥 Any'}
             </span>
           </div>
         </div>
