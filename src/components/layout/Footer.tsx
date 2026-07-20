@@ -30,7 +30,7 @@ export default function Footer() {
                 <Building2 className="w-5 h-5 text-white" />
               </div>
               <span className="text-xl font-display font-bold text-white">
-                Campus<span className="gradient-text">Nest</span>
+                FlatsN<span className="gradient-text">Foods</span>
               </span>
             </div>
             <p className="text-sm leading-relaxed mb-6 max-w-xs">
@@ -84,11 +84,11 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-brand-400 flex-shrink-0" />
-                <a href="tel:+911234567890" className="hover:text-white transition-colors">+91 12345 67890</a>
+                <a href="tel:+918999295362" className="hover:text-white transition-colors">+91 8999 295 362 / 7517 807 405</a>
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-brand-400 flex-shrink-0" />
-                <a href="mailto:hello@campusnest.in" className="hover:text-white transition-colors">hello@campusnest.in</a>
+                <a href="mailto:hello@flatsnfoods.in" className="hover:text-white transition-colors">hello@flatsnfoods.in</a>
               </li>
             </ul>
             <div className="mt-6">
@@ -106,10 +106,12 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-slate-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
-          <p>© 2026 CampusNest. All rights reserved. Built with ❤️ for Indian students.</p>
-          <div className="flex items-center gap-4">
-            <Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+          <p>© 2026 FlatsNFoods. All rights reserved. Built with ❤️ for Indian students.</p>
+          <div className="flex flex-wrap justify-center sm:justify-end items-center gap-4 mt-4 sm:mt-0">
+            <Link to="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link to="/terms-conditions" className="hover:text-white transition-colors">Terms & Conditions</Link>
+            <Link to="/community-guidelines" className="hover:text-white transition-colors">Community Guidelines</Link>
+            <Link to="/grievance-redressal" className="hover:text-white transition-colors">Grievance Redressal</Link>
             <Link to="/help" className="hover:text-white transition-colors">Help Center</Link>
           </div>
         </div>

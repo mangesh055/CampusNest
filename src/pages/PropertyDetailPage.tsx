@@ -33,6 +33,7 @@ export default function PropertyDetailPage() {
   const [showAllReviews, setShowAllReviews] = useState(false)
   const [newReview, setNewReview] = useState('')
   const [newRating, setNewRating] = useState(0)
+  const [showReviewForm, setShowReviewForm] = useState(false)
 
   useEffect(() => {
     void loadProperties()
@@ -151,9 +152,9 @@ export default function PropertyDetailPage() {
           <ChevronLeft className="w-4 h-4" /> Back to Properties
         </Link>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left: Images + Details */}
-          <div className="lg:col-span-2 space-y-6">
+        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6 lg:gap-8 items-start">
+          {/* Left Top: Images + Details */}
+          <div className="order-1 lg:col-span-2 space-y-6 w-full">
             {/* Image Gallery */}
             <div className="card overflow-hidden">
               <div className="relative h-80">
@@ -207,21 +208,21 @@ export default function PropertyDetailPage() {
 
             {/* Property Info */}
             <div className="card p-6">
-              <div className="flex items-start justify-between mb-4">
+              <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4 mb-4">
                 <div>
                   <h1 className="text-2xl font-display font-bold text-slate-900 dark:text-white">{property.title}</h1>
-                  <div className="flex items-center gap-1.5 mt-2 text-slate-500 dark:text-slate-400 text-sm">
-                    <MapPin className="w-4 h-4 text-brand-500" />
-                    {property.address}, {property.city}, {property.state} - {property.pincode}
+                  <div className="flex items-start gap-1.5 mt-2 text-slate-500 dark:text-slate-400 text-sm">
+                    <MapPin className="w-4 h-4 text-brand-500 flex-shrink-0 mt-0.5" />
+                    <span className="leading-relaxed">{property.address}, {property.city}, {property.state} - {property.pincode}</span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="flex items-center gap-1 justify-end">
+                <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-1">
                     <Star className="w-4 h-4 star-filled" />
                     <span className="font-bold text-slate-900 dark:text-white">{dynamicRating}</span>
                     <span className="text-slate-400 text-sm">({dynamicReviewCount})</span>
                   </div>
-                  <span className={cn('badge mt-1', property.gender_preference === 'male' ? 'badge-blue' : property.gender_preference === 'female' ? 'bg-pink-100 text-pink-700' : 'badge-green')}>
+                  <span className={cn('badge sm:mt-1.5', property.gender_preference === 'male' ? 'badge-blue' : property.gender_preference === 'female' ? 'bg-pink-100 text-pink-700' : 'badge-green')}>
                     {property.gender_preference === 'male' ? '👨 Boys Only' : property.gender_preference === 'female' ? '👩 Girls Only' : '👥 Any Gender'}
                   </span>
                 </div>
@@ -250,30 +251,35 @@ export default function PropertyDetailPage() {
                 </div>
               </div>
 
-              <h3 className="font-display font-bold text-slate-900 dark:text-white mb-4">Amenities</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {amenityList.map(({ key, icon, label }) => {
-                  const has = property.amenities[key as keyof typeof property.amenities]
-                  return (
-                    <div key={key} className={cn('flex items-center gap-2 p-3 rounded-xl border', has ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20' : 'border-slate-200 dark:border-slate-700 opacity-50')}>
-                      <span>{icon}</span>
-                      <span className={cn('text-sm font-medium', has ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400')}>{label}</span>
-                      {has && <CheckCircle className="w-3 h-3 text-emerald-500 ml-auto" />}
-                    </div>
-                  )
-                })}
-              </div>
+              {amenityList.filter(({ key }) => property.amenities[key as keyof typeof property.amenities]).length > 0 && (
+                <>
+                  <h3 className="font-display font-bold text-slate-900 dark:text-white mb-4">Amenities</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {amenityList
+                      .filter(({ key }) => property.amenities[key as keyof typeof property.amenities])
+                      .map(({ key, icon, label }) => (
+                        <div key={key} className="flex items-center gap-2 p-3 rounded-xl border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20">
+                          <span>{icon}</span>
+                          <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">{label}</span>
+                          <CheckCircle className="w-3 h-3 text-emerald-500 ml-auto" />
+                        </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
+          </div>
 
-            {/* Reviews */}
-            <div className="card p-6">
-              <h3 className="font-display font-bold text-slate-900 dark:text-white text-xl mb-6">
+          {/* Left Bottom: Reviews */}
+          <div className="order-3 lg:col-span-2 w-full">
+            <div className="card p-4 sm:p-6">
+              <h3 className="font-display font-bold text-slate-900 dark:text-white text-lg sm:text-xl mb-4 sm:mb-6">
                 Reviews ({dynamicReviewCount})
               </h3>
               {reviewsList.length > 0 && (
-                <div className="flex items-center gap-4 mb-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
+                <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 p-3 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
                   <div className="text-center">
-                    <div className="text-5xl font-bold text-slate-900 dark:text-white">{dynamicRating}</div>
+                    <div className="text-4xl sm:text-5xl font-bold text-slate-900 dark:text-white">{dynamicRating}</div>
                     <div className="flex justify-center gap-0.5 my-1">
                       {[1,2,3,4,5].map(s => (
                         <Star key={s} className={cn('w-4 h-4', s <= Math.floor(Number(dynamicRating)) ? 'star-filled' : 'star-empty')} />
@@ -299,36 +305,48 @@ export default function PropertyDetailPage() {
               )}
 
               {/* Add Review Form */}
-              <div className="mb-6 p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                <h4 className="font-bold text-slate-900 dark:text-white mb-3 text-sm">Write a Review</h4>
-                <form onSubmit={handleAddReview} className="space-y-3">
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5].map(s => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => setNewRating(s)}
-                        className="focus:outline-none transition-transform hover:scale-110"
-                      >
-                        <Star className={cn('w-6 h-6', s <= newRating ? 'text-amber-400 fill-amber-400' : 'text-slate-300 dark:text-slate-600')} />
-                      </button>
-                    ))}
+              {!showReviewForm ? (
+                <button 
+                  onClick={() => setShowReviewForm(true)}
+                  className="w-full py-3 mb-4 sm:mb-6 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
+                >
+                  <Star className="w-4 h-4" /> Write a Review
+                </button>
+              ) : (
+                <div className="mb-4 sm:mb-6 p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-bold text-slate-900 dark:text-white text-sm">Write a Review</h4>
+                    <button type="button" onClick={() => setShowReviewForm(false)} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4"/></button>
                   </div>
-                  <textarea
-                    placeholder="Share your experience..."
-                    className="input-field w-full min-h-[80px] text-sm resize-none"
-                    value={newReview}
-                    onChange={(e) => setNewReview(e.target.value)}
-                  />
-                  <button 
-                    type="submit" 
-                    disabled={!newReview.trim() || newRating === 0}
-                    className="btn-primary w-full text-sm py-2 disabled:opacity-50"
-                  >
-                    Submit Review
-                  </button>
-                </form>
-              </div>
+                  <form onSubmit={(e) => { handleAddReview(e); setShowReviewForm(false); }} className="space-y-3">
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map(s => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => setNewRating(s)}
+                          className="focus:outline-none transition-transform hover:scale-110"
+                        >
+                          <Star className={cn('w-6 h-6', s <= newRating ? 'text-amber-400 fill-amber-400' : 'text-slate-300 dark:text-slate-600')} />
+                        </button>
+                      ))}
+                    </div>
+                    <textarea
+                      placeholder="Share your experience..."
+                      className="input-field w-full min-h-[80px] text-sm resize-none"
+                      value={newReview}
+                      onChange={(e) => setNewReview(e.target.value)}
+                    />
+                    <button 
+                      type="submit" 
+                      disabled={!newReview.trim() || newRating === 0}
+                      className="btn-primary w-full text-sm py-2 disabled:opacity-50"
+                    >
+                      Submit Review
+                    </button>
+                  </form>
+                </div>
+              )}
 
               {reviewsList.length > 0 ? (
                 <div className="space-y-4">
@@ -381,7 +399,7 @@ export default function PropertyDetailPage() {
           </div>
 
           {/* Right: Contact + Location Card */}
-          <div className="space-y-4">
+          <div className="order-2 lg:col-span-1 lg:row-span-2 space-y-4 w-full">
             <div className="card p-6 sticky top-24 space-y-5">
               {/* Price */}
               <div className="text-center pb-4 border-b border-slate-100 dark:border-slate-800">

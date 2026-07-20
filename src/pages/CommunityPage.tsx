@@ -373,7 +373,7 @@ export default function CommunityPage() {
                           <a href={`tel:${phone}`} className="flex-1 btn-primary py-2 justify-center shadow-brand text-xs flex items-center gap-1.5">
                             <span className="text-sm">📞</span> Call
                           </a>
-                          <a href={`https://wa.me/${phone.replace(/\D/g, '')}?text=Hi, I saw your post "${post.title}" on CampusNest!`} target="_blank" rel="noopener noreferrer" className="flex-1 btn-secondary py-2 justify-center text-xs flex items-center gap-1.5 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 border-[#25D366]/20">
+                          <a href={`https://wa.me/${phone.replace(/\D/g, '')}?text=Hi, I saw your post "${post.title}" on FlatsNFoods!`} target="_blank" rel="noopener noreferrer" className="flex-1 btn-secondary py-2 justify-center text-xs flex items-center gap-1.5 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 border-[#25D366]/20">
                             <MessageSquare className="w-3.5 h-3.5" /> WhatsApp
                           </a>
                         </>

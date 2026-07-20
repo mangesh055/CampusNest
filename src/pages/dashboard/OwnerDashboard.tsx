@@ -269,7 +269,7 @@ export default function OwnerDashboard() {
               </div>
               <div className="space-y-1">
                 <h4 className="font-bold text-slate-800 dark:text-white text-sm">No Active Listings</h4>
-                <p className="text-xs text-slate-500 max-w-xs mx-auto">Welcome to CampusNest Housing! List your PG, flat, or hostel room to start receiving views and student inquiries.</p>
+                <p className="text-xs text-slate-500 max-w-xs mx-auto">Welcome to FlatsNFoods Housing! List your PG, flat, or hostel room to start receiving views and student inquiries.</p>
               </div>
               <button onClick={() => setIsModalOpen(true)} className="btn-primary py-2 px-5 text-xs mx-auto flex items-center gap-1">
                 <Plus className="w-4 h-4" /> Add Your First Listing

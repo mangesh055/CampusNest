@@ -146,11 +146,14 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
   }
 
   return (
-    <header
+    <motion.header
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ type: 'spring', stiffness: 100, damping: 20 }}
       className={cn(
-        'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
+        'fixed top-0 left-0 right-0 z-50 transition-all duration-500',
         scrolled || menuOpen
-          ? 'bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-sm border-b border-slate-200/50 dark:border-slate-700/50'
+          ? 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl shadow-md border-b border-slate-200/50 dark:border-slate-700/50'
           : 'bg-transparent'
       )}
     >
@@ -162,8 +165,8 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
               <Building2 className="w-5 h-5 text-white" />
             </div>
             <span className="text-xl font-display font-bold">
-              <span className="gradient-text">Campus</span>
-              <span className="text-slate-900 dark:text-white">Nest</span>
+              <span className="gradient-text">FlatsN</span>
+              <span className="text-slate-900 dark:text-white">Foods</span>
             </span>
           </Link>
 
@@ -355,6 +358,6 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
           </motion.div>
         )}
       </AnimatePresence>
-    </header>
+    </motion.header>
   )
 }

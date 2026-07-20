@@ -27,7 +27,7 @@ interface NotificationState {
 const defaultNotifications: AppNotification[] = [
   {
     id: 'n1',
-    title: 'Welcome to CampusNest!',
+    title: 'Welcome to FlatsNFoods!',
     message: 'Complete your profile to get the best housing and mess recommendations.',
     type: 'info',
     read: false,
@@ -56,13 +56,13 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   unreadCount: 0,
   init: () => {
     try {
-      const saved = localStorage.getItem('campusnest-notifications')
+      const saved = localStorage.getItem('flatsnfoods-notifications')
       if (saved) {
         const parsed = JSON.parse(saved)
         set({ notifications: parsed, unreadCount: parsed.filter((n: any) => !n.read).length })
       } else {
         set({ notifications: defaultNotifications, unreadCount: defaultNotifications.filter(n => !n.read).length })
-        localStorage.setItem('campusnest-notifications', JSON.stringify(defaultNotifications))
+        localStorage.setItem('flatsnfoods-notifications', JSON.stringify(defaultNotifications))
       }
     } catch (e) {
       set({ notifications: defaultNotifications, unreadCount: defaultNotifications.filter(n => !n.read).length })
@@ -77,12 +77,12 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     }
     const updated = [newNotif, ...get().notifications]
     set({ notifications: updated, unreadCount: updated.filter(n => !n.read).length })
-    localStorage.setItem('campusnest-notifications', JSON.stringify(updated))
+    localStorage.setItem('flatsnfoods-notifications', JSON.stringify(updated))
   },
   markAsRead: (id) => {
     const updated = get().notifications.map(n => n.id === id ? { ...n, read: true } : n)
     set({ notifications: updated, unreadCount: updated.filter(n => !n.read).length })
-    localStorage.setItem('campusnest-notifications', JSON.stringify(updated))
+    localStorage.setItem('flatsnfoods-notifications', JSON.stringify(updated))
     // Sync read status to server
     supabase.from('app_notifications').update({ read: true }).eq('id', id).then()
   },
@@ -90,7 +90,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     const unreadIds = get().notifications.filter(n => !n.read).map(n => n.id)
     const updated = get().notifications.map(n => ({ ...n, read: true }))
     set({ notifications: updated, unreadCount: 0 })
-    localStorage.setItem('campusnest-notifications', JSON.stringify(updated))
+    localStorage.setItem('flatsnfoods-notifications', JSON.stringify(updated))
     // Sync all unread to server
     if (unreadIds.length > 0) {
       supabase.from('app_notifications').update({ read: true }).in('id', unreadIds).then()
@@ -99,14 +99,14 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   deleteNotification: (id: string) => {
     const updated = get().notifications.filter(n => n.id !== id)
     set({ notifications: updated, unreadCount: updated.filter(n => !n.read).length })
-    localStorage.setItem('campusnest-notifications', JSON.stringify(updated))
+    localStorage.setItem('flatsnfoods-notifications', JSON.stringify(updated))
     // Also remove from Supabase if it's a server notification
     supabase.from('app_notifications').delete().eq('id', id).then()
   },
   clearAll: () => {
     const ids = get().notifications.map(n => n.id)
     set({ notifications: [], unreadCount: 0 })
-    localStorage.setItem('campusnest-notifications', JSON.stringify([]))
+    localStorage.setItem('flatsnfoods-notifications', JSON.stringify([]))
     // Also remove from Supabase
     if (ids.length > 0) {
       supabase.from('app_notifications').delete().in('id', ids).then()
@@ -146,7 +146,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
         merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         
         set({ notifications: merged, unreadCount: merged.filter(n => !n.read).length })
-        localStorage.setItem('campusnest-notifications', JSON.stringify(merged))
+        localStorage.setItem('flatsnfoods-notifications', JSON.stringify(merged))
         // NOTE: We do NOT auto-mark as read here — user must see and read them explicitly
       }
     } catch (e) {
@@ -180,7 +180,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
           if (existing.some(e => e.id === newNotif.id)) return
           const updated = [newNotif, ...existing]
           set({ notifications: updated, unreadCount: updated.filter(n => !n.read).length })
-          localStorage.setItem('campusnest-notifications', JSON.stringify(updated))
+          localStorage.setItem('flatsnfoods-notifications', JSON.stringify(updated))
         }
       )
       .subscribe()

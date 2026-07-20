@@ -1,7 +1,7 @@
 import type { Session, User } from '@supabase/supabase-js'
 import type { Profile, UserRole } from '../types'
 
-const LOCAL_AUTH_STORAGE_KEY = 'campusnest-local-auth'
+const LOCAL_AUTH_STORAGE_KEY = 'flatsnfoods-local-auth'
 
 interface LocalAuthAccount {
   email: string

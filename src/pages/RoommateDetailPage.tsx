@@ -193,11 +193,11 @@ export default function RoommateDetailPage() {
               )}
               
               {descObj.whatsapp ? (
-                <a href={`https://wa.me/${descObj.whatsapp.replace(/\D/g, '')}?text=Hi, I saw your room post on CampusNest!`} target="_blank" rel="noopener noreferrer" className="btn-secondary flex-1 py-3.5 justify-center text-sm flex items-center gap-2 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 border-[#25D366]/20">
+                <a href={`https://wa.me/${descObj.whatsapp.replace(/\D/g, '')}?text=Hi, I saw your room post on FlatsNFoods!`} target="_blank" rel="noopener noreferrer" className="btn-secondary flex-1 py-3.5 justify-center text-sm flex items-center gap-2 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 border-[#25D366]/20">
                   <MessageSquare className="w-4 h-4" /> WhatsApp
                 </a>
               ) : descObj.phone ? (
-                <a href={`https://wa.me/${descObj.phone.replace(/\D/g, '')}?text=Hi, I saw your room post on CampusNest!`} target="_blank" rel="noopener noreferrer" className="btn-secondary flex-1 py-3.5 justify-center text-sm flex items-center gap-2 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 border-[#25D366]/20">
+                <a href={`https://wa.me/${descObj.phone.replace(/\D/g, '')}?text=Hi, I saw your room post on FlatsNFoods!`} target="_blank" rel="noopener noreferrer" className="btn-secondary flex-1 py-3.5 justify-center text-sm flex items-center gap-2 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 border-[#25D366]/20">
                   <MessageSquare className="w-4 h-4" /> WhatsApp
                 </a>
               ) : (

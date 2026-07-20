@@ -10,6 +10,11 @@ import RoommatesPage from './pages/RoommatesPage'
 import RoommateDetailPage from './pages/RoommateDetailPage'
 import CommunityPage from './pages/CommunityPage'
 import NotificationsPage from './pages/NotificationsPage'
+import TermsConditionsPage from './pages/TermsConditionsPage'
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
+import CommunityGuidelinesPage from './pages/CommunityGuidelinesPage'
+import GrievanceRedressalPage from './pages/GrievanceRedressalPage'
+import HelpCenterPage from './pages/HelpCenterPage'
 
 // Dashboard pages
 import DashboardLayout from './components/layout/DashboardLayout'
@@ -142,6 +147,11 @@ export default function App() {
           <Route path="/community" element={<CommunityPage />} />
           <Route path="/favorites" element={<PropertiesPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/terms-conditions" element={<TermsConditionsPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/community-guidelines" element={<CommunityGuidelinesPage />} />
+          <Route path="/grievance-redressal" element={<GrievanceRedressalPage />} />
+          <Route path="/help" element={<HelpCenterPage />} />
         </Route>
 
         {/* Dashboard Redirect Handler */}

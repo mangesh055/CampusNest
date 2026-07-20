@@ -235,7 +235,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col sm:flex-row items-center justify-between mb-8 sm:mb-10 text-center sm:text-left">
             <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }}>
-              <h2 className="text-4xl sm:text-5xl font-dancing font-bold text-brand-600 dark:text-brand-400">
+              <h2 className="text-3xl sm:text-5xl font-display font-bold text-brand-600 dark:text-brand-400 tracking-tight">
                 🏠 Featured Properties
               </h2>
               <p className="text-slate-500 dark:text-slate-400 mt-2 sm:mt-1">Top-rated, verified accommodations near colleges</p>
@@ -262,7 +262,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col sm:flex-row items-center justify-between mb-8 sm:mb-10 text-center sm:text-left">
             <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }}>
-              <h2 className="text-4xl sm:text-5xl font-dancing font-bold text-accent-600 dark:text-accent-400">
+              <h2 className="text-3xl sm:text-5xl font-display font-bold text-accent-600 dark:text-accent-400 tracking-tight">
                 🍽️ Top Mess Services
               </h2>
               <p className="text-slate-500 dark:text-slate-400 mt-2 sm:mt-1">Verified messes with digital attendance system</p>
@@ -318,7 +318,7 @@ export default function HomePage() {
               {/* Desktop: full step list */}
               <div className="hidden sm:block space-y-4">
                 {[
-                  { icon: '📱', step: '1', title: 'Open Your App', desc: 'Launch the CampusNest app when you arrive at the mess.' },
+                  { icon: '📱', step: '1', title: 'Open Your App', desc: 'Launch the FlatsNFoods app when you arrive at the mess.' },
                   { icon: '📷', step: '2', title: 'Scan QR Poster', desc: 'Scan the mess\'s static QR code poster right from your dashboard.' },
                   { icon: '🎫', step: '3', title: 'System Validation', desc: 'The system instantly verifies your active meal plan and daily limits.' },
                   { icon: '✅', step: '4', title: 'Attendance Recorded', desc: 'Your meal is automatically logged and your plan count is updated!' },
@@ -392,7 +392,7 @@ export default function HomePage() {
               Ready to find your Campus Home?
             </h2>
             <p className="text-brand-200 text-sm sm:text-lg mb-5 sm:mb-8">
-              Join 5,000+ students already using CampusNest across India
+              Join 5,000+ students already using FlatsNFoods across India
             </p>
             <div className="flex flex-row gap-3 justify-center">
               <Link to="/auth?tab=register" className="btn-accent text-sm sm:text-base px-5 sm:px-8">
