@@ -55,7 +55,11 @@ export default function PropertiesPage() {
   }, [loadProperties])
 
   const filtered = useMemo(() => {
-    let result = [...properties]
+    const fortyFiveDaysAgo = new Date()
+    fortyFiveDaysAgo.setDate(fortyFiveDaysAgo.getDate() - 45)
+    
+    // Automatically remove properties older than 45 days from the properties tab
+    let result = properties.filter(p => new Date(p.created_at) >= fortyFiveDaysAgo)
     
     if (search) {
       const q = search.toLowerCase()

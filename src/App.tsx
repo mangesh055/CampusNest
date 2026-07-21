@@ -142,6 +142,7 @@ export default function App() {
         setSession(null)
         setUser(null)
         useAuthStore.getState().setProfile(null)
+        useNotificationStore.getState().reset()
       }
 
       if (mounted) setLoading(false)
@@ -166,6 +167,7 @@ export default function App() {
         setSession(null)
         setUser(null)
         useAuthStore.getState().setProfile(null)
+        useNotificationStore.getState().reset()
       }
       setLoading(false)
     })

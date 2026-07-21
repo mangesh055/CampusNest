@@ -10,7 +10,7 @@ interface SwipeableRowProps {
   notif: AppNotification
   onDelete: (id: string) => void
   onMarkRead: (id: string) => void
-  getIcon: (type: string) => JSX.Element
+  getIcon: (type: string) => React.ReactNode
   getTimeAgo: (d: string) => string
 }
 

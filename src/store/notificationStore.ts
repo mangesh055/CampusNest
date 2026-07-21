@@ -22,6 +22,7 @@ interface NotificationState {
   clearAll: () => void
   fetchServerNotifications: (userId: string) => Promise<void>
   subscribeToRealtime: (userId: string) => () => void
+  reset: () => void
 }
 
 const defaultNotifications: AppNotification[] = [
@@ -189,5 +190,9 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     return () => {
       supabase.removeChannel(channel)
     }
+  },
+  reset: () => {
+    set({ notifications: [], unreadCount: 0 })
+    localStorage.removeItem('flatsnfoods-notifications')
   }
 }))
