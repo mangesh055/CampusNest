@@ -66,7 +66,7 @@ export default function HelpCenterPage() {
             transition={{ delay: 0.2 }}
             className="text-lg text-slate-500 max-w-2xl mx-auto"
           >
-            Find answers to common questions about FlatsNFoods's smart housing and mess platform.
+            Find answers to common questions about FlatsNFood's smart housing and mess platform.
           </motion.p>
         </div>
 

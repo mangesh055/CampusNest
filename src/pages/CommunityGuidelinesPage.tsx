@@ -27,8 +27,8 @@ export default function CommunityGuidelinesPage() {
     >
       <section id="purpose">
         <h2>1. PURPOSE</h2>
-        <p>FlatsNFoods is a community built for college students, accommodation providers, and mess service operators. These Community Guidelines ("Guidelines") establish the standards of behaviour expected from all users to maintain a safe, respectful, and trustworthy platform.</p>
-        <p>By using FlatsNFoods, you agree to abide by these Guidelines in addition to our Terms & Conditions.</p>
+        <p>FlatsNFood is a community built for college students, accommodation providers, and mess service operators. These Community Guidelines ("Guidelines") establish the standards of behaviour expected from all users to maintain a safe, respectful, and trustworthy platform.</p>
+        <p>By using FlatsNFood, you agree to abide by these Guidelines in addition to our Terms & Conditions.</p>
       </section>
 
       <section id="values">
@@ -103,7 +103,7 @@ export default function CommunityGuidelinesPage() {
         <ul>
           <li>Creating fake listings for properties or messes that do not exist.</li>
           <li>Misrepresenting the condition, location, pricing, or availability of a listing.</li>
-          <li>Impersonating another user, organisation, or FlatsNFoods staff.</li>
+          <li>Impersonating another user, organisation, or FlatsNFood staff.</li>
           <li>Manipulating ratings and reviews through fake accounts, paid reviews, or review bombing.</li>
           <li>Phishing, social engineering, or attempting to steal user credentials.</li>
           <li>Sharing or manipulating QR codes for fraudulent meal attendance.</li>
@@ -171,7 +171,7 @@ export default function CommunityGuidelinesPage() {
         <ul>
           <li><strong>Automated Systems:</strong> Content filters and spam detection.</li>
           <li><strong>User Reports:</strong> Community reporting mechanism for violations.</li>
-          <li><strong>Admin Review:</strong> Manual review by FlatsNFoods administrators.</li>
+          <li><strong>Admin Review:</strong> Manual review by FlatsNFood administrators.</li>
         </ul>
 
         <h3>7.2 Reporting Violations</h3>
@@ -256,7 +256,7 @@ export default function CommunityGuidelinesPage() {
         <ul>
           <li>Respect copyright and intellectual property rights when posting content.</li>
           <li>Do not use another person's photos, text, or creative work without permission.</li>
-          <li>FlatsNFoods respects IP rights and will remove infringing content upon valid notification.</li>
+          <li>FlatsNFood respects IP rights and will remove infringing content upon valid notification.</li>
         </ul>
       </section>
 
@@ -278,7 +278,7 @@ export default function CommunityGuidelinesPage() {
       <div className="mt-8 p-4 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm text-slate-500 dark:text-slate-400 italic">
         <strong>Note:</strong> These Guidelines complement the Terms & Conditions. In case of conflict, the Terms & Conditions shall prevail.
         <br /><br />
-        © 2026 FlatsNFoods. All rights reserved.
+        © 2026 FlatsNFood. All rights reserved.
       </div>
     </LegalPageLayout>
   )

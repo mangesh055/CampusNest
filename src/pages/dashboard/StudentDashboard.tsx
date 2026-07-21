@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import { BarChart2, TrendingUp, CreditCard, Calendar, QrCode, Download, ArrowUpRight, Search, Utensils } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { BarChart2, TrendingUp, CreditCard, Calendar, QrCode, Download, ArrowUpRight, Search, Utensils, Building2 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts'
+import StudentPropertyRequestView from '../../components/StudentPropertyRequestView'
 import { useAuthStore } from '../../store/authStore'
 import { supabase } from '../../lib/supabase'
 import { cn, formatCurrency, formatDate, getRemainingDays } from '../../lib/utils'
@@ -64,6 +65,7 @@ const emptyMenu = { breakfast: [], lunch: [], dinner: [], snack: [] }
 export default function StudentDashboard() {
   const { profile } = useAuthStore()
   const location = useLocation()
+  const navigate = useNavigate()
 
   const [messes, setMesses] = useState<MessRow[]>([])
   const [plans, setPlans] = useState<PlanRow[]>([])
@@ -78,7 +80,7 @@ export default function StudentDashboard() {
   const [checkoutStep, setCheckoutStep] = useState<'details' | 'qr' | 'paying' | 'success'>('details')
   const [checkoutQRUrl, setCheckoutQRUrl] = useState('')
 
-  const view = location.pathname.endsWith('/subscription') ? 'subscription' : location.pathname.endsWith('/attendance') ? 'attendance' : 'overview'
+  const view = location.pathname.endsWith('/subscription') ? 'subscription' : location.pathname.endsWith('/attendance') ? 'attendance' : location.pathname.endsWith('/add-property') ? 'add-property' : 'overview'
 
   useEffect(() => {
     const load = async () => {
@@ -270,7 +272,7 @@ export default function StudentDashboard() {
 
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="card p-6 lg:col-span-2"><h3 className="font-display font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-brand-500" /> Monthly Spending</h3><ResponsiveContainer width="100%" height={200}><LineChart data={spendingData}><CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" /><XAxis dataKey="month" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 12 }} /><Tooltip formatter={(v) => [`₹${v}`, 'Spent']} /><Line type="monotone" dataKey="amount" stroke="#6366f1" strokeWidth={2.5} dot={{ fill: '#6366f1', r: 4 }} /></LineChart></ResponsiveContainer></div>
-          <div className="card p-6"><h3 className="font-display font-bold text-slate-900 dark:text-white mb-4">⚡ Quick Links</h3><div className="space-y-3"><Link to="/roommates" className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800"><span className="text-xs font-semibold text-slate-700 dark:text-slate-300">👥 Match Roommates</span><ArrowUpRight className="w-4 h-4 text-slate-400" /></Link><Link to="/community" className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800"><span className="text-xs font-semibold text-slate-700 dark:text-slate-300">📢 Campus Board</span><ArrowUpRight className="w-4 h-4 text-slate-400" /></Link></div></div>
+          <div className="card p-6"><h3 className="font-display font-bold text-slate-900 dark:text-white mb-4">⚡ Quick Links</h3><div className="space-y-3"><Link to="/roommates" className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800"><span className="text-xs font-semibold text-slate-700 dark:text-slate-300">👥 Match Roommates</span><ArrowUpRight className="w-4 h-4 text-slate-400" /></Link><Link to="/community" className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800"><span className="text-xs font-semibold text-slate-700 dark:text-slate-300">📢 Campus Board</span><ArrowUpRight className="w-4 h-4 text-slate-400" /></Link><button onClick={() => setIsPropertyModalOpen(true)} className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"><span className="text-xs font-semibold text-slate-700 dark:text-slate-300">🏠 Request to Add Property</span><ArrowUpRight className="w-4 h-4 text-slate-400" /></button></div></div>
         </div>
 
         <div className="card p-6"><h3 className="font-display font-bold text-slate-900 dark:text-white mb-4">📋 Recent Meal Logs</h3><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-slate-200 dark:border-slate-700"><th className="text-left py-3 px-2">Date</th><th className="text-center py-3 px-2">🌅 Breakfast</th><th className="text-center py-3 px-2">☀️ Lunch</th><th className="text-center py-3 px-2">🌙 Dinner</th><th className="text-center py-3 px-2">🍪 Snack</th></tr></thead><tbody>{filteredAttendance.slice(0, 5).map((row) => (<tr key={row.id} className="border-b border-slate-100 dark:border-slate-800"><td className="py-3 px-2 font-medium">{formatDate(row.date)}</td><td className="py-3 px-2 text-center">{row.breakfast ? '✓' : '—'}</td><td className="py-3 px-2 text-center">{row.lunch ? '✓' : '—'}</td><td className="py-3 px-2 text-center">{row.dinner ? '✓' : '—'}</td><td className="py-3 px-2 text-center">{row.snack ? '✓' : '—'}</td></tr>))}</tbody></table></div></div>
@@ -353,6 +355,23 @@ export default function StudentDashboard() {
         <div><h1 className="text-2xl font-display font-bold">Meal Attendance Log</h1><p className="text-slate-500 text-sm mt-1">Attendance rows are loaded from the database.</p></div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4"><div className="card p-5"><div className="text-2xl font-extrabold">{totalMeals}</div><div className="text-xs text-slate-500 mt-1">Scanned Meals</div></div><div className="card p-5"><div className="text-2xl font-extrabold">{subscription ? Math.min(100, Math.round((totalMeals / Math.max(1, filteredAttendance.length * 3)) * 100)) : 0}%</div><div className="text-xs text-slate-500 mt-1">Attendance rate</div></div><div className="card p-5"><div className="text-2xl font-extrabold text-brand-500">{remaining}</div><div className="text-xs text-slate-500 mt-1">Days remaining</div></div><div className="card p-5"><div className="text-2xl font-extrabold text-emerald-600">{subscriptionHistory.length}</div><div className="text-xs text-slate-500 mt-1">Past subscriptions</div></div></div>
         <div className="card p-6"><h3 className="font-display font-bold mb-4">Attendance Calendar ({monthName} {currentYear})</h3><div className="grid grid-cols-7 gap-2 max-w-md">{daysInMonth.map((day) => (<div key={day.day} className={cn('aspect-square rounded-xl flex items-center justify-center text-xs font-bold', day.status === 'attended' ? 'bg-emerald-500 text-white' : day.status === 'missed' ? 'bg-slate-200 text-slate-500' : 'bg-slate-50 text-slate-400')}>{day.day}</div>))}</div></div>
+      </div>
+    )
+  }
+
+  if (view === 'add-property') {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-display font-bold">Property Listing Request</h1>
+            <p className="text-slate-500 text-sm mt-1">Submit your property details for admin approval.</p>
+          </div>
+          <button onClick={() => navigate('/dashboard/student')} className="btn-secondary text-sm">
+            &larr; Back to Dashboard
+          </button>
+        </div>
+        <StudentPropertyRequestView />
       </div>
     )
   }

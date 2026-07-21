@@ -7,7 +7,7 @@ export default function TermsConditionsPage() {
     { id: 'acceptance', title: '1. Acceptance of Terms' },
     { id: 'eligibility', title: '2. Eligibility' },
     { id: 'about', title: '3. About the Platform' },
-    { id: 'role', title: '4. Role of FlatsNFoods' },
+    { id: 'role', title: '4. Role of FlatsNFood' },
     { id: 'accounts', title: '5. User Accounts' },
     { id: 'obligations', title: '6. User Obligations' },
     { id: 'content', title: '7. Listings and Content' },
@@ -34,7 +34,7 @@ export default function TermsConditionsPage() {
     >
       <section id="acceptance">
         <h2>1. ACCEPTANCE OF TERMS</h2>
-        <p>These Terms & Conditions ("Terms") constitute a legally binding agreement between you ("User," "you," "your") and [Your Registered Entity Name] ("FlatsNFoods," "we," "us," "our"), the operator of the FlatsNFoods platform (the "Platform").</p>
+        <p>These Terms & Conditions ("Terms") constitute a legally binding agreement between you ("User," "you," "your") and [Your Registered Entity Name] ("FlatsNFood," "we," "us," "our"), the operator of the FlatsNFood platform (the "Platform").</p>
         <p>By accessing, browsing, or using the Platform, you agree to be bound by these Terms, our <Link to="/privacy-policy">Privacy Policy</Link>, <Link to="/community-guidelines">Community Guidelines</Link>, and all other policies referenced herein. If you do not agree, you must not use the Platform.</p>
         <p>These Terms are published in accordance with:</p>
         <ul>
@@ -57,7 +57,7 @@ export default function TermsConditionsPage() {
 
       <section id="about">
         <h2>3. ABOUT THE PLATFORM</h2>
-        <p>FlatsNFoods is a technology-enabled discovery and listing platform that connects students with accommodation providers, mess/tiffin service providers, and fellow students. The Platform offers:</p>
+        <p>FlatsNFood is a technology-enabled discovery and listing platform that connects students with accommodation providers, mess/tiffin service providers, and fellow students. The Platform offers:</p>
         <ul>
           <li><strong>Property Discovery:</strong> Browse and search PGs, hostels, flats, shared rooms, and private rooms with filters for rent, location, amenities, and gender preference.</li>
           <li><strong>Mess Discovery & Subscriptions:</strong> Discover mess/tiffin services, view menus and plans, subscribe to meal plans, and track attendance via QR-based system.</li>
@@ -72,7 +72,7 @@ export default function TermsConditionsPage() {
         <h2>4. ROLE OF CAMPUSNEST</h2>
         
         <h3>4.1 Platform / Intermediary Status</h3>
-        <p>FlatsNFoods operates as an <strong>intermediary</strong> and <strong>e-commerce marketplace entity</strong> under the IT Act, 2000 and the Consumer Protection (E-Commerce) Rules, 2020. We:</p>
+        <p>FlatsNFood operates as an <strong>intermediary</strong> and <strong>e-commerce marketplace entity</strong> under the IT Act, 2000 and the Consumer Protection (E-Commerce) Rules, 2020. We:</p>
         <ul>
           <li>Provide a technology platform to facilitate connections between students and service providers.</li>
           <li>Do <strong>not</strong> own, operate, manage, or control any property, hostel, PG, or mess listed on the Platform.</li>
@@ -81,10 +81,10 @@ export default function TermsConditionsPage() {
         </ul>
 
         <h3>4.2 No Endorsement</h3>
-        <p>Listing a property or mess on FlatsNFoods does not constitute an endorsement, recommendation, or guarantee by us. Users must exercise their own judgement and due diligence.</p>
+        <p>Listing a property or mess on FlatsNFood does not constitute an endorsement, recommendation, or guarantee by us. Users must exercise their own judgement and due diligence.</p>
 
         <h3>4.3 Limitation of Role</h3>
-        <p>All transactions (rental agreements, mess subscriptions, marketplace purchases) are directly between the relevant users. FlatsNFoods is not a party to any such transaction and bears no liability for disputes arising therefrom, except as required under applicable law.</p>
+        <p>All transactions (rental agreements, mess subscriptions, marketplace purchases) are directly between the relevant users. FlatsNFood is not a party to any such transaction and bears no liability for disputes arising therefrom, except as required under applicable law.</p>
       </section>
 
       <section id="accounts">
@@ -162,14 +162,14 @@ export default function TermsConditionsPage() {
         <h3>7.1 User-Generated Content</h3>
         <p>By posting content (listings, reviews, community posts, images) on the Platform, you:</p>
         <ul>
-          <li>Grant FlatsNFoods a non-exclusive, royalty-free, worldwide licence to use, display, reproduce, and distribute such content for Platform operations.</li>
+          <li>Grant FlatsNFood a non-exclusive, royalty-free, worldwide licence to use, display, reproduce, and distribute such content for Platform operations.</li>
           <li>Represent that you own the content or have the right to post it.</li>
-          <li>Agree that FlatsNFoods may remove content that violates these Terms or applicable law.</li>
+          <li>Agree that FlatsNFood may remove content that violates these Terms or applicable law.</li>
         </ul>
 
         <h3>7.2 Verification and Featured Listings</h3>
         <ul>
-          <li>FlatsNFoods may offer "Verified" and "Featured" badges for listings.</li>
+          <li>FlatsNFood may offer "Verified" and "Featured" badges for listings.</li>
           <li>Verification involves basic checks but does <strong>not</strong> guarantee accuracy, quality, or safety.</li>
           <li>Featured status may involve promotional placement.</li>
         </ul>
@@ -188,7 +188,7 @@ export default function TermsConditionsPage() {
         <h3>8.1 Subscription Terms</h3>
         <ul>
           <li>Mess subscriptions are agreements between you and the mess owner.</li>
-          <li>FlatsNFoods facilitates the subscription process but is not a party to the agreement.</li>
+          <li>FlatsNFood facilitates the subscription process but is not a party to the agreement.</li>
           <li>Subscription status (active/expired/cancelled/pending) is tracked on the Platform.</li>
         </ul>
 
@@ -204,7 +204,7 @@ export default function TermsConditionsPage() {
         <h3>8.3 Payments</h3>
         <ul>
           <li>Payment processing is handled through third-party payment gateways.</li>
-          <li>FlatsNFoods does not store your payment instrument details (card numbers, UPI PINs).</li>
+          <li>FlatsNFood does not store your payment instrument details (card numbers, UPI PINs).</li>
           <li>Disputes regarding payments for mess subscriptions should be raised with the mess owner and/or our Grievance Officer.</li>
         </ul>
       </section>
@@ -214,7 +214,7 @@ export default function TermsConditionsPage() {
         <ul>
           <li>The marketplace allows students to post items for sale/exchange in categories: notes, books, cycles, bikes, events, announcements, general.</li>
           <li>All transactions are directly between users.</li>
-          <li>FlatsNFoods is not responsible for the quality, legality, or delivery of items.</li>
+          <li>FlatsNFood is not responsible for the quality, legality, or delivery of items.</li>
           <li>Prohibited items include illegal goods, weapons, drugs, counterfeit goods, and any items restricted under applicable law.</li>
         </ul>
       </section>
@@ -222,16 +222,16 @@ export default function TermsConditionsPage() {
       <section id="ip">
         <h2>10. INTELLECTUAL PROPERTY</h2>
         
-        <h3>10.1 FlatsNFoods IP</h3>
+        <h3>10.1 FlatsNFood IP</h3>
         <ul>
-          <li>The Platform, including its design, code, logos, branding, user interface, and original content, is the intellectual property of FlatsNFoods.</li>
+          <li>The Platform, including its design, code, logos, branding, user interface, and original content, is the intellectual property of FlatsNFood.</li>
           <li>You may not copy, modify, distribute, or create derivative works without written permission.</li>
         </ul>
 
         <h3>10.2 User IP</h3>
         <ul>
           <li>You retain ownership of original content you post.</li>
-          <li>By posting, you grant FlatsNFoods the licence described in Section 7.1.</li>
+          <li>By posting, you grant FlatsNFood the licence described in Section 7.1.</li>
         </ul>
       </section>
 
@@ -249,15 +249,15 @@ export default function TermsConditionsPage() {
         <h2>12. LIMITATION OF LIABILITY</h2>
         <p>To the maximum extent permitted by applicable law:</p>
         <ul>
-          <li>FlatsNFoods shall not be liable for any indirect, incidental, special, consequential, or punitive damages.</li>
-          <li>Our total aggregate liability for any claim shall not exceed the amount paid by you to FlatsNFoods (if any) in the 12 months preceding the claim.</li>
+          <li>FlatsNFood shall not be liable for any indirect, incidental, special, consequential, or punitive damages.</li>
+          <li>Our total aggregate liability for any claim shall not exceed the amount paid by you to FlatsNFood (if any) in the 12 months preceding the claim.</li>
           <li>This limitation applies to all causes of action, including breach of contract, tort, negligence, and strict liability.</li>
         </ul>
       </section>
 
       <section id="indemnification">
         <h2>13. INDEMNIFICATION</h2>
-        <p>You agree to indemnify, defend, and hold harmless FlatsNFoods, its officers, directors, employees, and agents from and against all claims, damages, losses, liabilities, costs, and expenses (including legal fees) arising from:</p>
+        <p>You agree to indemnify, defend, and hold harmless FlatsNFood, its officers, directors, employees, and agents from and against all claims, damages, losses, liabilities, costs, and expenses (including legal fees) arising from:</p>
         <ul>
           <li>Your use of the Platform.</li>
           <li>Your violation of these Terms.</li>
@@ -291,7 +291,7 @@ export default function TermsConditionsPage() {
 
       <section id="entire-agreement">
         <h2>17. ENTIRE AGREEMENT</h2>
-        <p>These Terms, together with the <Link to="/privacy-policy">Privacy Policy</Link>, constitute the entire agreement between you and FlatsNFoods.</p>
+        <p>These Terms, together with the <Link to="/privacy-policy">Privacy Policy</Link>, constitute the entire agreement between you and FlatsNFood.</p>
       </section>
 
       <section id="contact">
@@ -312,7 +312,7 @@ export default function TermsConditionsPage() {
       <div className="mt-8 p-4 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm text-slate-500 dark:text-slate-400 italic">
         <strong>DISCLAIMER:</strong> These Terms & Conditions are drafted to align with applicable Indian laws and are intended for review by qualified legal counsel before publication. They do not constitute legal advice.
         <br /><br />
-        © 2026 FlatsNFoods. All rights reserved.
+        © 2026 FlatsNFood. All rights reserved.
       </div>
     </LegalPageLayout>
   )

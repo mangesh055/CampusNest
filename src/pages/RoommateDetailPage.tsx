@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { MapPin, Users, DollarSign, Shield, Compass, MessageSquare, ArrowLeft, Phone, Check } from 'lucide-react'
+import { MapPin, Users, DollarSign, Shield, Compass, MessageSquare, ArrowLeft, Phone, Check, ExternalLink, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import type { RoommateProfile } from '../types'
@@ -13,6 +13,8 @@ export default function RoommateDetailPage() {
   const { profile } = useAuthStore()
   const [roommate, setRoommate] = useState<RoommateProfile & { full_name?: string | null; email?: string | null } | null>(null)
   const [loading, setLoading] = useState(true)
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null)
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -52,7 +54,7 @@ export default function RoommateDetailPage() {
     )
   }
 
-  let descObj = { text: roommate.description, deposit: 0, total_roommates: 1, location: '', amenities: [] as string[], images: [] as string[], phone: '', whatsapp: '' }
+  let descObj = { text: roommate.description, deposit: 0, total_roommates: 1, location: '', amenities: [] as string[], images: [] as string[], video_url: '', phone: '', whatsapp: '' }
   try {
     const parsed = JSON.parse(roommate.description || '{}')
     if (parsed.text !== undefined) descObj = { ...descObj, ...parsed }
@@ -68,7 +70,7 @@ export default function RoommateDetailPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white dark:bg-slate-900 rounded-3xl shadow-card overflow-hidden">
           
           {(descObj.images?.length || 0) > 0 && (
-            <div className="h-64 sm:h-96 w-full bg-slate-200 dark:bg-slate-800 relative">
+            <div className="h-48 sm:h-64 w-full bg-slate-200 dark:bg-slate-800 relative cursor-pointer" onClick={() => setSelectedImage(descObj.images?.[0] || null)}>
               <img src={descObj.images?.[0]} alt="Room" className="w-full h-full object-cover" />
             </div>
           )}
@@ -127,6 +129,46 @@ export default function RoommateDetailPage() {
                 {descObj.text}
               </p>
             </div>
+
+            {(descObj.images?.length > 0 || descObj.video_url) && (
+              <div className="mb-10">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center justify-between">
+                  <span>📸 Media Gallery</span>
+                  <span className="text-xs font-normal text-slate-400">
+                    {descObj.images?.length || 0} images {descObj.video_url && '• 1 video'}
+                  </span>
+                </h3>
+                <div className="flex flex-wrap gap-3">
+                  {descObj.video_url && (
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      onClick={() => setSelectedVideo(descObj.video_url!)}
+                      className="relative rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 cursor-pointer group bg-black shrink-0 shadow-sm border border-slate-200 dark:border-slate-700"
+                    >
+                      <video src={descObj.video_url} className="w-full h-full object-cover opacity-80 transition-transform duration-300 group-hover:scale-105" preload="metadata" />
+                      <div className="absolute inset-0 bg-slate-900/20 group-hover:bg-slate-900/40 transition-all duration-200 flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                          <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[12px] border-l-white border-b-[8px] border-b-transparent ml-1" />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                  {descObj.images?.map((photo: string, i: number) => (
+                    <motion.div
+                      key={i}
+                      whileHover={{ scale: 1.05 }}
+                      onClick={() => setSelectedImage(photo)}
+                      className="relative rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 cursor-pointer group shrink-0 shadow-sm border border-slate-200 dark:border-slate-700"
+                    >
+                      <img src={photo} alt={`Room photo ${i + 1}`} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                      <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/20 transition-all duration-200 flex items-center justify-center">
+                        <ExternalLink className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {((descObj.amenities?.length || 0) > 0 || roommate.gender || roommate.food_preference) && (
               <div className="mb-10">
@@ -201,11 +243,11 @@ export default function RoommateDetailPage() {
               )}
               
               {descObj.whatsapp ? (
-                <a href={`https://wa.me/${descObj.whatsapp.replace(/\D/g, '')}?text=Hi, I saw your room post on FlatsNFoods!`} target="_blank" rel="noopener noreferrer" className="btn-secondary flex-1 py-3.5 justify-center text-sm flex items-center gap-2 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 border-[#25D366]/20">
+                <a href={`https://wa.me/${descObj.whatsapp.replace(/\D/g, '')}?text=Hi, I saw your room post on FlatsNFood!`} target="_blank" rel="noopener noreferrer" className="btn-secondary flex-1 py-3.5 justify-center text-sm flex items-center gap-2 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 border-[#25D366]/20">
                   <MessageSquare className="w-4 h-4" /> WhatsApp
                 </a>
               ) : descObj.phone ? (
-                <a href={`https://wa.me/${descObj.phone.replace(/\D/g, '')}?text=Hi, I saw your room post on FlatsNFoods!`} target="_blank" rel="noopener noreferrer" className="btn-secondary flex-1 py-3.5 justify-center text-sm flex items-center gap-2 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 border-[#25D366]/20">
+                <a href={`https://wa.me/${descObj.phone.replace(/\D/g, '')}?text=Hi, I saw your room post on FlatsNFood!`} target="_blank" rel="noopener noreferrer" className="btn-secondary flex-1 py-3.5 justify-center text-sm flex items-center gap-2 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 border-[#25D366]/20">
                   <MessageSquare className="w-4 h-4" /> WhatsApp
                 </a>
               ) : (
@@ -217,6 +259,47 @@ export default function RoommateDetailPage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Fullscreen Media Modal */}
+      {(selectedImage || selectedVideo) && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => { setSelectedImage(null); setSelectedVideo(null); }}
+            className="absolute inset-0 bg-black/90 backdrop-blur-sm cursor-pointer"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="relative z-10 max-w-5xl w-full h-full flex flex-col items-center justify-center pointer-events-none"
+          >
+            <button
+              onClick={() => { setSelectedImage(null); setSelectedVideo(null); }}
+              className="absolute top-0 right-0 sm:-right-4 sm:-top-4 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full backdrop-blur-md transition-colors pointer-events-auto z-20"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            
+            {selectedImage ? (
+              <img
+                src={selectedImage}
+                alt="Fullscreen view"
+                className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl pointer-events-auto"
+              />
+            ) : selectedVideo ? (
+              <video
+                src={selectedVideo}
+                controls
+                autoPlay
+                className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl pointer-events-auto bg-black"
+              />
+            ) : null}
+          </motion.div>
+        </div>
+      )}
     </div>
   )
 }

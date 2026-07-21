@@ -18,7 +18,7 @@ export default function Footer() {
                 <Building2 className="w-5 h-5 text-white" />
               </div>
               <span className="text-xl font-display font-bold text-white">
-                FlatsN<span className="gradient-text">Foods</span>
+                FlatsN<span className="gradient-text">Food</span>
               </span>
             </div>
             <p className="text-sm leading-relaxed mb-6 max-w-xs">
@@ -87,7 +87,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-slate-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
-          <p>© 2026 FlatsNFoods. All rights reserved. Built with ❤️ for Indian students.</p>
+          <p>© 2026 FlatsNFood. All rights reserved. Built with ❤️ for Indian students.</p>
           <div className="flex flex-wrap justify-center sm:justify-end items-center gap-4 mt-4 sm:mt-0">
             <Link to="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
             <Link to="/terms-conditions" className="hover:text-white transition-colors">Terms & Conditions</Link>

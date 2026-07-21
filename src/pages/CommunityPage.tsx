@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Plus, MessageSquare, Heart, ThumbsUp, Send, Share2, X, ShoppingBag, BookOpen, Bike, Calendar, Megaphone, HelpCircle, Pencil } from 'lucide-react'
+import { Filter, Search, Plus, MapPin, X, Pencil, ArrowRight, ShieldAlert, BadgeCheck, MessageSquare, BookOpen, Notebook, Bike, Music, Speaker, Check, Upload, Video, HelpCircle, Calendar, Megaphone, Send, Share2, ThumbsUp, Heart, ShoppingBag, Camera } from 'lucide-react'
+import { uploadToCloudinary } from '../utils/cloudinary'
 import { useAuthStore } from '../store/authStore'
 import { useNavigate } from 'react-router-dom'
 import type { CommunityPost } from '../types'
 import { cn, formatCurrency } from '../lib/utils'
-import { fetchCommunityComments, fetchCommunityPosts } from '../lib/platformData'
+import { fetchCommunityComments, fetchCommunityPosts, invalidatePlatformCache } from '../lib/platformData'
 import { supabase } from '../lib/supabase'
 
 const categoryConfig = {
@@ -28,6 +29,7 @@ export default function CommunityPage() {
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [showModal, setShowModal] = useState(false)
+  const [showAllPosts, setShowAllPosts] = useState(false)
   const [isEditingPostId, setIsEditingPostId] = useState<string | null>(null)
 
   // Form State
@@ -39,8 +41,10 @@ export default function CommunityPage() {
     phone: '',
     phone_code: '+91',
     location: '',
-    images: [] as string[]
+    images: [] as string[],
+    video_url: ''
   })
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false)
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -53,6 +57,21 @@ export default function CommunityPage() {
       }
       reader.readAsDataURL(file)
     })
+  }
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploadingVideo(true)
+    try {
+      const url = await uploadToCloudinary(file)
+      setForm(prev => ({ ...prev, video_url: url }))
+    } catch (error: any) {
+      alert('Failed to upload video: ' + error.message)
+    } finally {
+      setIsUploadingVideo(false)
+    }
   }
 
   useEffect(() => {
@@ -89,7 +108,7 @@ export default function CommunityPage() {
       return
     }
 
-    const contentObj = JSON.stringify({ text: form.content, phone: `${form.phone_code}${form.phone}`, location: form.location, images: form.images })
+    const contentObj = JSON.stringify({ text: form.content, phone: `${form.phone_code}${form.phone}`, location: form.location, images: form.images, video_url: form.video_url })
 
     if (isEditingPostId) {
       void (async () => {
@@ -113,9 +132,11 @@ export default function CommunityPage() {
           price: form.price ? Number(form.price) : undefined,
         } : p))
         
+        invalidatePlatformCache()
+        alert('Your changes are saved!')
         setShowModal(false)
         setIsEditingPostId(null)
-        setForm({ title: '', content: '', category: 'general', price: '', phone: '', phone_code: '+91', location: '', images: [] })
+        setForm({ title: '', content: '', category: 'general', price: '', phone: '', phone_code: '+91', location: '', images: [], video_url: '' })
       })()
       return
     }
@@ -142,8 +163,9 @@ export default function CommunityPage() {
       }
 
       setPosts(prev => [{ ...newPost, profiles: profile }, ...prev])
+      invalidatePlatformCache()
       setShowModal(false)
-      setForm({ title: '', content: '', category: 'general', price: '', phone: '', phone_code: '+91', location: '', images: [] })
+      setForm({ title: '', content: '', category: 'general', price: '', phone: '', phone_code: '+91', location: '', images: [], video_url: '' })
     })()
   }
 
@@ -156,6 +178,7 @@ export default function CommunityPage() {
         return
       }
       setPosts(prev => prev.filter(p => p.id !== postId))
+      invalidatePlatformCache()
     })()
   }
 
@@ -242,24 +265,27 @@ export default function CommunityPage() {
               </button>
             </div>
           ) : (
-            <div className="space-y-4">
-              {filteredPosts.map(post => {
-                const config = categoryConfig[post.category as keyof typeof categoryConfig] || categoryConfig.general
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 items-stretch">
+                {filteredPosts.slice(0, (showAllPosts || search.trim() !== '' || selectedCategory !== 'all') ? undefined : 3).map(post => {
+                  const config = categoryConfig[post.category as keyof typeof categoryConfig] || categoryConfig.general
                 const CategoryIcon = config.icon
                 
                 let textContent = post.content
                 let phone = ''
                 let location = ''
                 let images: string[] = post.images || []
+                let video_url = ''
                 try {
                   const parsed = JSON.parse(post.content)
-                  if (parsed.text) {
+                  if (parsed.text !== undefined) {
                     textContent = parsed.text
                     phone = parsed.phone || ''
                     location = parsed.location || ''
                     if (parsed.images && parsed.images.length > 0) {
                       images = parsed.images
                     }
+                    if (parsed.video_url) video_url = parsed.video_url
                   }
                 } catch (e) {}
 
@@ -267,12 +293,13 @@ export default function CommunityPage() {
                   <motion.div
                     layout
                     key={post.id}
-                    className="card p-6 border-slate-200 hover:border-slate-300 transition-all dark:border-slate-800"
+                    onClick={() => navigate(`/community/${post.id}`)}
+                    className="card p-3 sm:p-4 border-slate-200 hover:border-slate-300 transition-all dark:border-slate-800 cursor-pointer hover:shadow-md flex flex-col h-full"
                   >
                     {/* Post Meta */}
-                    <div className="flex justify-between items-start mb-3">
+                    <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-xs text-brand-600">
+                        <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-[10px] text-brand-600 shrink-0">
                           {post.profiles?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
                         </div>
                         <div>
@@ -297,9 +324,18 @@ export default function CommunityPage() {
                         {post.author_id === profile?.id && (
                           <div className="flex items-center gap-1">
                             <button
-                              onClick={() => {
-                                const phoneNoCode = phone.replace(/^\+\d+/, '')
-                                const phoneCode = phone.match(/^\+(\d+)/)?.[0] || '+91'
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                let phoneNoCode = phone;
+                                let phoneCode = '+91';
+                                const validCodes = ['+91', '+1', '+44', '+61', '+971'];
+                                for (const c of validCodes) {
+                                  if (phone.startsWith(c)) {
+                                    phoneCode = c;
+                                    phoneNoCode = phone.slice(c.length);
+                                    break;
+                                  }
+                                }
                                 setForm({
                                   title: post.title,
                                   content: textContent,
@@ -309,6 +345,7 @@ export default function CommunityPage() {
                                   phone_code: phoneCode,
                                   location: location,
                                   images: images,
+                                  video_url: video_url
                                 })
                                 setIsEditingPostId(post.id)
                                 setShowModal(true)
@@ -319,7 +356,7 @@ export default function CommunityPage() {
                               <Pencil className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => handleDeletePost(post.id)}
+                              onClick={(e) => { e.stopPropagation(); handleDeletePost(post.id) }}
                               className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 dark:bg-red-900/20 dark:hover:bg-red-900/40 transition-colors"
                               title="Delete Post"
                             >
@@ -331,9 +368,13 @@ export default function CommunityPage() {
                     </div>
 
                     {/* Content */}
-                    {images.length > 0 && (
-                      <div className="mb-4 h-48 w-full bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden relative">
-                        <img src={images[0]} alt="Post attachment" className="w-full h-full object-cover" />
+                    {(images.length > 0 || video_url) && (
+                      <div className="mb-3 h-28 sm:h-32 w-full bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden relative shrink-0">
+                        {images.length > 0 ? (
+                          <img src={images[0]} alt="Post attachment" className="w-full h-full object-cover" />
+                        ) : (
+                          <video src={`${video_url}#t=0.001`} className="w-full h-full object-cover opacity-80" preload="metadata" playsInline muted />
+                        )}
                         {images.length > 1 && (
                           <div className="absolute top-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded-md backdrop-blur-sm">
                             1 of {images.length}
@@ -342,15 +383,16 @@ export default function CommunityPage() {
                       </div>
                     )}
                     
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2 leading-tight">
-                      {post.title}
-                    </h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-wrap">
-                      {textContent}
-                    </p>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1.5 leading-tight line-clamp-2">
+                        {post.title}
+                      </h3>
+                      <p className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-wrap line-clamp-3">
+                        {textContent}
+                      </p>
 
-                    {/* Price Tag if available */}
-                    {post.price !== undefined && (
+                      {/* Price Tag if available */}
+                      {post.price !== undefined && (
                       <div className="mt-3 flex items-center gap-1">
                         <span className="text-xs text-slate-400">Asking Price:</span>
                         <span className="text-sm font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 px-2.5 py-1 rounded-lg">
@@ -359,22 +401,23 @@ export default function CommunityPage() {
                       </div>
                     )}
 
-                    {location && (
-                      <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                        <span className="shrink-0">📍</span>
-                        <span className="truncate">{location}</span>
-                      </div>
-                    )}
+                      {location && (
+                        <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                          <span className="shrink-0">📍</span>
+                          <span className="truncate">{location}</span>
+                        </div>
+                      )}
+                    </div>
 
                     {/* Buttons */}
-                    <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3 text-xs">
+                    <div className="mt-auto pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2 text-[10px] sm:text-xs">
                       {phone ? (
                         <>
-                          <a href={`tel:${phone}`} className="flex-1 btn-primary py-2 justify-center shadow-brand text-xs flex items-center gap-1.5">
-                            <span className="text-sm">📞</span> Call
+                          <a href={`tel:${phone}`} onClick={(e) => e.stopPropagation()} className="flex-1 btn-primary py-1.5 justify-center shadow-brand text-[10px] sm:text-xs flex items-center gap-1">
+                            <span>📞</span> Call
                           </a>
-                          <a href={`https://wa.me/${phone.replace(/\D/g, '')}?text=Hi, I saw your post "${post.title}" on FlatsNFoods!`} target="_blank" rel="noopener noreferrer" className="flex-1 btn-secondary py-2 justify-center text-xs flex items-center gap-1.5 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 border-[#25D366]/20">
-                            <MessageSquare className="w-3.5 h-3.5" /> WhatsApp
+                          <a href={`https://wa.me/${phone.replace(/\D/g, '')}?text=Hi, I saw your post "${post.title}" on FlatsNFood!`} onClick={(e) => e.stopPropagation()} target="_blank" rel="noopener noreferrer" className="flex-1 btn-secondary py-1.5 justify-center text-[10px] sm:text-xs flex items-center gap-1 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 border-[#25D366]/20">
+                            <MessageSquare className="w-3 h-3" /> WhatsApp
                           </a>
                         </>
                       ) : (
@@ -384,6 +427,15 @@ export default function CommunityPage() {
                   </motion.div>
                 )
               })}
+              </div>
+              
+              {!showAllPosts && search.trim() === '' && selectedCategory === 'all' && filteredPosts.length > 3 && (
+                <div className="flex justify-center mt-6">
+                  <button onClick={() => setShowAllPosts(true)} className="btn-secondary">
+                    View all {filteredPosts.length} posts
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -393,13 +445,13 @@ export default function CommunityPage() {
       <AnimatePresence>
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowModal(false); setIsEditingPostId(null); setForm({ title: '', content: '', category: 'general', price: '', phone: '', phone_code: '+91', location: '', images: [] }) }} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowModal(false); setIsEditingPostId(null); setForm({ title: '', content: '', category: 'general', price: '', phone: '', phone_code: '+91', location: '', images: [], video_url: '' }) }} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
             <motion.div initial={{ scale: 0.95, y: 15, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.95, y: 15, opacity: 0 }}
               className="relative w-full max-w-md h-full sm:h-auto max-h-screen overflow-y-auto bg-white dark:bg-slate-900 rounded-none sm:rounded-3xl shadow-glass z-10 p-6 space-y-4">
               
               <div className="flex justify-between items-center border-b pb-3">
                 <h3 className="text-lg font-display font-bold text-slate-900 dark:text-white">{isEditingPostId ? '📝 Edit Board Post' : '🆕 Post on Community Board'}</h3>
-                <button onClick={() => { setShowModal(false); setIsEditingPostId(null); setForm({ title: '', content: '', category: 'general', price: '', phone: '', phone_code: '+91', location: '', images: [] }) }} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400"><X className="w-5 h-5" /></button>
+                <button type="button" onClick={() => { setShowModal(false); setIsEditingPostId(null); setForm({ title: '', content: '', category: 'general', price: '', phone: '', phone_code: '+91', location: '', images: [], video_url: '' }) }} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400"><X className="w-5 h-5" /></button>
               </div>
 
               <form onSubmit={handleCreatePost} className="space-y-3">
@@ -441,7 +493,7 @@ export default function CommunityPage() {
                         <option value="+61">+61</option>
                         <option value="+971">+971</option>
                       </select>
-                      <input type="tel" value={form.phone} onChange={e => setForm(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, '') }))}
+                      <input type="tel" maxLength={10} pattern="[0-9]{10}" title="Please enter a 10 digit mobile number" value={form.phone} onChange={e => setForm(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, '') }))}
                         placeholder="9876543210" className="input-field text-sm flex-1" required />
                     </div>
                   </div>
@@ -453,7 +505,7 @@ export default function CommunityPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-2">Upload Images (Max 3)</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-2">Upload Media (Max 3 Images, 1 Video)</label>
                   <div className="flex gap-2 overflow-x-auto pb-2">
                     {form.images.map((img, i) => (
                       <div key={i} className="relative w-16 h-16 shrink-0 rounded-lg overflow-hidden border border-slate-200">
@@ -462,10 +514,50 @@ export default function CommunityPage() {
                       </div>
                     ))}
                     {form.images.length < 3 && (
-                      <label className="w-16 h-16 shrink-0 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 cursor-pointer transition-colors">
-                        <Plus className="w-5 h-5" />
-                        <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="hidden" />
-                      </label>
+                      <>
+                        <label className="w-16 h-16 shrink-0 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 cursor-pointer transition-colors" title="Upload Image">
+                          <Plus className="w-5 h-5" />
+                          <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="hidden" />
+                        </label>
+                        <label className="w-16 h-16 shrink-0 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 cursor-pointer transition-colors" title="Take Photo">
+                          <Camera className="w-5 h-5" />
+                          <span className="text-[9px] mt-1">Camera</span>
+                          <input type="file" accept="image/*" capture="environment" onChange={handleImageUpload} className="hidden" />
+                        </label>
+                      </>
+                    )}
+                    
+                    {form.video_url ? (
+                      <div className="relative w-16 h-16 shrink-0 rounded-lg overflow-hidden border border-slate-200 bg-black">
+                        <video src={`${form.video_url}#t=0.001`} className="w-full h-full object-cover opacity-70" preload="metadata" playsInline muted autoPlay loop />
+                        <button type="button" onClick={() => setForm(prev => ({ ...prev, video_url: '' }))} className="absolute top-0 right-0 bg-red-500 text-white p-0.5 rounded-bl-lg"><X className="w-3 h-3" /></button>
+                        <Video className="absolute inset-0 m-auto w-4 h-4 text-white" />
+                      </div>
+                    ) : (
+                      <>
+                        <label className="w-16 h-16 shrink-0 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 cursor-pointer transition-colors" title="Upload Video">
+                          {isUploadingVideo ? (
+                            <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <>
+                              <Video className="w-5 h-5" />
+                              <span className="text-[9px] mt-1">Video</span>
+                            </>
+                          )}
+                          <input type="file" accept="video/*" onChange={handleVideoUpload} className="hidden" disabled={isUploadingVideo} />
+                        </label>
+                        <label className="w-16 h-16 shrink-0 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 cursor-pointer transition-colors" title="Record Video">
+                          {isUploadingVideo ? (
+                            <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <>
+                              <Camera className="w-5 h-5" />
+                              <span className="text-[9px] mt-1">Record</span>
+                            </>
+                          )}
+                          <input type="file" accept="video/*" capture="environment" onChange={handleVideoUpload} className="hidden" disabled={isUploadingVideo} />
+                        </label>
+                      </>
                     )}
                   </div>
                 </div>

@@ -29,7 +29,7 @@ export default function GrievanceRedressalPage() {
     >
       <section id="introduction">
         <h2>1. INTRODUCTION</h2>
-        <p>FlatsNFoods is committed to providing a transparent, fair, and efficient grievance redressal mechanism for all users. This Grievance Redressal Policy ("Policy") outlines the process for raising, handling, and resolving complaints related to the Platform.</p>
+        <p>FlatsNFood is committed to providing a transparent, fair, and efficient grievance redressal mechanism for all users. This Grievance Redressal Policy ("Policy") outlines the process for raising, handling, and resolving complaints related to the Platform.</p>
         <p>This Policy is published in compliance with:</p>
         <ul>
           <li><strong>The Information Technology Act, 2000</strong>, Section 79 read with the Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021</li>
@@ -57,7 +57,7 @@ export default function GrievanceRedressalPage() {
 
       <section id="grievance-officer">
         <h2>3. GRIEVANCE OFFICER</h2>
-        <p>In accordance with the IT Act, 2000 (Section 79) and the DPDP Act, 2023, FlatsNFoods has appointed a Grievance Officer:</p>
+        <p>In accordance with the IT Act, 2000 (Section 79) and the DPDP Act, 2023, FlatsNFood has appointed a Grievance Officer:</p>
         <div className="overflow-x-auto mb-6">
           <table className="w-full text-sm text-left">
             <tbody>
@@ -71,7 +71,7 @@ export default function GrievanceRedressalPage() {
               </tr>
               <tr className="border-b dark:border-slate-700">
                 <td className="px-4 py-3 font-semibold bg-slate-50 dark:bg-slate-800">Organisation</td>
-                <td className="px-4 py-3">FlatsNFoods / [Your Registered Entity Name]</td>
+                <td className="px-4 py-3">FlatsNFood / [Your Registered Entity Name]</td>
               </tr>
               <tr className="border-b dark:border-slate-700">
                 <td className="px-4 py-3 font-semibold bg-slate-50 dark:bg-slate-800">Email</td>
@@ -338,7 +338,7 @@ export default function GrievanceRedressalPage() {
 
       <section id="commitment">
         <h2>11. COMMITMENT</h2>
-        <p>FlatsNFoods is committed to:</p>
+        <p>FlatsNFood is committed to:</p>
         <ul>
           <li>Treating all grievances with fairness, impartiality, and confidentiality.</li>
           <li>Not retaliating against users for filing good-faith complaints.</li>
@@ -371,7 +371,7 @@ export default function GrievanceRedressalPage() {
       <div className="mt-8 p-4 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm text-slate-500 dark:text-slate-400 italic">
         <strong>DISCLAIMER:</strong> This Grievance Redressal Policy is drafted to align with applicable Indian laws and is intended for legal review before publication.
         <br /><br />
-        © 2026 FlatsNFoods. All rights reserved.
+        © 2026 FlatsNFood. All rights reserved.
       </div>
     </LegalPageLayout>
   )

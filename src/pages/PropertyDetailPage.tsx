@@ -35,6 +35,7 @@ export default function PropertyDetailPage() {
   const [newRating, setNewRating] = useState(0)
   const [showReviewForm, setShowReviewForm] = useState(false)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null)
 
   useEffect(() => {
     void loadProperties()
@@ -156,28 +157,10 @@ export default function PropertyDetailPage() {
         <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6 lg:gap-8 items-start">
           {/* Left Top: Images + Details */}
           <div className="order-1 lg:col-span-2 space-y-6 w-full">
-            {/* Image Gallery */}
+            {/* Hero Image */}
             <div className="card overflow-hidden">
-              <div className="relative h-80">
-                <img onClick={() => setSelectedImage(property.images[currentImage])} src={property.images[currentImage]} alt={property.title} className="w-full h-full object-cover cursor-pointer" />
-                {property.images.length > 1 && (
-                  <>
-                    <button onClick={() => setCurrentImage(i => Math.max(0, i - 1))}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 flex items-center justify-center shadow-sm hover:bg-white transition-colors">
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <button onClick={() => setCurrentImage(i => Math.min(property.images.length - 1, i + 1))}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 flex items-center justify-center shadow-sm hover:bg-white transition-colors">
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                      {property.images.map((_, i) => (
-                        <button key={i} onClick={() => setCurrentImage(i)}
-                          className={cn('w-2 h-2 rounded-full transition-all', i === currentImage ? 'bg-white w-4' : 'bg-white/60')} />
-                      ))}
-                    </div>
-                  </>
-                )}
+              <div className="relative h-64 sm:h-80">
+                <img onClick={() => setSelectedImage(property.images[0])} src={property.images[0]} alt={property.title} className="w-full h-full object-cover cursor-pointer" />
                 {/* Top badges */}
                 <div className="absolute top-3 left-3 flex gap-2">
                   <span className="badge badge-purple">{propertyTypeLabels[property.property_type]}</span>
@@ -196,15 +179,6 @@ export default function PropertyDetailPage() {
                   </button>
                 </div>
               </div>
-              {property.images.length > 1 && (
-                <div className="p-3 flex gap-2 bg-white dark:bg-slate-800 overflow-x-auto">
-                  {property.images.map((img, i) => (
-                    <img key={i} src={img} alt="" onClick={() => setCurrentImage(i)}
-                      className={cn('w-16 h-12 object-cover rounded-lg cursor-pointer flex-shrink-0 border-2 transition-all',
-                        i === currentImage ? 'border-brand-500' : 'border-transparent opacity-70 hover:opacity-100')} />
-                  ))}
-                </div>
-              )}
             </div>
 
             {/* Property Info */}
@@ -268,6 +242,46 @@ export default function PropertyDetailPage() {
                   </div>
                 </>
               )}
+            </div>
+
+            {/* Unified Media Gallery */}
+            <div className="card p-6">
+              <h3 className="text-lg font-display font-bold text-slate-900 dark:text-white mb-5 flex items-center justify-between">
+                <span>📸 Media Gallery</span>
+                <span className="text-xs font-normal text-slate-400">
+                  {property.images.length} images {property.video_url && '• 1 video'}
+                </span>
+              </h3>
+
+              <div className="flex flex-wrap gap-3">
+                {property.video_url && (
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    onClick={() => setSelectedVideo(property.video_url!)}
+                    className="relative rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 cursor-pointer group bg-black shrink-0 shadow-sm border border-slate-200 dark:border-slate-700"
+                  >
+                    <video src={property.video_url} className="w-full h-full object-cover opacity-80 transition-transform duration-300 group-hover:scale-105" preload="metadata" />
+                    <div className="absolute inset-0 bg-slate-900/20 group-hover:bg-slate-900/40 transition-all duration-200 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                        <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[12px] border-l-white border-b-[8px] border-b-transparent ml-1" />
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+                {property.images.map((photo, i) => (
+                  <motion.div
+                    key={i}
+                    whileHover={{ scale: 1.05 }}
+                    onClick={() => setSelectedImage(photo)}
+                    className="relative rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 cursor-pointer group shrink-0 shadow-sm border border-slate-200 dark:border-slate-700"
+                  >
+                    <img src={photo} alt={`${property.title} ${i + 1}`} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/20 transition-all duration-200 flex items-center justify-center">
+                      <ExternalLink className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -515,15 +529,15 @@ export default function PropertyDetailPage() {
         </div>
       )}
 
-      {/* Fullscreen Image Modal */}
+      {/* Fullscreen Media Modal */}
       <AnimatePresence>
-        {selectedImage && (
+        {(selectedImage || selectedVideo) && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setSelectedImage(null)}
+              onClick={() => { setSelectedImage(null); setSelectedVideo(null); }}
               className="absolute inset-0 bg-black/90 backdrop-blur-sm cursor-pointer"
             />
             <motion.div
@@ -533,16 +547,26 @@ export default function PropertyDetailPage() {
               className="relative z-10 max-w-5xl w-full h-full flex flex-col items-center justify-center pointer-events-none"
             >
               <button
-                onClick={() => setSelectedImage(null)}
-                className="absolute top-0 right-0 sm:-right-4 sm:-top-4 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full backdrop-blur-md transition-colors pointer-events-auto"
+                onClick={() => { setSelectedImage(null); setSelectedVideo(null); }}
+                className="absolute top-0 right-0 sm:-right-4 sm:-top-4 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full backdrop-blur-md transition-colors pointer-events-auto z-20"
               >
                 <X className="w-6 h-6" />
               </button>
-              <img
-                src={selectedImage}
-                alt="Fullscreen view"
-                className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl pointer-events-auto"
-              />
+              
+              {selectedImage ? (
+                <img
+                  src={selectedImage}
+                  alt="Fullscreen view"
+                  className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl pointer-events-auto"
+                />
+              ) : selectedVideo ? (
+                <video
+                  src={selectedVideo}
+                  controls
+                  autoPlay
+                  className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl pointer-events-auto bg-black"
+                />
+              ) : null}
             </motion.div>
           </div>
         )}

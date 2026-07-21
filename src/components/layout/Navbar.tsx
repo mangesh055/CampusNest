@@ -166,7 +166,7 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
             </div>
             <span className="text-xl font-display font-bold">
               <span className="gradient-text">FlatsN</span>
-              <span className="text-slate-900 dark:text-white">Foods</span>
+              <span className="text-slate-900 dark:text-white">Food</span>
             </span>
           </Link>
 
@@ -284,9 +284,11 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
                           </span>
                         </div>
                         <div className="p-2">
-                          <Link to={getDashboardPath()} className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors">
-                            <LayoutDashboard className="w-4 h-4" /> Dashboard
-                          </Link>
+                          {profile.role !== 'admin' && (
+                            <Link to={getDashboardPath()} className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors">
+                              <LayoutDashboard className="w-4 h-4" /> Dashboard
+                            </Link>
+                          )}
                           {profile.role === 'student' && (
                             <Link to="/dashboard/student/scan" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors">
                               <QrCode className="w-4 h-4" /> Scan QR

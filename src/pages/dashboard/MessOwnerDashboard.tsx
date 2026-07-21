@@ -603,7 +603,7 @@ export default function MessOwnerDashboard() {
         user_id: profile.id,
         type: 'success',
         title: 'Mess Registered',
-        message: 'Your mess has been successfully registered and is now live on FlatsNFoods!',
+        message: 'Your mess has been successfully registered and is now live on FlatsNFood!',
         read: false,
       })
     }

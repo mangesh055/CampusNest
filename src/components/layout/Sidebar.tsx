@@ -8,12 +8,14 @@ import {
 } from 'lucide-react'
 import { cn, getInitials } from '../../lib/utils'
 import { useAuthStore } from '../../store/authStore'
+import StudentPropertyRequestModal from '../StudentPropertyRequestModal'
 
 const studentLinks = [
   { label: 'Overview', path: '/dashboard/student', icon: LayoutDashboard },
   { label: 'My Subscription', path: '/dashboard/student/subscription', icon: CreditCard },
   { label: 'Attendance', path: '/dashboard/student/attendance', icon: Calendar },
   { label: 'Scan QR', path: '/dashboard/student/scan', icon: QrCode },
+  { label: 'Request Property', path: '/dashboard/student/add-property', icon: Building2 },
   { label: 'Favorites', path: '/favorites', icon: Heart },
   { label: 'Reviews', path: '/dashboard/student/reviews', icon: Star },
   { label: 'Settings', path: '/dashboard/settings', icon: Settings },
@@ -103,16 +105,17 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       <nav className="flex-1 p-3 overflow-y-auto">
         <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-600 uppercase tracking-wider px-4 mb-2">Navigation</p>
         <ul className="space-y-1">
-          {links.map(({ label, path, icon: Icon }) => {
-            const isActive = location.pathname === path
+          {links.map((link) => {
+            const isActive = location.pathname === link.path
+
             return (
-              <li key={path}>
+              <li key={link.path}>
                 <Link
-                  to={path}
+                  to={link.path}
                   className={cn('sidebar-item', isActive && 'active')}
                 >
-                  <Icon className={cn('w-4 h-4', isActive ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400')} />
-                  <span className="text-sm">{label}</span>
+                  <link.icon className={cn('w-4 h-4', isActive ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400')} />
+                  <span className="text-sm">{link.label}</span>
                   {isActive && (
                     <ChevronRight className="w-3 h-3 ml-auto text-brand-500" />
                   )}

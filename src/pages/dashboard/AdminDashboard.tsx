@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useLocation, Navigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Users, Building2, Utensils, TrendingUp, Shield, AlertTriangle, CheckCircle, XCircle, RefreshCw } from 'lucide-react'
+import { Users, Building2, Utensils, TrendingUp, Shield, AlertTriangle, CheckCircle, XCircle, RefreshCw, Search } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { formatCurrency } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
@@ -46,6 +46,12 @@ export default function AdminDashboard() {
   const [loadingCommunity, setLoadingCommunity] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null)
+  
+  // Search States
+  const [userSearch, setUserSearch] = useState('')
+  const [messSearch, setMessSearch] = useState('')
+  const [propSearch, setPropSearch] = useState('')
+
   const [overviewStats, setOverviewStats] = useState({
     totalStudents: 0,
     totalMesses: 0,
@@ -56,6 +62,11 @@ export default function AdminDashboard() {
   })
 
   useEffect(() => {
+    // Clear search queries when switching tabs
+    setUserSearch('')
+    setMessSearch('')
+    setPropSearch('')
+
     if (currentTab === 'users') {
       fetchUsers()
     } else if (currentTab === 'messes') {
@@ -111,7 +122,7 @@ export default function AdminDashboard() {
   const fetchProperties = async () => {
     setLoadingProps(true)
     try {
-      const { data, error } = await supabase.from('properties').select('*')
+      const { data, error } = await supabase.from('properties').select('*, profiles(role)')
       if (!error && data) {
         setProperties(data)
       } else {
@@ -495,12 +506,24 @@ export default function AdminDashboard() {
 
   const renderUsers = () => (
     <div className="card p-6">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
           <h3 className="font-display font-bold text-slate-900 dark:text-white">User Management</h3>
           <p className="text-xs text-slate-400 mt-0.5">{users.length} users loaded from database</p>
         </div>
-        <button onClick={fetchUsers} className="text-sm text-brand-500 hover:underline font-medium">↻ Refresh</button>
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by name, email, or role..."
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:border-brand-500"
+            />
+          </div>
+          <button onClick={fetchUsers} className="text-sm text-brand-500 hover:underline font-medium whitespace-nowrap">↻ Refresh</button>
+        </div>
       </div>
 
       {fetchError && (
@@ -528,7 +551,11 @@ export default function AdminDashboard() {
               <tr><td colSpan={6} className="py-8 text-center text-slate-500">Loading users...</td></tr>
             ) : users.length === 0 && !fetchError ? (
               <tr><td colSpan={6} className="py-8 text-center text-slate-500">No users found in the <code>profiles</code> table.</td></tr>
-            ) : users.map((user) => (
+            ) : users.filter(u => 
+                u.full_name?.toLowerCase().includes(userSearch.toLowerCase()) || 
+                u.email?.toLowerCase().includes(userSearch.toLowerCase()) ||
+                u.role?.toLowerCase().includes(userSearch.toLowerCase())
+              ).map((user) => (
               <tr key={user.id}>
                 <td className="py-3 font-medium text-slate-900 dark:text-white">{user.full_name || 'Anonymous User'}</td>
                 <td className="py-3 text-slate-500 text-xs">{user.email || '—'}</td>
@@ -559,9 +586,21 @@ export default function AdminDashboard() {
 
   const renderMesses = () => (
     <div className="card p-6">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h3 className="font-display font-bold text-slate-900 dark:text-white">Mess Approvals</h3>
-        <button onClick={fetchMesses} className="text-sm text-brand-500 hover:underline">Refresh</button>
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by name or location..."
+              value={messSearch}
+              onChange={(e) => setMessSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:border-brand-500"
+            />
+          </div>
+          <button onClick={fetchMesses} className="text-sm text-brand-500 hover:underline">Refresh</button>
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
@@ -579,7 +618,10 @@ export default function AdminDashboard() {
               <tr><td colSpan={5} className="py-8 text-center text-slate-500">Loading messes...</td></tr>
             ) : messes.length === 0 ? (
               <tr><td colSpan={5} className="py-8 text-center text-slate-500">No messes found.</td></tr>
-            ) : messes.map(mess => (
+            ) : messes.filter(m => 
+                m.name?.toLowerCase().includes(messSearch.toLowerCase()) || 
+                m.address?.toLowerCase().includes(messSearch.toLowerCase())
+              ).map(mess => (
               <tr key={mess.id}>
                 <td className="py-3 font-medium text-slate-900 dark:text-white">{mess.name}</td>
                 <td className="py-3 text-slate-500">Owner ID: {mess.owner_id.substring(0, 4)}</td>
@@ -610,58 +652,85 @@ export default function AdminDashboard() {
     </div>
   )
 
-  const renderProperties = () => (
-    <div className="card p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="font-display font-bold text-slate-900 dark:text-white">Property Approvals</h3>
-        <button onClick={fetchProperties} className="text-sm text-brand-500 hover:underline">Refresh</button>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500">
-              <th className="pb-3 font-medium">Property Name</th>
-              <th className="pb-3 font-medium">Owner</th>
-              <th className="pb-3 font-medium">Location</th>
-              <th className="pb-3 font-medium">Status</th>
-              <th className="pb-3 font-medium text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {loadingProps ? (
-              <tr><td colSpan={5} className="py-8 text-center text-slate-500">Loading properties...</td></tr>
-            ) : properties.length === 0 ? (
-              <tr><td colSpan={5} className="py-8 text-center text-slate-500">No properties found.</td></tr>
-            ) : properties.map(prop => (
-              <tr key={prop.id}>
-                <td className="py-3 font-medium text-slate-900 dark:text-white">{prop.title}</td>
-                <td className="py-3 text-slate-500">Owner ID: {prop.owner_id?.substring(0, 4) || 'Unk'}</td>
-                <td className="py-3 text-slate-500">{prop.address || 'Pune'}</td>
-                <td className="py-3">
-                  {prop.verified ? (
-                     <span className="badge bg-emerald-50 text-emerald-600">Verified</span>
-                  ) : (
-                     <span className="badge bg-amber-50 text-amber-600">Pending Review</span>
-                  )}
-                </td>
-                <td className="py-3 text-right flex gap-2 justify-end">
-                  {!prop.verified ? (
-                    <>
-                      <button onClick={() => handleApproveProperty(prop.id, prop.title)} className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded text-xs font-bold transition-colors">Approve</button>
-                      <button onClick={() => handleRejectProperty(prop.id, prop.title)} className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded text-xs font-bold transition-colors">Reject</button>
-                    </>
-                  ) : (
-                    <button onClick={() => handleRejectProperty(prop.id, prop.title)} className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded text-xs font-bold transition-colors">Revoke</button>
-                  )}
-                  <button onClick={() => handleDeleteProperty(prop.id)} className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs font-bold transition-colors">Delete</button>
-                </td>
+  const renderProperties = () => {
+    const studentRequests = properties.filter(p => p.profiles?.role === 'student')
+    const regularProperties = properties.filter(p => p.profiles?.role !== 'student')
+
+    const renderPropertySection = (title: string, data: any[]) => (
+      <div className="card p-6 mb-6" key={title}>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <h3 className="font-display font-bold text-slate-900 dark:text-white">{title}</h3>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search by title or location..."
+                value={propSearch}
+                onChange={(e) => setPropSearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:border-brand-500"
+              />
+            </div>
+            <button onClick={fetchProperties} className="text-sm text-brand-500 hover:underline">Refresh</button>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500">
+                <th className="pb-3 font-medium">Property Name</th>
+                <th className="pb-3 font-medium">Owner</th>
+                <th className="pb-3 font-medium">Location</th>
+                <th className="pb-3 font-medium">Status</th>
+                <th className="pb-3 font-medium text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {loadingProps ? (
+                <tr><td colSpan={5} className="py-8 text-center text-slate-500">Loading properties...</td></tr>
+              ) : data.length === 0 ? (
+                <tr><td colSpan={5} className="py-8 text-center text-slate-500">No properties found.</td></tr>
+              ) : data.filter(p => 
+                  p.title?.toLowerCase().includes(propSearch.toLowerCase()) || 
+                  p.address?.toLowerCase().includes(propSearch.toLowerCase())
+                ).map(prop => (
+                <tr key={prop.id}>
+                  <td className="py-3 font-medium text-slate-900 dark:text-white">{prop.title}</td>
+                  <td className="py-3 text-slate-500">Owner ID: {prop.owner_id?.substring(0, 4) || 'Unk'}</td>
+                  <td className="py-3 text-slate-500">{prop.address || 'Pune'}</td>
+                  <td className="py-3">
+                    {prop.verified ? (
+                       <span className="badge bg-emerald-50 text-emerald-600">Verified</span>
+                    ) : (
+                       <span className="badge bg-amber-50 text-amber-600">Pending Review</span>
+                    )}
+                  </td>
+                  <td className="py-3 text-right flex gap-2 justify-end">
+                    {!prop.verified ? (
+                      <>
+                        <button onClick={() => handleApproveProperty(prop.id, prop.title)} className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded text-xs font-bold transition-colors">Approve</button>
+                        <button onClick={() => handleRejectProperty(prop.id, prop.title)} className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded text-xs font-bold transition-colors">Reject</button>
+                      </>
+                    ) : (
+                      <button onClick={() => handleRejectProperty(prop.id, prop.title)} className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded text-xs font-bold transition-colors">Revoke</button>
+                    )}
+                    <button onClick={() => handleDeleteProperty(prop.id)} className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs font-bold transition-colors">Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-  )
+    )
+
+    return (
+      <div className="space-y-6">
+        {renderPropertySection("Student Property Requests", studentRequests)}
+        {renderPropertySection("Owner Property Listings", regularProperties)}
+      </div>
+    )
+  }
 
   const renderRoommates = () => (
     <div className="card p-6">

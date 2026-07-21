@@ -183,7 +183,7 @@ export default function MessPage() {
           <div className="grid grid-cols-4 gap-2 sm:gap-6">
             {[
               { icon: '🔍', step: '1', title: 'Find & Subscribe', desc: 'Browse mess services and subscribe to an active meal plan.' },
-              { icon: '📱', step: '2', title: 'Open Your App', desc: 'Launch the FlatsNFoods app when you arrive at the mess.' },
+              { icon: '📱', step: '2', title: 'Open Your App', desc: 'Launch the FlatsNFood app when you arrive at the mess.' },
               { icon: '📷', step: '3', title: 'Scan QR', desc: 'Scan the static QR code poster directly from your dashboard.' },
               { icon: '✅', step: '4', title: 'Attendance Logged', desc: 'System automatically verifies limits and logs your meal!' },
             ].map(item => (

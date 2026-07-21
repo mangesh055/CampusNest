@@ -43,11 +43,12 @@ export const usePropertyStore = create<PropertyState>()(
 
       let { error } = await supabase.from('properties').insert([created])
       
-      // Fallback if the google_maps_url column hasn't been added to the database yet
-      if (error && error.message.includes('google_maps_url')) {
-        console.warn('google_maps_url column missing, retrying without it...')
+      // Fallback if columns haven't been added to the database yet
+      if (error && (error.message.includes('google_maps_url') || error.message.includes('video_url'))) {
+        console.warn('New columns missing in DB, retrying without them...')
         const fallbackCreated = { ...created }
         delete fallbackCreated.google_maps_url
+        delete fallbackCreated.video_url
         const retryResult = await supabase.from('properties').insert([fallbackCreated])
         error = retryResult.error
       }
@@ -63,11 +64,12 @@ export const usePropertyStore = create<PropertyState>()(
     updateProperty: async (id, updates) => {
       let { error } = await supabase.from('properties').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id)
       
-      // Fallback if the google_maps_url column hasn't been added to the database yet
-      if (error && error.message.includes('google_maps_url')) {
-        console.warn('google_maps_url column missing, retrying update without it...')
+      // Fallback if columns haven't been added to the database yet
+      if (error && (error.message.includes('google_maps_url') || error.message.includes('video_url'))) {
+        console.warn('New columns missing in DB, retrying update without them...')
         const fallbackUpdates = { ...updates }
         delete fallbackUpdates.google_maps_url
+        delete fallbackUpdates.video_url
         const retryResult = await supabase.from('properties').update({ ...fallbackUpdates, updated_at: new Date().toISOString() }).eq('id', id)
         error = retryResult.error
       }

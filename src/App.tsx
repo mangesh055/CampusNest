@@ -10,6 +10,7 @@ import AuthPage from './pages/AuthPage'
 import RoommatesPage from './pages/RoommatesPage'
 import RoommateDetailPage from './pages/RoommateDetailPage'
 import CommunityPage from './pages/CommunityPage'
+import CommunityDetailPage from './pages/CommunityDetailPage'
 import NotificationsPage from './pages/NotificationsPage'
 import TermsConditionsPage from './pages/TermsConditionsPage'
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
@@ -209,6 +210,7 @@ export default function App() {
             <Route path="/roommates" element={<RoommatesPage />} />
             <Route path="/roommates/:id" element={<RoommateDetailPage />} />
             <Route path="/community" element={<CommunityPage />} />
+            <Route path="/community/:id" element={<CommunityDetailPage />} />
             <Route path="/favorites" element={<FavoritesPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
           </Route>
@@ -233,6 +235,7 @@ export default function App() {
             <Route path="student/scan" element={<QRScanPage />} />
             <Route path="student/subscription" element={<StudentDashboard />} />
             <Route path="student/attendance" element={<StudentDashboard />} />
+            <Route path="student/add-property" element={<StudentDashboard />} />
           </Route>
 
           {/* Owner Routes */}

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, SlidersHorizontal, Plus, Users, Shield, Compass, Sparkles, MessageSquare, Check, X, MapPin, DollarSign, BookOpen } from 'lucide-react'
+import { Search, SlidersHorizontal, Plus, Users, Shield, Compass, Sparkles, MessageSquare, Check, X, MapPin, DollarSign, BookOpen, Camera } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { useNavigate } from 'react-router-dom'
 import type { RoommateProfile, UserRole } from '../types'
 import { cn, formatCurrency } from '../lib/utils'
 import { fetchRoommateProfiles, invalidatePlatformCache } from '../lib/platformData'
 import { supabase } from '../lib/supabase'
+import { uploadToCloudinary } from '../utils/cloudinary'
 
 type RoommateRow = RoommateProfile & { full_name?: string | null; email?: string | null }
 
@@ -23,6 +24,7 @@ export default function RoommatesPage() {
   const [showForm, setShowForm] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [customAmenity, setCustomAmenity] = useState('')
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false)
 
   // Form Fields for new Roommate seeker
   const [form, setForm] = useState({
@@ -40,6 +42,7 @@ export default function RoommatesPage() {
     looking_for: 'flat' as 'flat' | 'pg' | 'hostel' | 'any',
     amenities: [] as string[],
     images: [] as string[],
+    video_url: '',
     description: '',
     phone: '',
     whatsapp: '',
@@ -54,6 +57,21 @@ export default function RoommatesPage() {
       reader.onloadend = () => setForm(prev => ({ ...prev, images: [...prev.images, reader.result as string] }))
       reader.readAsDataURL(file)
     })
+  }
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploadingVideo(true)
+    try {
+      const url = await uploadToCloudinary(file)
+      setForm(prev => ({ ...prev, video_url: url }))
+    } catch (error: any) {
+      alert('Failed to upload video: ' + error.message)
+    } finally {
+      setIsUploadingVideo(false)
+    }
   }
 
   useEffect(() => {
@@ -102,6 +120,7 @@ export default function RoommatesPage() {
         location: form.location,
         amenities: form.amenities,
         images: form.images,
+        video_url: form.video_url,
         phone: form.phone,
         whatsapp: `${form.whatsapp_code}${form.whatsapp}`
       }),
@@ -240,7 +259,7 @@ export default function RoommatesPage() {
                   <p className="text-sm font-semibold text-white">{myProfile.college} • {myProfile.branch}</p>
                 </div>
                 <button onClick={() => {
-                  let descObj = { text: myProfile.description, deposit: 0, total_roommates: 1, location: '', amenities: [] as string[], images: [] as string[], phone: '', whatsapp: '' }
+                  let descObj = { text: myProfile.description, deposit: 0, total_roommates: 1, location: '', amenities: [] as string[], images: [] as string[], video_url: '', phone: '', whatsapp: '' }
                   try {
                     const parsed = JSON.parse(myProfile.description || '{}')
                     if (parsed.text !== undefined) descObj = { ...descObj, ...parsed }
@@ -273,6 +292,7 @@ export default function RoommatesPage() {
                     looking_for: myProfile.looking_for as any,
                     amenities: descObj.amenities,
                     images: descObj.images || [],
+                    video_url: descObj.video_url || '',
                     description: descObj.text || '',
                     phone: descObj.phone || '',
                     whatsapp: parsedNumber,
@@ -575,11 +595,53 @@ export default function RoommatesPage() {
                         <button type="button" onClick={() => setForm(prev => ({ ...prev, images: prev.images.filter((_, idx) => idx !== i) }))} className="absolute top-0 right-0 bg-red-500 text-white p-0.5 rounded-bl-lg"><X className="w-3 h-3" /></button>
                       </div>
                     ))}
-                    <label className="w-16 h-16 shrink-0 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 cursor-pointer transition-colors">
+                    <label className="w-16 h-16 shrink-0 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 cursor-pointer transition-colors" title="Upload Image">
                       <Plus className="w-5 h-5" />
                       <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="hidden" />
                     </label>
+                    <label className="w-16 h-16 shrink-0 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 cursor-pointer transition-colors" title="Take Photo">
+                      <Camera className="w-5 h-5" />
+                      <span className="text-[9px] mt-1">Camera</span>
+                      <input type="file" accept="image/*" capture="environment" onChange={handleImageUpload} className="hidden" />
+                    </label>
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-2">Room Video (Optional)</label>
+                  {form.video_url ? (
+                    <div className="relative w-full h-40 rounded-xl overflow-hidden border border-slate-200 bg-black">
+                      <video src={form.video_url} controls playsInline preload="metadata" className="w-full h-full object-contain" />
+                      <button type="button" onClick={() => setForm(prev => ({ ...prev, video_url: '' }))} className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-lg shadow-sm hover:bg-red-600 transition-colors">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2 w-full">
+                      <label className="flex-1 h-24 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 cursor-pointer transition-colors">
+                        {isUploadingVideo ? (
+                          <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <Plus className="w-6 h-6 mb-1" />
+                            <span className="text-[10px] sm:text-xs font-medium">Upload Video</span>
+                          </>
+                        )}
+                        <input type="file" accept="video/*" onChange={handleVideoUpload} className="hidden" disabled={isUploadingVideo} />
+                      </label>
+                      <label className="flex-1 h-24 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 cursor-pointer transition-colors">
+                        {isUploadingVideo ? (
+                          <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <Camera className="w-6 h-6 mb-1" />
+                            <span className="text-[10px] sm:text-xs font-medium">Record Video</span>
+                          </>
+                        )}
+                        <input type="file" accept="video/*" capture="environment" onChange={handleVideoUpload} className="hidden" disabled={isUploadingVideo} />
+                      </label>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

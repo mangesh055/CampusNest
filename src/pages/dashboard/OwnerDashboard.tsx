@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users, Building2, TrendingUp, DollarSign, Star, Eye, MessageSquare,
-  Trash2, ToggleLeft, ToggleRight, X, Plus, Check, MapPin, Phone
+  Trash2, ToggleLeft, ToggleRight, X, Plus, Check, MapPin, Phone, Camera
 } from 'lucide-react'
 import { usePropertyStore } from '../../store/propertyStore'
 import { useAuthStore } from '../../store/authStore'
 import { formatCurrency } from '../../lib/utils'
 import { uploadToCloudinary } from '../../utils/cloudinary'
+
 import type { Property, PropertyType } from '../../types'
 
 export default function OwnerDashboard() {
@@ -36,6 +37,7 @@ export default function OwnerDashboard() {
     total_rooms: '10',
     available_rooms: '5',
     images: ['https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600'] as string[],
+    video_url: '',
     amenities: {
       wifi: true,
       ac: false,
@@ -88,6 +90,21 @@ export default function OwnerDashboard() {
     }
   }
 
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploading(true)
+    try {
+      const url = await uploadToCloudinary(file)
+      setFormData(prev => ({ ...prev, video_url: url }))
+    } catch (error: any) {
+      alert('Failed to upload video: ' + error.message)
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
   const handleAddImageUrl = () => {
     const url = prompt('Enter image URL:')
     if (url) {
@@ -132,6 +149,7 @@ export default function OwnerDashboard() {
       total_rooms: property.total_rooms?.toString() || '10',
       available_rooms: property.available_rooms?.toString() || '5',
       images: property.images?.length ? property.images : ['https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600'],
+      video_url: property.video_url || '',
       amenities: {
         wifi: !!property.amenities?.wifi,
         ac: !!property.amenities?.ac,
@@ -176,6 +194,7 @@ export default function OwnerDashboard() {
       total_rooms: Number(formData.total_rooms) || 10,
       available_rooms: Number(formData.available_rooms) || 5,
       images: formData.images,
+      video_url: formData.video_url,
       amenities: formData.amenities,
     }
 
@@ -218,6 +237,7 @@ export default function OwnerDashboard() {
       total_rooms: '10',
       available_rooms: '5',
       images: ['https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600'],
+      video_url: '',
       amenities: {
         wifi: true,
         ac: false,
@@ -269,7 +289,7 @@ export default function OwnerDashboard() {
               </div>
               <div className="space-y-1">
                 <h4 className="font-bold text-slate-800 dark:text-white text-sm">No Active Listings</h4>
-                <p className="text-xs text-slate-500 max-w-xs mx-auto">Welcome to FlatsNFoods Housing! List your PG, flat, or hostel room to start receiving views and student inquiries.</p>
+                <p className="text-xs text-slate-500 max-w-xs mx-auto">Welcome to FlatsNFood Housing! List your PG, flat, or hostel room to start receiving views and student inquiries.</p>
               </div>
               <button onClick={() => setIsModalOpen(true)} className="btn-primary py-2 px-5 text-xs mx-auto flex items-center gap-1">
                 <Plus className="w-4 h-4" /> Add Your First Listing
@@ -465,18 +485,52 @@ export default function OwnerDashboard() {
                       <div className="flex gap-2">
                         <label className={`flex-1 cursor-pointer bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-3 flex flex-col items-center justify-center transition-colors ${isUploading ? 'opacity-50 cursor-wait' : ''}`}>
                           <Plus className="w-5 h-5 text-slate-400 mb-1" />
-                          <span className="text-xs text-slate-500 font-medium">{isUploading ? 'Uploading...' : 'Upload Local Image'}</span>
+                          <span className="text-xs text-slate-500 font-medium">{isUploading ? 'Uploading...' : 'Upload'}</span>
                           <input type="file" multiple accept="image/*" onChange={handleFileUpload} disabled={isUploading} className="hidden" />
+                        </label>
+                        <label className={`flex-1 cursor-pointer bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-3 flex flex-col items-center justify-center transition-colors ${isUploading ? 'opacity-50 cursor-wait' : ''}`}>
+                          <Camera className="w-5 h-5 text-slate-400 mb-1" />
+                          <span className="text-xs text-slate-500 font-medium">Camera</span>
+                          <input type="file" accept="image/*" capture="environment" onChange={handleFileUpload} disabled={isUploading} className="hidden" />
                         </label>
                         <button
                           type="button"
                           onClick={handleAddImageUrl}
-                          className="flex-1 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-3 flex flex-col items-center justify-center transition-colors"
+                          className="flex-[0.8] bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-3 flex flex-col items-center justify-center transition-colors"
                         >
                           <Plus className="w-5 h-5 text-slate-400 mb-1" />
-                          <span className="text-xs text-slate-500 font-medium">Add via Link</span>
+                          <span className="text-[10px] text-slate-500 font-medium">Link</span>
                         </button>
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 mb-2">Property Video (Optional)</label>
+                      {formData.video_url ? (
+                        <div className="relative aspect-video rounded-lg overflow-hidden group mb-2 border border-slate-200 dark:border-slate-700">
+                          <video src={formData.video_url} controls className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, video_url: '' }))}
+                            className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2 w-full">
+                          <label className={`cursor-pointer flex-1 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-4 flex flex-col items-center justify-center transition-colors ${isUploading ? 'opacity-50 cursor-wait' : ''}`}>
+                            <Plus className="w-6 h-6 text-slate-400 mb-2" />
+                            <span className="text-sm text-slate-500 font-medium">{isUploading ? 'Uploading...' : 'Upload Video'}</span>
+                            <input type="file" accept="video/*" onChange={handleVideoUpload} disabled={isUploading} className="hidden" />
+                          </label>
+                          <label className={`cursor-pointer flex-1 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-4 flex flex-col items-center justify-center transition-colors ${isUploading ? 'opacity-50 cursor-wait' : ''}`}>
+                            <Camera className="w-6 h-6 text-slate-400 mb-2" />
+                            <span className="text-sm text-slate-500 font-medium">{isUploading ? 'Uploading...' : 'Record Video'}</span>
+                            <input type="file" accept="video/*" capture="environment" onChange={handleVideoUpload} disabled={isUploading} className="hidden" />
+                          </label>
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 )}

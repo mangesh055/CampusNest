@@ -64,6 +64,7 @@ export interface Property {
   views?: number
   inquiries?: number
   images: string[]
+  video_url?: string
   amenities: PropertyAmenity
   google_maps_url?: string
   created_at: string

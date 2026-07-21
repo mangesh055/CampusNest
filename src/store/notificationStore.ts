@@ -28,7 +28,7 @@ interface NotificationState {
 const defaultNotifications: AppNotification[] = [
   {
     id: 'n1',
-    title: 'Welcome to FlatsNFoods!',
+    title: 'Welcome to FlatsNFood!',
     message: 'Complete your profile to get the best housing and mess recommendations.',
     type: 'info',
     read: false,

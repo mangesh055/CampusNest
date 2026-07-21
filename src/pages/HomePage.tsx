@@ -109,20 +109,32 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-500/20 border border-brand-500/30 text-brand-300 text-sm font-medium mb-6">
+            <div className={cn(
+              "inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium mb-6",
+              searchTab === 'mess' 
+                ? "bg-accent-500/20 border-accent-500/30 text-accent-300" 
+                : "bg-brand-500/20 border-brand-500/30 text-brand-300"
+            )}>
               <Zap className="w-4 h-4" />
-              India's #1 Smart Student Housing Platform
+              {searchTab === 'mess' ? "India's #1 Digital Mess Platform" : "India's #1 Smart Student Housing Platform"}
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-serif italic font-bold text-white leading-tight mb-4 sm:mb-6 tracking-tight">
               Find Your Perfect
               <br />
-              <span className="gradient-text font-pacifico not-italic font-normal text-[1.1em] block mt-2">Campus Home</span>
+              {searchTab === 'mess' ? (
+                <span className="gradient-text-orange font-pacifico not-italic font-normal text-[1.1em] block mt-2">Daily Meals</span>
+              ) : (
+                <span className="gradient-text font-pacifico not-italic font-normal text-[1.1em] block mt-2">Campus Home</span>
+              )}
             </h1>
 
             <p className="text-slate-300 text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
-              Discover PGs, hostels, flats & digital mess services near your college.
-              Smart attendance, QR meals, and community living — all in one app.
+              {searchTab === 'mess' ? (
+                "Discover the best mess services, tiffin centers, and food joints near your college. Subscribe to meal plans, track attendance, and enjoy delicious home-like food."
+              ) : (
+                "Discover PGs, hostels, flats & digital mess services near your college. Smart attendance, QR meals, and community living — all in one app."
+              )}
             </p>
 
             {/* Search Tabs */}
@@ -180,7 +192,7 @@ export default function HomePage() {
                     {cities.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-                <button type="submit" className="btn-primary rounded-xl px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm whitespace-nowrap mt-1 sm:mt-0">
+                <button type="submit" className={cn("rounded-xl px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm whitespace-nowrap mt-1 sm:mt-0 flex items-center gap-1.5 font-medium transition-all text-white", searchTab === 'mess' ? 'bg-accent-500 hover:bg-accent-600 shadow-lg shadow-accent-500/30' : 'btn-primary')}>
                   <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   Search
                 </button>
@@ -188,10 +200,19 @@ export default function HomePage() {
             </form>
 
             <div className="flex flex-wrap items-center justify-center gap-4 mt-6">
-              {['PG below ₹8000', 'Girls Hostel', 'AC Flat', 'Veg Mess'].map(tag => (
+              {(searchTab === 'mess' 
+                ? ['Veg Only', 'Non-Veg', 'Jain Food', 'Monthly Pass']
+                : ['PG below ₹8000', 'Girls Hostel', 'AC Flat', 'Veg Mess']
+              ).map(tag => (
                 <button
                   key={tag}
-                  onClick={() => navigate(`/properties?q=${tag}`)}
+                  onClick={() => {
+                    if (searchTab === 'mess') {
+                      navigate(`/mess?q=${tag}`);
+                    } else {
+                      navigate(`/properties?q=${tag}`);
+                    }
+                  }}
                   className="px-4 py-1.5 rounded-full border border-white/20 text-white/80 text-sm hover:bg-white/10 transition-colors"
                 >
                   {tag}
@@ -323,7 +344,7 @@ export default function HomePage() {
               {/* Desktop: full step list */}
               <div className="hidden sm:block space-y-4">
                 {[
-                  { icon: '📱', step: '1', title: 'Open Your App', desc: 'Launch the FlatsNFoods app when you arrive at the mess.' },
+                  { icon: '📱', step: '1', title: 'Open Your App', desc: 'Launch the FlatsNFood app when you arrive at the mess.' },
                   { icon: '📷', step: '2', title: 'Scan QR Poster', desc: 'Scan the mess\'s static QR code poster right from your dashboard.' },
                   { icon: '🎫', step: '3', title: 'System Validation', desc: 'The system instantly verifies your active meal plan and daily limits.' },
                   { icon: '✅', step: '4', title: 'Attendance Recorded', desc: 'Your meal is automatically logged and your plan count is updated!' },
@@ -397,7 +418,7 @@ export default function HomePage() {
               Ready to find your Campus Home?
             </h2>
             <p className="text-brand-200 text-sm sm:text-lg mb-5 sm:mb-8">
-              Join 5,000+ students already using FlatsNFoods across India
+              Join 5,000+ students already using FlatsNFood across India
             </p>
             <div className="flex flex-row gap-3 justify-center">
               <Link to="/auth?tab=register" className="btn-accent text-sm sm:text-base px-5 sm:px-8">

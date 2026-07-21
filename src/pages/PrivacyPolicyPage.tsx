@@ -32,7 +32,7 @@ export default function PrivacyPolicyPage() {
     >
       <section id="introduction">
         <h2>1. INTRODUCTION</h2>
-        <p>FlatsNFoods ("we," "us," "our," or the "Platform") is operated by [Your Registered Entity Name] (CIN: [___]), a company incorporated under the Companies Act, 2013, having its registered office at [Your Registered Address, City, State – Pincode, India].</p>
+        <p>FlatsNFood ("we," "us," "our," or the "Platform") is operated by [Your Registered Entity Name] (CIN: [___]), a company incorporated under the Companies Act, 2013, having its registered office at [Your Registered Address, City, State – Pincode, India].</p>
         <p>This Privacy Policy describes how we collect, use, store, process, transfer, disclose, and protect personal data of individuals ("you," "your," or "Data Principal") who access or use our website, mobile application, and associated services (the "Services").</p>
         <p>This Policy is published in compliance with:</p>
         <ul>
@@ -47,7 +47,7 @@ export default function PrivacyPolicyPage() {
         <h2>2. DEFINITIONS</h2>
         <ul>
           <li><strong>"Data Principal"</strong> — the individual to whom personal data relates (DPDP Act, 2023).</li>
-          <li><strong>"Data Fiduciary"</strong> — FlatsNFoods, which determines the purpose and means of processing.</li>
+          <li><strong>"Data Fiduciary"</strong> — FlatsNFood, which determines the purpose and means of processing.</li>
           <li><strong>"Personal Data"</strong> — any data about an identifiable individual.</li>
           <li><strong>"Processing"</strong> — collection, storage, use, sharing, disclosure, erasure, or destruction of personal data.</li>
           <li><strong>"SPDI"</strong> — Sensitive Personal Data or Information as defined under the SPDI Rules, 2011.</li>
@@ -150,7 +150,7 @@ export default function PrivacyPolicyPage() {
         <h2>5. CONSENT</h2>
         <p><strong>Obtaining Consent:</strong> We obtain your free, specific, informed, unconditional, and unambiguous consent before processing personal data, through clear affirmative action at registration. Specific consents are requested for optional features (location access, push/email notifications).</p>
         <p><strong>Withdrawal of Consent:</strong> You may withdraw consent at any time via Settings or by contacting our Grievance Officer. Withdrawal does not affect prior lawful processing. Some features may become unavailable upon withdrawal.</p>
-        <p><strong>Children's Data:</strong> FlatsNFoods is for college students aged 18+. We do not knowingly collect data from minors. If discovered, such data will be promptly deleted.</p>
+        <p><strong>Children's Data:</strong> FlatsNFood is for college students aged 18+. We do not knowingly collect data from minors. If discovered, such data will be promptly deleted.</p>
       </section>
 
       <section id="how-we-use">
@@ -343,7 +343,7 @@ export default function PrivacyPolicyPage() {
       <div className="mt-8 p-4 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm text-slate-500 dark:text-slate-400 italic">
         <strong>DISCLAIMER:</strong> This Privacy Policy is drafted to align with applicable Indian laws and is intended for review by qualified legal counsel before publication. It does not constitute legal advice.
         <br /><br />
-        © 2026 FlatsNFoods. All rights reserved.
+        © 2026 FlatsNFood. All rights reserved.
       </div>
     </LegalPageLayout>
   )

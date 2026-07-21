@@ -219,7 +219,7 @@ export default function AuthPage() {
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-glow">
               <Building2 className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-display font-bold text-white">FlatsNFoods</span>
+            <span className="text-2xl font-display font-bold text-white">FlatsNFood</span>
           </Link>
 
           <h1 className="text-5xl font-display font-bold text-white leading-tight mb-4">
