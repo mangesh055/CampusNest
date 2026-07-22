@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -20,6 +20,29 @@ export default function HomePage() {
   const [messes, setMesses] = useState<any[]>([])
   const [dynamicStats, setDynamicStats] = useState({ properties: '0+', messes: '0+', students: '0+' })
   const navigate = useNavigate()
+  const scrollTimerRef = useRef<any>(null)
+
+  const handleTabChange = (tab: 'property' | 'mess') => {
+    setSearchTab(tab)
+    if (scrollTimerRef.current) {
+      clearTimeout(scrollTimerRef.current)
+    }
+    scrollTimerRef.current = setTimeout(() => {
+      const targetId = tab === 'property' ? 'featured-properties-section' : 'top-mess-section'
+      const element = document.getElementById(targetId)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }, 1000)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (scrollTimerRef.current) {
+        clearTimeout(scrollTimerRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const load = async () => {
@@ -57,7 +80,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden">
+      <section className="relative py-12 sm:py-20 lg:py-24 flex items-center justify-center overflow-hidden min-h-[75vh]">
         {/* Background */}
         <div className="absolute inset-0">
           <img
@@ -65,7 +88,7 @@ export default function HomePage() {
             alt="Hero"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-br from-brand-950/90 via-slate-900/80 to-slate-900/70" />
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-950/90 via-slate-900/85 to-slate-900/75" />
           <div className="absolute inset-0 bg-grid opacity-10" />
         </div>
 
@@ -73,11 +96,11 @@ export default function HomePage() {
         <motion.div
           animate={{ y: [0, -15, 0] }}
           transition={{ duration: 4, repeat: Infinity }}
-          className="absolute top-32 left-10 lg:left-32 hidden lg:block"
+          className="absolute top-24 left-10 lg:left-24 hidden lg:block"
         >
-          <div className="glass rounded-2xl p-4 text-white">
+          <div className="glass rounded-2xl p-3.5 text-white shadow-xl border border-white/10">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">🏠</div>
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center">🏠</div>
               <div>
                 <p className="text-xs font-semibold">New Listing!</p>
                 <p className="text-[10px] opacity-70">Sunshine PG, Kothrud</p>
@@ -89,11 +112,11 @@ export default function HomePage() {
         <motion.div
           animate={{ y: [0, 15, 0] }}
           transition={{ duration: 4, repeat: Infinity, delay: 2 }}
-          className="absolute top-40 right-10 lg:right-32 hidden lg:block"
+          className="absolute top-32 right-10 lg:right-24 hidden lg:block"
         >
-          <div className="glass rounded-2xl p-4 text-white">
+          <div className="glass rounded-2xl p-3.5 text-white shadow-xl border border-white/10">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">✅</div>
+              <div className="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center">✅</div>
               <div>
                 <p className="text-xs font-semibold">Meal Attended!</p>
                 <p className="text-[10px] opacity-70">Maa Ki Rasoi - Lunch</p>
@@ -103,117 +126,135 @@ export default function HomePage() {
         </motion.div>
 
         {/* Hero Content */}
-        <div className="relative z-10 max-w-5xl mx-auto px-4 text-center">
+        <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.6 }}
           >
             <div className={cn(
-              "inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium mb-6",
+              "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs sm:text-sm font-medium mb-4",
               searchTab === 'mess' 
                 ? "bg-accent-500/20 border-accent-500/30 text-accent-300" 
                 : "bg-brand-500/20 border-brand-500/30 text-brand-300"
             )}>
-              <Zap className="w-4 h-4" />
+              <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               {searchTab === 'mess' ? "India's #1 Digital Mess Platform" : "India's #1 Smart Student Housing Platform"}
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-serif italic font-bold text-white leading-tight mb-4 sm:mb-6 tracking-tight">
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-serif italic font-bold text-white leading-tight mb-3 sm:mb-4 tracking-tight">
               Find Your Perfect
               <br />
               {searchTab === 'mess' ? (
-                <span className="gradient-text-orange font-pacifico not-italic font-normal text-[1.1em] block mt-2">Daily Meals</span>
+                <span className="gradient-text-orange font-pacifico not-italic font-normal text-[1.05em] inline-block mt-1">Daily Meals</span>
               ) : (
-                <span className="gradient-text font-pacifico not-italic font-normal text-[1.1em] block mt-2">Campus Home</span>
+                <span className="gradient-text font-pacifico not-italic font-normal text-[1.05em] inline-block mt-1">Campus Home</span>
               )}
             </h1>
 
-            <p className="text-slate-300 text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-slate-300 text-xs sm:text-base max-w-xl mx-auto mb-6 leading-relaxed">
               {searchTab === 'mess' ? (
-                "Discover the best mess services, tiffin centers, and food joints near your college. Subscribe to meal plans, track attendance, and enjoy delicious home-like food."
+                "Discover verified messes, tiffin services & meal plans near your college."
               ) : (
-                "Discover PGs, hostels, flats & digital mess services near your college. Smart attendance, QR meals, and community living — all in one app."
+                "Discover PGs, hostels, flats & digital mess services near your college."
               )}
             </p>
 
             {/* Search Tabs */}
-            <div className="flex justify-center gap-2.5 mb-4 max-w-xs mx-auto">
+            <div className="flex justify-center gap-2 mb-3 max-w-[240px] mx-auto">
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 type="button"
-                onClick={() => setSearchTab('property')}
+                onClick={() => handleTabChange('property')}
                 className={cn(
-                  "flex-1 py-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 border",
+                  "flex-1 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 border",
                   searchTab === 'property'
-                    ? "bg-brand-500 text-white border-brand-500 shadow-lg shadow-brand-500/25"
-                    : "bg-black/20 hover:bg-black/35 text-white/90 border-white/10"
+                    ? "bg-brand-500 text-white border-brand-500 shadow-md shadow-brand-500/25"
+                    : "bg-black/30 hover:bg-black/45 text-white/90 border-white/10"
                 )}
               >
                 🏠 Housing
               </motion.button>
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 type="button"
-                onClick={() => setSearchTab('mess')}
+                onClick={() => handleTabChange('mess')}
                 className={cn(
-                  "flex-1 py-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 border",
+                  "flex-1 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 border",
                   searchTab === 'mess'
-                    ? "bg-accent-500 text-white border-accent-500 shadow-lg shadow-accent-500/25"
-                    : "bg-black/20 hover:bg-black/35 text-white/90 border-white/10"
+                    ? "bg-accent-500 text-white border-accent-500 shadow-md shadow-accent-500/25"
+                    : "bg-black/30 hover:bg-black/45 text-white/90 border-white/10"
                 )}
               >
                 🍽️ Mess
               </motion.button>
             </div>
 
-            {/* Search Bar */}
-            <form onSubmit={handleSearch} className="max-w-3xl mx-auto">
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 bg-white dark:bg-slate-800 p-1.5 sm:p-2 rounded-2xl shadow-glass">
-                <div className="flex items-center gap-2 flex-1 px-2 sm:px-3">
-                  <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 flex-shrink-0" />
+            {/* Ultra-Compact Single-Row Search Bar */}
+            <form onSubmit={handleSearch} className="max-w-lg mx-auto">
+              <div className="flex items-center gap-1 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md p-1 sm:p-1.5 rounded-full shadow-lg border border-white/30 dark:border-slate-700/60">
+                <div className="flex items-center gap-1.5 flex-1 min-w-0 pl-2.5 sm:pl-3 pr-1">
+                  <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-500 dark:text-brand-400 flex-shrink-0" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={searchTab === 'mess' ? 'Try "Jagdamba Mess" or "veg meals"' : 'Try "PG near MIT College"'}
-                    className="flex-1 bg-transparent outline-none text-slate-900 dark:text-white placeholder-slate-400 text-xs sm:text-sm py-2"
+                    placeholder={searchTab === 'mess' ? 'Search messes...' : 'Try "PG near MIT"...'}
+                    className="w-full bg-transparent outline-none text-slate-900 dark:text-white placeholder:text-slate-400 text-xs sm:text-sm py-1"
                   />
                 </div>
-                <div className="flex items-center gap-2 sm:border-l border-slate-200 dark:border-slate-700 px-2 sm:px-3 py-1 sm:py-0 border-t sm:border-t-0">
-                  <MapPin className="w-4 h-4 text-slate-400" />
+                
+                <div className="flex items-center gap-1 px-1.5 py-0.5 border-l border-slate-200 dark:border-slate-700/80 flex-shrink-0">
+                  <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 flex-shrink-0" />
                   <select
                     value={searchCity}
                     onChange={(e) => setSearchCity(e.target.value)}
-                    className="bg-transparent outline-none text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium w-full"
+                    className="bg-transparent outline-none text-xs text-slate-700 dark:text-slate-200 font-medium cursor-pointer max-w-[68px] sm:max-w-none pr-0.5"
                   >
-                    {cities.map(c => <option key={c} value={c}>{c}</option>)}
+                    {cities.map(c => <option key={c} value={c} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">{c}</option>)}
                   </select>
                 </div>
-                <button type="submit" className={cn("rounded-xl px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm whitespace-nowrap mt-1 sm:mt-0 flex items-center gap-1.5 font-medium transition-all text-white", searchTab === 'mess' ? 'bg-accent-500 hover:bg-accent-600 shadow-lg shadow-accent-500/30' : 'btn-primary')}>
-                  <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  Search
+
+                <button
+                  type="submit"
+                  className={cn(
+                    "rounded-full p-2 sm:px-4 sm:py-1.5 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all text-white shadow-sm flex-shrink-0 active:scale-95",
+                    searchTab === 'mess'
+                      ? 'bg-accent-500 hover:bg-accent-600'
+                      : 'bg-brand-600 hover:bg-brand-700'
+                  )}
+                >
+                  <Search className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Search</span>
                 </button>
               </div>
             </form>
 
-            <div className="flex flex-wrap items-center justify-center gap-4 mt-6">
+            {/* Quick Tags */}
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
               {(searchTab === 'mess' 
                 ? ['Veg Only', 'Non-Veg', 'Jain Food', 'Monthly Pass']
                 : ['PG below ₹8000', 'Girls Hostel', 'AC Flat', 'Veg Mess']
               ).map(tag => (
                 <button
                   key={tag}
+                  type="button"
                   onClick={() => {
                     if (searchTab === 'mess') {
-                      navigate(`/mess?q=${tag}`);
+                      if (tag === 'Veg Only') navigate('/mess?foodType=veg')
+                      else if (tag === 'Non-Veg') navigate('/mess?foodType=non_veg')
+                      else navigate(`/mess?q=${encodeURIComponent(tag)}`)
                     } else {
-                      navigate(`/properties?q=${tag}`);
+                      if (tag === 'PG below ₹8000') navigate('/properties?type=pg&maxRent=8000')
+                      else if (tag === 'Girls Hostel') navigate('/properties?type=hostel&gender=female')
+                      else if (tag === 'AC Flat') navigate('/properties?type=flat&ac=true')
+                      else if (tag === 'Veg Mess') navigate('/mess?foodType=veg')
+                      else navigate(`/properties?q=${encodeURIComponent(tag)}`)
                     }
                   }}
-                  className="px-4 py-1.5 rounded-full border border-white/20 text-white/80 text-sm hover:bg-white/10 transition-colors"
+                  className="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white/90 text-xs border border-white/15 backdrop-blur-sm transition-all cursor-pointer"
                 >
                   {tag}
                 </button>
@@ -248,167 +289,170 @@ export default function HomePage() {
         </div>
       </section>
 
-
-
-
-      {/* Featured Properties */}
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between mb-8 sm:mb-10 text-center sm:text-left">
-            <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }}>
-              <h2 className="text-3xl sm:text-5xl font-display font-bold text-brand-600 dark:text-brand-400 tracking-tight">
-                🏠 Featured Properties
-              </h2>
-              <p className="text-slate-500 dark:text-slate-400 mt-2 sm:mt-1">Top-rated, verified accommodations near colleges</p>
-            </motion.div>
-            <Link to="/properties" className="btn-secondary hidden sm:flex text-sm mt-4 sm:mt-0">
-              View All <ArrowRight className="w-4 h-4" />
-            </Link>
+      {/* Featured Properties (shown when Housing option is active) */}
+      {searchTab === 'property' && (
+        <section id="featured-properties-section" className="py-16">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between mb-8 sm:mb-10 text-center sm:text-left">
+              <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }}>
+                <h2 className="text-3xl sm:text-5xl font-display font-bold text-brand-600 dark:text-brand-400 tracking-tight">
+                 Featured Properties
+                </h2>
+                <p className="text-slate-500 dark:text-slate-400 mt-2 sm:mt-1">Top-rated, verified accommodations near colleges</p>
+              </motion.div>
+              <Link to="/properties" className="btn-secondary hidden sm:flex text-sm mt-4 sm:mt-0">
+                View All <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {properties.slice(0, 3).map((property, i) => (
+                <PropertyCard key={property.id} property={property} index={i} />
+              ))}
+            </div>
+            <div className="text-center mt-6 sm:hidden">
+              <Link to="/properties" className="btn-secondary text-sm w-full justify-center">
+                View All <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {properties.slice(0, 3).map((property, i) => (
-              <PropertyCard key={property.id} property={property} index={i} />
-            ))}
-          </div>
-          <div className="text-center mt-6 sm:hidden">
-            <Link to="/properties" className="btn-secondary text-sm w-full justify-center">
-              View All <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* Mess Section */}
-      <section className="py-16 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900/50 dark:to-slate-950">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between mb-8 sm:mb-10 text-center sm:text-left">
-            <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }}>
-              <h2 className="text-3xl sm:text-5xl font-display font-bold text-accent-600 dark:text-accent-400 tracking-tight">
-                🍽️ Top Mess Services
-              </h2>
-              <p className="text-slate-500 dark:text-slate-400 mt-2 sm:mt-1">Verified messes with digital attendance system</p>
-            </motion.div>
-            <Link to="/mess" className="btn-secondary hidden sm:flex text-sm mt-4 sm:mt-0">
-              View All <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {messes.slice(0, 3).map((mess, i) => (
-              <MessCard key={mess.id} mess={mess} index={i} />
-            ))}
-          </div>
-          <div className="text-center mt-6 sm:hidden">
-            <Link to="/mess" className="btn-secondary text-sm w-full justify-center">
-              View All <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Smart Mess System Explainer */}
-      <section className="py-10 sm:py-20 bg-gradient-to-br from-brand-950 to-slate-900 text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-grid opacity-10" />
-        <div className="max-w-6xl mx-auto px-4 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-            <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} className="text-center sm:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-500/20 border border-accent-500/30 text-accent-300 text-xs sm:text-sm mb-3 sm:mb-6 animate-pulse-slow shadow-[0_0_15px_rgba(249,115,22,0.3)]">
-                🚀 Revolutionary Feature
-              </div>
-              <h2 className="text-3xl sm:text-5xl font-serif italic font-bold mb-3 sm:mb-6 leading-tight">
-                Smart Digital Mess<br />
-                <span className="gradient-text-orange font-dancing not-italic font-normal block mt-1">Attendance System</span>
-              </h2>
-              {/* Description — hidden on mobile to save space */}
-              <p className="hidden sm:block text-slate-300 text-lg mb-8 leading-relaxed">
-                No more paper registers. Our streamlined static QR-based attendance system ensures authentic meal tracking seamlessly linked to your active subscription.
-              </p>
-
-              {/* Mobile: compact 2-col step grid */}
-              <div className="grid grid-cols-2 gap-3 sm:hidden mb-5">
-                {[
-                  { icon: '📱', title: 'Open App' },
-                  { icon: '📷', title: 'Scan QR' },
-                  { icon: '🎫', title: 'Validated' },
-                  { icon: '✅', title: 'Logged!' },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-2 bg-white/5 rounded-xl px-3 py-2.5">
-                    <span className="text-xl">{item.icon}</span>
-                    <div>
-                      <p className="text-[10px] text-brand-300 font-medium">Step {i + 1}</p>
-                      <p className="text-xs text-white font-semibold">{item.title}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Desktop: full step list */}
-              <div className="hidden sm:block space-y-4">
-                {[
-                  { icon: '📱', step: '1', title: 'Open Your App', desc: 'Launch the FlatsNFood app when you arrive at the mess.' },
-                  { icon: '📷', step: '2', title: 'Scan QR Poster', desc: 'Scan the mess\'s static QR code poster right from your dashboard.' },
-                  { icon: '🎫', step: '3', title: 'System Validation', desc: 'The system instantly verifies your active meal plan and daily limits.' },
-                  { icon: '✅', step: '4', title: 'Attendance Recorded', desc: 'Your meal is automatically logged and your plan count is updated!' },
-                ].map((item) => (
-                  <div key={item.step} className="flex items-start gap-4 group cursor-default">
-                    <div className="w-10 h-10 rounded-full bg-brand-500/30 border border-brand-500/50 flex items-center justify-center flex-shrink-0 text-lg group-hover:scale-110 transition-transform duration-300 shadow-glow">
-                      <span className="group-hover:animate-bounce-subtle">{item.icon}</span>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-white">{item.title}</h4>
-                      <p className="text-slate-400 text-sm">{item.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-5 sm:mt-8 flex justify-center sm:justify-start">
-                <Link to="/mess" className="btn-accent text-sm sm:text-base hover:scale-105 transition-transform duration-300 shadow-glow-orange">
-                  Explore Mess Services <ArrowRight className="w-4 h-4" />
+      {/* Mess Sections (shown when Mess option is active) */}
+      {searchTab === 'mess' && (
+        <>
+          {/* Mess Section */}
+          <section id="top-mess-section" className="py-16 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900/50 dark:to-slate-950">
+            <div className="max-w-7xl mx-auto px-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between mb-8 sm:mb-10 text-center sm:text-left">
+                <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }}>
+                  <h2 className="text-3xl sm:text-5xl font-display font-bold text-accent-600 dark:text-accent-400 tracking-tight">
+                    🍽️ Top Mess Services
+                  </h2>
+                  <p className="text-slate-500 dark:text-slate-400 mt-2 sm:mt-1">Verified messes with digital attendance system</p>
+                </motion.div>
+                <Link to="/mess" className="btn-secondary hidden sm:flex text-sm mt-4 sm:mt-0">
+                  View All <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
-            </motion.div>
-
-            {/* Mock phone UI — hidden on mobile */}
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              className="relative hidden lg:block"
-            >
-              <div className="relative rounded-3xl overflow-hidden bg-slate-800/50 border border-slate-700 p-6 animate-float shadow-2xl shadow-brand-500/20">
-                <div className="bg-slate-900 rounded-2xl p-4 mb-4">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-brand-500/30 flex items-center justify-center text-xl">🍽️</div>
-                    <div>
-                      <p className="text-white font-semibold text-sm">Jagdamba Mess</p>
-                      <p className="text-emerald-400 text-xs flex items-center gap-1">🟢 Open Now</p>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-800">
-                      <span className="text-slate-300 text-sm">📊 Daily Limit</span>
-                      <span className="text-emerald-400 text-sm font-medium">✓ 1 of 2 scans used</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-800">
-                      <span className="text-slate-300 text-sm">🎫 Subscription</span>
-                      <span className="text-emerald-400 text-sm font-medium">✓ Active (18 days left)</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="text-center p-4 rounded-2xl bg-brand-500/10 border border-brand-500/30">
-                  <div className="text-4xl mb-2">📷</div>
-                  <p className="text-brand-300 font-semibold">Ready to Scan QR</p>
-                  <p className="text-slate-400 text-xs mt-1">Point camera at mess QR code</p>
-                </div>
-                <div className="mt-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-center">
-                  <p className="text-emerald-400 font-bold">🎉 Lunch Attended!</p>
-                  <p className="text-slate-400 text-xs mt-1">Meals Left: <span className="text-white font-mono">24</span></p>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {messes.slice(0, 3).map((mess, i) => (
+                  <MessCard key={mess.id} mess={mess} index={i} />
+                ))}
               </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
+              <div className="text-center mt-6 sm:hidden">
+                <Link to="/mess" className="btn-secondary text-sm w-full justify-center">
+                  View All <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+          </section>
 
+          {/* Smart Mess System Explainer */}
+          <section className="py-10 sm:py-20 bg-gradient-to-br from-brand-950 to-slate-900 text-white relative overflow-hidden">
+            <div className="absolute inset-0 bg-grid opacity-10" />
+            <div className="max-w-6xl mx-auto px-4 relative z-10">
+              <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+                <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} className="text-center sm:text-left">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-500/20 border border-accent-500/30 text-accent-300 text-xs sm:text-sm mb-3 sm:mb-6 animate-pulse-slow shadow-[0_0_15px_rgba(249,115,22,0.3)]">
+                    🚀 Revolutionary Feature
+                  </div>
+                  <h2 className="text-3xl sm:text-5xl font-serif italic font-bold mb-3 sm:mb-6 leading-tight">
+                    Smart Digital Mess<br />
+                    <span className="gradient-text-orange font-dancing not-italic font-normal block mt-1">Attendance System</span>
+                  </h2>
+                  {/* Description — hidden on mobile to save space */}
+                  <p className="hidden sm:block text-slate-300 text-lg mb-8 leading-relaxed">
+                    No more paper registers. Our streamlined static QR-based attendance system ensures authentic meal tracking seamlessly linked to your active subscription.
+                  </p>
+
+                  {/* Mobile: compact 2-col step grid */}
+                  <div className="grid grid-cols-2 gap-3 sm:hidden mb-5">
+                    {[
+                      { icon: '📱', title: 'Open App' },
+                      { icon: '📷', title: 'Scan QR' },
+                      { icon: '🎫', title: 'Validated' },
+                      { icon: '✅', title: 'Logged!' },
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-center gap-2 bg-white/5 rounded-xl px-3 py-2.5">
+                        <span className="text-xl">{item.icon}</span>
+                        <div>
+                          <p className="text-[10px] text-brand-300 font-medium">Step {i + 1}</p>
+                          <p className="text-xs text-white font-semibold">{item.title}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Desktop: full step list */}
+                  <div className="hidden sm:block space-y-4">
+                    {[
+                      { icon: '📱', step: '1', title: 'Open Your App', desc: 'Launch the FlatsNFood app when you arrive at the mess.' },
+                      { icon: '📷', step: '2', title: 'Scan QR Poster', desc: 'Scan the mess\'s static QR code poster right from your dashboard.' },
+                      { icon: '🎫', step: '3', title: 'System Validation', desc: 'The system instantly verifies your active meal plan and daily limits.' },
+                      { icon: '✅', step: '4', title: 'Attendance Recorded', desc: 'Your meal is automatically logged and your plan count is updated!' },
+                    ].map((item) => (
+                      <div key={item.step} className="flex items-start gap-4 group cursor-default">
+                        <div className="w-10 h-10 rounded-full bg-brand-500/30 border border-brand-500/50 flex items-center justify-center flex-shrink-0 text-lg group-hover:scale-110 transition-transform duration-300 shadow-glow">
+                          <span className="group-hover:animate-bounce-subtle">{item.icon}</span>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-white">{item.title}</h4>
+                          <p className="text-slate-400 text-sm">{item.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 sm:mt-8 flex justify-center sm:justify-start">
+                    <Link to="/mess" className="btn-accent text-sm sm:text-base hover:scale-105 transition-transform duration-300 shadow-glow-orange">
+                      Explore Mess Services <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                </motion.div>
+
+                {/* Mock phone UI — hidden on mobile */}
+                <motion.div
+                  initial={{ opacity: 0, x: 30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  className="relative hidden lg:block"
+                >
+                  <div className="relative rounded-3xl overflow-hidden bg-slate-800/50 border border-slate-700 p-6 animate-float shadow-2xl shadow-brand-500/20">
+                    <div className="bg-slate-900 rounded-2xl p-4 mb-4">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-brand-500/30 flex items-center justify-center text-xl">🍽️</div>
+                        <div>
+                          <p className="text-white font-semibold text-sm">Jagdamba Mess</p>
+                          <p className="text-emerald-400 text-xs flex items-center gap-1">🟢 Open Now</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-slate-800">
+                          <span className="text-slate-300 text-sm">📊 Daily Limit</span>
+                          <span className="text-emerald-400 text-sm font-medium">✓ 1 of 2 scans used</span>
+                        </div>
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-slate-800">
+                          <span className="text-slate-300 text-sm">🎫 Subscription</span>
+                          <span className="text-emerald-400 text-sm font-medium">✓ Active (18 days left)</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-center p-4 rounded-2xl bg-brand-500/10 border border-brand-500/30">
+                      <div className="text-4xl mb-2">📷</div>
+                      <p className="text-brand-300 font-semibold">Ready to Scan QR</p>
+                      <p className="text-slate-400 text-xs mt-1">Point camera at mess QR code</p>
+                    </div>
+                    <div className="mt-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-center">
+                      <p className="text-emerald-400 font-bold">🎉 Lunch Attended!</p>
+                      <p className="text-slate-400 text-xs mt-1">Meals Left: <span className="text-white font-mono">24</span></p>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+          </section>
+        </>
+      )}
 
       {/* CTA Section */}
       <section className="py-10 sm:py-20 bg-gradient-to-br from-brand-600 to-brand-800">
@@ -424,8 +468,8 @@ export default function HomePage() {
               <Link to="/auth?tab=register" className="btn-accent text-sm sm:text-base px-5 sm:px-8">
                 Get Started Free <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </Link>
-              <Link to="/properties" className="px-5 sm:px-8 py-2.5 sm:py-3 rounded-xl border-2 border-white/30 text-white text-sm sm:text-base font-semibold hover:bg-white/10 transition-all inline-flex items-center gap-2">
-                Browse Properties
+              <Link to={searchTab === 'mess' ? "/mess" : "/properties"} className="px-5 sm:px-8 py-2.5 sm:py-3 rounded-xl border-2 border-white/30 text-white text-sm sm:text-base font-semibold hover:bg-white/10 transition-all inline-flex items-center gap-2">
+                {searchTab === 'mess' ? "Browse Mess Services" : "Browse Properties"}
               </Link>
             </div>
           </motion.div>

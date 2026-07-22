@@ -17,6 +17,7 @@ export default function OwnerDashboard() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formStep, setFormStep] = useState(1)
   const [isUploading, setIsUploading] = useState(false)
+  const [customAmenityInput, setCustomAmenityInput] = useState('')
 
   // Form State
   const [formData, setFormData] = useState({
@@ -50,7 +51,7 @@ export default function OwnerDashboard() {
       attached_bathroom: false,
       study_table: true,
       furnished: true,
-    }
+    } as Record<string, boolean>
   })
 
   const { profile, initialized } = useAuthStore()
@@ -119,7 +120,7 @@ export default function OwnerDashboard() {
     }))
   }
 
-  const handleAmenityChange = (key: keyof typeof formData.amenities) => {
+  const handleAmenityChange = (key: string) => {
     setFormData(prev => ({
       ...prev,
       amenities: {
@@ -129,8 +130,31 @@ export default function OwnerDashboard() {
     }))
   }
 
+  const handleAddCustomAmenity = () => {
+    const trimmed = customAmenityInput.trim()
+    if (!trimmed) return
+    const key = trimmed.toLowerCase().replace(/\s+/g, '_')
+    setFormData(prev => ({
+      ...prev,
+      amenities: {
+        ...prev.amenities,
+        [key]: true
+      }
+    }))
+    setCustomAmenityInput('')
+  }
+
+  const removeCustomAmenity = (keyToRemove: string) => {
+    setFormData(prev => {
+      const copy = { ...prev.amenities }
+      delete copy[keyToRemove]
+      return { ...prev, amenities: copy }
+    })
+  }
+
   const handleEdit = (property: Property) => {
     setEditingId(property.id)
+    const existing = (property.amenities || {}) as Record<string, boolean>
     setFormData({
       title: property.title,
       description: property.description || '',
@@ -151,17 +175,18 @@ export default function OwnerDashboard() {
       images: property.images?.length ? property.images : ['https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600'],
       video_url: property.video_url || '',
       amenities: {
-        wifi: !!property.amenities?.wifi,
-        ac: !!property.amenities?.ac,
-        laundry: !!property.amenities?.laundry,
-        water: !!property.amenities?.water,
-        electricity: !!property.amenities?.electricity,
-        cctv: !!property.amenities?.cctv,
-        security: !!property.amenities?.security,
-        parking: !!property.amenities?.parking,
-        attached_bathroom: !!property.amenities?.attached_bathroom,
-        study_table: !!property.amenities?.study_table,
-        furnished: !!property.amenities?.furnished,
+        wifi: !!existing.wifi,
+        ac: !!existing.ac,
+        laundry: !!existing.laundry,
+        water: !!existing.water,
+        electricity: !!existing.electricity,
+        cctv: !!existing.cctv,
+        security: !!existing.security,
+        parking: !!existing.parking,
+        attached_bathroom: !!existing.attached_bathroom,
+        study_table: !!existing.study_table,
+        furnished: !!existing.furnished,
+        ...existing
       }
     })
     setFormStep(1)
@@ -393,7 +418,7 @@ export default function OwnerDashboard() {
               <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
                 {formStep === 1 && (
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
-                    <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm border-b pb-1">1. Basic Information</h4>
+                    <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm border-b pb-1">1. Basic Information & Amenities</h4>
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 mb-1">Property Title / Name *</label>
                       <input
@@ -426,6 +451,67 @@ export default function OwnerDashboard() {
                           <option value="male">Boys Only</option>
                           <option value="female">Girls Only</option>
                         </select>
+                      </div>
+                    </div>
+
+                    {/* Amenities Provided & Custom Amenity Input */}
+                    <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">Amenities Provided</label>
+                      
+                      {/* Add Custom Amenity Bar */}
+                      <div className="flex gap-2 items-center bg-slate-50 dark:bg-slate-800/60 p-2 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <input
+                          type="text"
+                          value={customAmenityInput}
+                          onChange={(e) => setCustomAmenityInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault()
+                              handleAddCustomAmenity()
+                            }
+                          }}
+                          placeholder="Type custom amenity (e.g. Gym, Power Backup)..."
+                          className="bg-transparent outline-none text-xs text-slate-900 dark:text-white placeholder:text-slate-400 flex-1 px-2"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddCustomAmenity}
+                          className="btn-primary py-1.5 px-3.5 text-xs font-semibold whitespace-nowrap flex items-center gap-1"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Add Amenity
+                        </button>
+                      </div>
+
+                      {/* Amenities Selection Grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {Object.keys(formData.amenities).map((key) => {
+                          const isChecked = formData.amenities[key]
+                          const isStandard = ['wifi', 'ac', 'laundry', 'water', 'electricity', 'cctv', 'security', 'parking', 'attached_bathroom', 'study_table', 'furnished'].includes(key)
+                          return (
+                            <div key={key} className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleAmenityChange(key)}
+                                className={`flex-1 flex items-center gap-2 p-2 rounded-xl border text-xs font-medium transition-all ${isChecked ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-950/20 text-brand-600 dark:text-brand-400' : 'border-slate-200 dark:border-slate-700 text-slate-400 hover:border-slate-300'}`}
+                              >
+                                <span className="flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center">
+                                  {isChecked && <Check className="w-3 h-3 text-brand-500" />}
+                                </span>
+                                <span className="capitalize truncate">{key.replace(/_/g, ' ')}</span>
+                              </button>
+                              {!isStandard && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeCustomAmenity(key)}
+                                  className="p-1 text-slate-400 hover:text-red-500 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                  title="Remove Custom Amenity"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
                   </motion.div>
@@ -537,7 +623,7 @@ export default function OwnerDashboard() {
 
                 {formStep === 3 && (
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
-                    <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm border-b pb-1">3. Location & Amenities</h4>
+                    <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm border-b pb-1">3. Location Details</h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="col-span-2">
                         <label className="block text-xs font-semibold text-slate-500 mb-1">Address *</label>
@@ -625,27 +711,6 @@ export default function OwnerDashboard() {
                         type="url" name="google_maps_url" value={formData.google_maps_url} onChange={handleInputChange}
                         placeholder="https://maps.app.goo.gl/..." className="input-field text-xs"
                       />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-2">Amenities Provided</label>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {Object.keys(formData.amenities).map((key) => {
-                          const isChecked = formData.amenities[key as keyof typeof formData.amenities]
-                          return (
-                            <button
-                              key={key} type="button"
-                              onClick={() => handleAmenityChange(key as keyof typeof formData.amenities)}
-                              className={`flex items-center gap-2 p-2 rounded-xl border text-xs font-medium transition-all ${isChecked ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-950/20 text-brand-600 dark:text-brand-400' : 'border-slate-200 dark:border-slate-700 text-slate-400 hover:border-slate-300'}`}
-                            >
-                              <span className="flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center">
-                                {isChecked && <Check className="w-3 h-3 text-brand-500" />}
-                              </span>
-                              <span className="capitalize">{key.replace('_', ' ')}</span>
-                            </button>
-                          )
-                        })}
-                      </div>
                     </div>
                   </motion.div>
                 )}

@@ -87,6 +87,7 @@ export interface PropertyAmenity {
   gym?: boolean
   tv?: boolean
   kitchen?: boolean
+  [key: string]: boolean | undefined
 }
 
 export interface Mess {

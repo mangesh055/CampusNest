@@ -226,19 +226,24 @@ export default function PropertyDetailPage() {
                 </div>
               </div>
 
-              {amenityList.filter(({ key }) => property.amenities[key as keyof typeof property.amenities]).length > 0 && (
+              {Object.entries(property.amenities || {}).some(([_, active]) => Boolean(active)) && (
                 <>
                   <h3 className="font-display font-bold text-slate-900 dark:text-white mb-4">Amenities</h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {amenityList
-                      .filter(({ key }) => property.amenities[key as keyof typeof property.amenities])
-                      .map(({ key, icon, label }) => (
-                        <div key={key} className="flex items-center gap-2 p-3 rounded-xl border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20">
-                          <span>{icon}</span>
-                          <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">{label}</span>
-                          <CheckCircle className="w-3 h-3 text-emerald-500 ml-auto" />
-                        </div>
-                      ))}
+                    {Object.entries(property.amenities || {})
+                      .filter(([_, active]) => Boolean(active))
+                      .map(([key]) => {
+                        const standard = amenityList.find(a => a.key === key)
+                        const icon = standard ? standard.icon : '✨'
+                        const label = standard ? standard.label : key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+                        return (
+                          <div key={key} className="flex items-center gap-2 p-3 rounded-xl border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20">
+                            <span>{icon}</span>
+                            <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400 truncate">{label}</span>
+                            <CheckCircle className="w-3 h-3 text-emerald-500 ml-auto shrink-0" />
+                          </div>
+                        )
+                      })}
                   </div>
                 </>
               )}

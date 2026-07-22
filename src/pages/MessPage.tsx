@@ -10,7 +10,7 @@ import type { MessStatus } from '../types'
 export default function MessPage() {
   const [searchParams] = useSearchParams()
   const [search, setSearch] = useState(searchParams.get('q') || '')
-  const [foodType, setFoodType] = useState('')
+  const [foodType, setFoodType] = useState(searchParams.get('foodType') || '')
   const [status, setStatus] = useState<MessStatus | ''>('')
   const [maxPrice, setMaxPrice] = useState('')
   const [city, setCity] = useState(searchParams.get('city') || '')
@@ -30,8 +30,24 @@ export default function MessPage() {
     load()
   }, [])
 
+  useEffect(() => {
+    const qParam = searchParams.get('q') || ''
+    const foodTypeParam = searchParams.get('foodType') || ''
+    const cityParam = searchParams.get('city') || ''
+    if (qParam !== search) setSearch(qParam)
+    if (foodTypeParam !== foodType) setFoodType(foodTypeParam)
+    if (cityParam !== city) setCity(cityParam)
+  }, [searchParams])
+
   const filtered = allMesses.filter(m => {
-    if (search && !m.name.toLowerCase().includes(search.toLowerCase()) && !m.address.toLowerCase().includes(search.toLowerCase())) return false
+    if (search) {
+      const q = search.toLowerCase()
+      const matchesText = m.name.toLowerCase().includes(q) || 
+                          m.address.toLowerCase().includes(q) || 
+                          m.city.toLowerCase().includes(q) ||
+                          (m.description && m.description.toLowerCase().includes(q))
+      if (!matchesText) return false
+    }
     if (city && m.city.toLowerCase() !== city.toLowerCase()) return false
     if (foodType && m.food_type !== foodType && m.food_type !== 'both') return false
     if (status && m.status !== status) return false

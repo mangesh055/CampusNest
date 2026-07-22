@@ -37,14 +37,17 @@ export default function PropertiesPage() {
   const [searchParams] = useSearchParams()
   const [search, setSearch] = useState(searchParams.get('q') || '')
   const [selectedType, setSelectedType] = useState<PropertyType | ''>((searchParams.get('type') as PropertyType) || '')
-  const [gender, setGender] = useState('')
-  const [minRent, setMinRent] = useState('')
-  const [maxRent, setMaxRent] = useState('')
+  const [gender, setGender] = useState(searchParams.get('gender') || '')
+  const [minRent, setMinRent] = useState(searchParams.get('minRent') || '')
+  const [maxRent, setMaxRent] = useState(searchParams.get('maxRent') || '')
   const [city, setCity] = useState(searchParams.get('city') || '')
   const [sortBy, setSortBy] = useState('relevance')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [showFilters, setShowFilters] = useState(false)
-  const [amenityFilters, setAmenityFilters] = useState<Record<string, boolean>>({})
+  const [amenityFilters, setAmenityFilters] = useState<Record<string, boolean>>(() => {
+    const ac = searchParams.get('ac') === 'true'
+    return ac ? { ac: true } : {}
+  })
   const [availableOnly, setAvailableOnly] = useState(false)
 
   const { properties, loadProperties } = usePropertyStore()
@@ -53,6 +56,25 @@ export default function PropertiesPage() {
   useEffect(() => {
     void loadProperties()
   }, [loadProperties])
+
+  // Synchronize state when searchParams change
+  useEffect(() => {
+    const qParam = searchParams.get('q') || ''
+    const typeParam = (searchParams.get('type') as PropertyType) || ''
+    const genderParam = searchParams.get('gender') || ''
+    const minRentParam = searchParams.get('minRent') || ''
+    const maxRentParam = searchParams.get('maxRent') || ''
+    const cityParam = searchParams.get('city') || ''
+    const acParam = searchParams.get('ac') === 'true'
+
+    if (qParam !== search) setSearch(qParam)
+    if (typeParam !== selectedType) setSelectedType(typeParam)
+    if (genderParam !== gender) setGender(genderParam)
+    if (minRentParam !== minRent) setMinRent(minRentParam)
+    if (maxRentParam !== maxRent) setMaxRent(maxRentParam)
+    if (cityParam !== city) setCity(cityParam)
+    if (acParam && !amenityFilters.ac) setAmenityFilters(prev => ({ ...prev, ac: true }))
+  }, [searchParams])
 
   const filtered = useMemo(() => {
     const fortyFiveDaysAgo = new Date()
@@ -63,7 +85,37 @@ export default function PropertiesPage() {
     
     if (search) {
       const q = search.toLowerCase()
-      result = result.filter(p => p.title.toLowerCase().includes(q) || p.address.toLowerCase().includes(q) || p.city.toLowerCase().includes(q))
+      result = result.filter(p => {
+        const matchesDirect = p.title.toLowerCase().includes(q) || 
+                              p.address.toLowerCase().includes(q) || 
+                              p.city.toLowerCase().includes(q) ||
+                              p.property_type.toLowerCase().includes(q)
+        if (matchesDirect) return true
+
+        // Keyword search matching
+        const isPg = q.includes('pg')
+        const isHostel = q.includes('hostel')
+        const isFlat = q.includes('flat')
+        const isGirls = q.includes('girl') || q.includes('female')
+        const isBoys = q.includes('boy') || q.includes('male')
+        const isAc = q.includes('ac')
+
+        let matchesKeyword = false
+        if (isPg && p.property_type === 'pg') matchesKeyword = true
+        if (isHostel && p.property_type === 'hostel') matchesKeyword = true
+        if (isFlat && p.property_type === 'flat') matchesKeyword = true
+        if (isGirls && (p.gender_preference === 'female' || p.gender_preference === 'any')) matchesKeyword = true
+        if (isBoys && (p.gender_preference === 'male' || p.gender_preference === 'any')) matchesKeyword = true
+        if (isAc && p.amenities?.ac) matchesKeyword = true
+
+        const rentNumberMatch = q.match(/\d+/)
+        if (rentNumberMatch && matchesKeyword) {
+          const maxTarget = parseInt(rentNumberMatch[0], 10)
+          if (p.rent > maxTarget + 2000) return false
+        }
+
+        return matchesKeyword
+      })
     }
     if (city) {
       result = result.filter(p => p.city.toLowerCase() === city.toLowerCase())
