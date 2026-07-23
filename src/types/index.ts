@@ -33,6 +33,7 @@ export interface Profile {
   bio?: string
   email_notifications?: boolean
   push_notifications?: boolean
+  is_profile_completed?: boolean
   created_at: string
   updated_at: string
 }

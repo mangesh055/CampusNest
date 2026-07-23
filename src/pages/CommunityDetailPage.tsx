@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, MessageSquare, Phone, ExternalLink, X, MapPin, Tag } from 'lucide-react'
+import { 
+  ArrowLeft, Phone, MessageSquare, MapPin, Tag, Calendar, ShieldCheck, 
+  Heart, Share2, ExternalLink, X, ChevronLeft, ChevronRight, AlertTriangle, 
+  User, Navigation2, ShoppingBag, Eye
+} from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { cn, formatCurrency } from '../lib/utils'
+import { cn, formatCurrency, getInitials } from '../lib/utils'
 
 export default function CommunityDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [post, setPost] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [favorited, setFavorited] = useState(false)
+  const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null)
 
@@ -36,17 +42,20 @@ export default function CommunityDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen pt-20 flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen pt-24 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-500">
+        <div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mb-3" />
+        <p className="text-sm font-semibold">Loading item details...</p>
       </div>
     )
   }
 
   if (!post) {
     return (
-      <div className="min-h-screen pt-20 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-4">Post Not Found</h2>
-        <button onClick={() => navigate('/community')} className="btn-primary">Back to Community</button>
+      <div className="min-h-screen pt-24 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="text-5xl mb-3">🛍️</div>
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2">Item Listing Not Found</h2>
+        <p className="text-sm text-slate-500 mb-5">This classified ad or post has been removed or is no longer active.</p>
+        <button onClick={() => navigate('/community')} className="btn-primary">Back to Marketplace</button>
       </div>
     )
   }
@@ -55,12 +64,11 @@ export default function CommunityDetailPage() {
   let phone = ''
   let location = ''
   let images: string[] = post.images || []
-  
   let video_url = ''
   
   try {
     const parsed = JSON.parse(post.content)
-    if (parsed.text) {
+    if (parsed.text !== undefined) {
       textContent = parsed.text
       phone = parsed.phone || ''
       location = parsed.location || ''
@@ -73,126 +81,370 @@ export default function CommunityDetailPage() {
     }
   } catch (e) {}
 
-  return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pt-20 pb-20">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <button onClick={() => navigate('/community')} className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 mb-6 font-medium">
-          <ArrowLeft className="w-4 h-4" /> Back to board
-        </button>
+  const sellerName = post.full_name || 'Campus Student'
+  const displayPhone = phone || '9876543210'
+  const digitsOnly = displayPhone.replace(/[^0-9]/g, '')
+  const phone10 = digitsOnly.length > 10 ? digitsOnly.slice(-10) : digitsOnly
+  const formattedPhone = phone ? `+91 ${phone10}` : 'Not Provided'
+  const whatsappUrl = `https://wa.me/91${phone10}?text=${encodeURIComponent(
+    `Hi ${sellerName}, I am interested in your item "${post.title}" listed on FlatsNFood Marketplace. Is it still available?`
+  )}`
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white dark:bg-slate-900 rounded-3xl shadow-card overflow-hidden">
-          {images.length > 0 && (
-            <div className="h-48 sm:h-64 w-full bg-slate-200 dark:bg-slate-800 relative cursor-pointer" onClick={() => setSelectedImage(images[0])}>
-              <img src={images[0]} alt="Post Banner" className="w-full h-full object-cover" />
-            </div>
-          )}
-          <div className="p-5 md:p-8">
-            {images.length === 0 && (
-              <div className="flex justify-between items-start mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg">
-                  {(post.full_name || 'U').split(' ').map((n: string) => n[0]).join('')}
+  const googleMapsUrl = location
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('VIT Pune, Kothrud')}`
+
+  const postedDate = new Date(post.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+
+  return (
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 pt-16 pb-24 lg:pb-16">
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        
+        {/* OLX Style Breadcrumb / Back Navigation */}
+        <div className="flex items-center justify-between mb-4">
+          <Link to="/community" className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-brand-600 transition-colors text-sm font-semibold">
+            <ChevronLeft className="w-4 h-4" /> Back to Marketplace & Community
+          </Link>
+          <div className="flex items-center gap-1.5 text-xs text-slate-400">
+            <span>Marketplace</span> / <span className="capitalize text-slate-600 dark:text-slate-300 font-medium">{post.category || 'General'}</span>
+          </div>
+        </div>
+
+        {/* OLX Two-Column Layout Grid */}
+        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6 items-start">
+          
+          {/* LEFT COLUMN: Main Media Carousel, Title, Specifications & Description */}
+          <div className="order-1 lg:col-span-2 space-y-5 w-full">
+            
+            {/* OLX Hero Photo Gallery Carousel Box */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+              <div className="relative h-72 sm:h-96 w-full bg-slate-900 flex items-center justify-center">
+                {images.length > 0 ? (
+                  <>
+                    <img 
+                      src={images[activeImageIndex % images.length]} 
+                      alt={post.title} 
+                      onClick={() => setSelectedImage(images[activeImageIndex % images.length])}
+                      className="w-full h-full object-contain cursor-pointer transform-gpu" 
+                      decoding="async"
+                    />
+                    
+                    {/* Carousel Prev/Next Controls */}
+                    {images.length > 1 && (
+                      <>
+                        <button
+                          onClick={() => setActiveImageIndex((prev) => (prev - 1 + images.length) % images.length)}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-sm transition-all"
+                        >
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => setActiveImageIndex((prev) => (prev + 1) % images.length)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-sm transition-all"
+                        >
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+                        
+                        {/* Photo Counter Badge (OLX Style) */}
+                        <div className="absolute bottom-3 left-3 bg-black/70 text-white text-xs px-2.5 py-1 rounded-md backdrop-blur-sm font-semibold">
+                          📷 {activeImageIndex + 1} / {images.length}
+                        </div>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center text-white p-6 text-center">
+                    <ShoppingBag className="w-16 h-16 mb-2 opacity-40" />
+                    <span className="text-base font-bold text-white/90">No Item Image Uploaded</span>
+                    <span className="text-xs text-white/60 mt-0.5">Seller has not attached photos for this listing</span>
+                  </div>
+                )}
+
+                {/* Top Action Buttons (Favorite & Share) */}
+                <div className="absolute top-3 right-3 flex gap-2 z-10">
+                  <button 
+                    onClick={() => setFavorited(!favorited)}
+                    className={cn(
+                      'w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-md backdrop-blur-md',
+                      favorited ? 'bg-red-500 text-white' : 'bg-white/90 dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 hover:text-red-500'
+                    )}
+                  >
+                    <Heart className={cn('w-4.5 h-4.5', favorited && 'fill-current')} />
+                  </button>
+                  <button className="w-9 h-9 rounded-full bg-white/90 dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 flex items-center justify-center hover:bg-white transition-colors shadow-md backdrop-blur-md">
+                    <Share2 className="w-4.5 h-4.5" />
+                  </button>
                 </div>
               </div>
-            )}
 
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-5">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="badge badge-purple px-2 py-1 text-xs capitalize">{post.category}</span>
-                  <span className="text-xs text-slate-400 font-medium">{new Date(post.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+              {/* Photo Thumbnails Strip (OLX Style) */}
+              {images.length > 1 && (
+                <div className="p-3 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-800 flex gap-2 overflow-x-auto">
+                  {images.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveImageIndex(idx)}
+                      className={cn(
+                        'relative w-16 h-16 rounded-lg overflow-hidden shrink-0 border-2 transition-all cursor-pointer',
+                        idx === activeImageIndex ? 'border-brand-500 scale-105 shadow-sm' : 'border-transparent opacity-70 hover:opacity-100'
+                      )}
+                    >
+                      <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
                 </div>
-                <h1 className="text-2xl md:text-4xl font-display font-bold text-slate-900 dark:text-white mb-2">
+              )}
+            </div>
+
+            {/* OLX Title & Overview Box (Mobile First Title Card) */}
+            <div className="bg-white dark:bg-slate-900 p-5 sm:p-7 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
+              
+              {/* OLX Huge Asking Price Header */}
+              {post.price !== undefined && post.price !== null && (
+                <div className="flex items-baseline justify-between">
+                  <div>
+                    <span className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                      {formatCurrency(post.price)}
+                    </span>
+                    <span className="ml-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                      Asking Price
+                    </span>
+                  </div>
+                  <span className="badge badge-purple px-2.5 py-1 text-xs capitalize font-bold">
+                    🏷️ {post.category || 'General'}
+                  </span>
+                </div>
+              )}
+
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white leading-snug">
                   {post.title}
                 </h1>
-                <p className="text-sm font-semibold text-slate-500 flex items-center gap-1.5">
-                  Posted by <span className="text-brand-600 dark:text-brand-400">{post.full_name || 'Anonymous'}</span>
-                </p>
+              </div>
+
+              {/* Location & Post Date Strip */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
+                <div className="flex items-center gap-1.5 font-medium">
+                  <MapPin className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                  <span>{location || 'Kothrud, Pune'}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Posted on {postedDate}</span>
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
-              {post.price !== undefined && (
-                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                  <p className="text-xs text-slate-400 font-semibold uppercase mb-1">Asking Price</p>
-                  <p className="text-lg font-bold text-emerald-600">{formatCurrency(post.price)}</p>
+            {/* OLX Key Specifications Table */}
+            <div className="bg-white dark:bg-slate-900 p-5 sm:p-7 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span>📋</span> Item Details & Specifications
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                  <p className="text-slate-400 font-semibold mb-0.5 uppercase tracking-wider text-[10px]">Category</p>
+                  <p className="font-bold text-slate-800 dark:text-slate-200 capitalize">{post.category || 'General'}</p>
                 </div>
-              )}
-              {location && (
-                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 col-span-2">
-                  <p className="text-xs text-slate-400 font-semibold uppercase mb-1 flex items-center gap-1"><MapPin className="w-3 h-3" /> Location</p>
-                  <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{location}</p>
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                  <p className="text-slate-400 font-semibold mb-0.5 uppercase tracking-wider text-[10px]">Listed Date</p>
+                  <p className="font-bold text-slate-800 dark:text-slate-200">{postedDate}</p>
                 </div>
-              )}
-            </div>
-
-            <div className="mb-5">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">Description</h3>
-              <div className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-line p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                {textContent}
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                  <p className="text-slate-400 font-semibold mb-0.5 uppercase tracking-wider text-[10px]">Verification</p>
+                  <p className={cn('font-bold flex items-center gap-1', (post.verified || post.profiles?.verified) ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400')}>
+                    {(post.verified || post.profiles?.verified) ? <><ShieldCheck className="w-3.5 h-3.5" /> Verified Student</> : 'Pending Admin Verification'}
+                  </p>
+                </div>
+                {location && (
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 col-span-2 sm:col-span-3">
+                    <p className="text-slate-400 font-semibold mb-0.5 uppercase tracking-wider text-[10px]">Pickup Location</p>
+                    <p className="font-bold text-slate-800 dark:text-slate-200">{location}</p>
+                  </div>
+                )}
               </div>
             </div>
 
+            {/* OLX Item Description Box */}
+            <div className="bg-white dark:bg-slate-900 p-5 sm:p-7 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3 shadow-sm">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                Description
+              </h3>
+              <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line bg-slate-50 dark:bg-slate-800/40 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                {textContent || 'No additional description provided by the seller.'}
+              </div>
+            </div>
+
+            {/* Media Attachments Gallery */}
             {(images.length > 0 || video_url) && (
-              <div className="mb-5">
-                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-3 flex items-center justify-between">
-                  <span>📸 Media Gallery</span>
-                  <span className="text-xs font-normal text-slate-400">
-                    {images.length} images {video_url && '• 1 video'}
-                  </span>
+              <div className="bg-white dark:bg-slate-900 p-5 sm:p-7 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center justify-between">
+                  <span>📸 Item Photos & Video</span>
+                  <span className="text-xs font-normal text-slate-400">{images.length} images {video_url && '• 1 video'}</span>
                 </h3>
                 <div className="flex flex-wrap gap-3">
                   {video_url && (
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
+                    <div
                       onClick={() => setSelectedVideo(video_url)}
-                      className="relative rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 cursor-pointer group bg-black shrink-0 shadow-sm border border-slate-200 dark:border-slate-700"
+                      className="relative rounded-xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 cursor-pointer group bg-black shrink-0 shadow-sm border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform duration-150 transform-gpu"
                     >
-                      <video src={video_url} className="w-full h-full object-cover opacity-80 transition-transform duration-300 group-hover:scale-105" preload="metadata" />
+                      <video src={video_url} className="w-full h-full object-cover opacity-80" preload="metadata" />
                       <div className="absolute inset-0 bg-slate-900/20 group-hover:bg-slate-900/40 transition-all duration-200 flex items-center justify-center">
                         <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
                           <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-white border-b-[6px] border-b-transparent ml-1" />
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   )}
-                  {images.map((photo: string, i: number) => (
-                    <motion.div
+                  {images.map((img, i) => (
+                    <div
                       key={i}
-                      whileHover={{ scale: 1.05 }}
-                      onClick={() => setSelectedImage(photo)}
-                      className="relative rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 cursor-pointer group shrink-0 shadow-sm border border-slate-200 dark:border-slate-700"
+                      onClick={() => setSelectedImage(img)}
+                      className="relative rounded-xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 cursor-pointer group shrink-0 shadow-sm border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform duration-150 transform-gpu"
                     >
-                      <img src={photo} alt={`Post attachment ${i + 1}`} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                      <img src={img} alt={`Item photo ${i + 1}`} className="w-full h-full object-cover transform-gpu" decoding="async" />
                       <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/20 transition-all duration-200 flex items-center justify-center">
-                        <ExternalLink className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <ExternalLink className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               </div>
             )}
+          </div>
 
-            <div className="border-t border-slate-100 dark:border-slate-800 pt-5 mt-5 flex flex-col sm:flex-row gap-3">
-              {phone ? (
-                <>
-                  <a href={`tel:${phone}`} className="btn-primary flex-1 py-3.5 justify-center text-sm shadow-brand hover:shadow-brand-hover flex items-center gap-2">
-                    <Phone className="w-4 h-4" /> Call {phone}
-                  </a>
-                  <a href={`https://wa.me/${phone.replace(/\D/g, '')}?text=Hi, I saw your post "${post.title}" on FlatsNFood!`} target="_blank" rel="noopener noreferrer" className="btn-secondary flex-1 py-3.5 justify-center text-sm flex items-center gap-2 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 border-[#25D366]/20">
-                    <MessageSquare className="w-4 h-4" /> WhatsApp
-                  </a>
-                </>
-              ) : (
-                <div className="w-full text-center py-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
-                  <p className="text-sm text-slate-500 italic">The author did not provide contact details for this post.</p>
+          {/* RIGHT COLUMN: OLX Seller Contact Sidebar Card */}
+          <div className="order-2 lg:col-span-1 space-y-4 w-full lg:sticky lg:top-20">
+            
+            {/* OLX Price & Quick Buy Box (Desktop View) */}
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-md hidden lg:block space-y-3">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Asking Price</span>
+              <p className="text-3xl font-extrabold text-slate-900 dark:text-white">
+                {post.price !== undefined && post.price !== null ? formatCurrency(post.price) : 'Contact Seller'}
+              </p>
+              <p className="text-xs text-slate-500 flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-red-500" /> {location || 'Kothrud, Pune'}
+              </p>
+            </div>
+
+            {/* OLX Seller Profile Card */}
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-md space-y-5">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Seller Information</h3>
+              
+              <div className="flex items-center gap-3.5 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-600 to-brand-600 flex items-center justify-center text-white font-extrabold text-xl shadow-md shrink-0">
+                  {getInitials(sellerName)}
                 </div>
-              )}
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <h4 className="font-bold text-slate-900 dark:text-white text-base leading-tight">{sellerName}</h4>
+                    {(post.verified || post.profiles?.verified) && <ShieldCheck className="w-4 h-4 text-emerald-500" />}
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    {(post.verified || post.profiles?.verified) ? 'Verified Student Seller' : 'Student Seller'}
+                  </p>
+                  <p className="text-[11px] text-brand-600 dark:text-brand-400 font-semibold mt-0.5">Member on FlatsNFood</p>
+                </div>
+              </div>
+
+              {/* Direct Phone Display */}
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs">
+                <span className="text-slate-500 font-medium">Seller Phone:</span>
+                <span className="font-mono font-bold text-slate-900 dark:text-white text-sm tracking-wider">
+                  {formattedPhone}
+                </span>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-2.5">
+                {phone ? (
+                  <>
+                    <motion.a
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.97 }}
+                      href={`tel:${phone}`}
+                      className="w-full py-3.5 px-4 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm flex items-center justify-center gap-2.5 transition-all shadow-md shadow-brand-500/20 cursor-pointer"
+                    >
+                      <Phone className="w-4 h-4" /> Call Seller Now
+                    </motion.a>
+
+                    <motion.a
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.97 }}
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm flex items-center justify-center gap-2.5 transition-all shadow-md shadow-emerald-500/20 animate-pulse-ring cursor-pointer"
+                    >
+                      <MessageSquare className="w-4 h-4" /> Chat on WhatsApp
+                    </motion.a>
+                  </>
+                ) : (
+                  <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-center text-xs text-slate-500 font-medium">
+                    No phone number provided for this listing.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* OLX Safety Tips Card */}
+            <div className="bg-amber-50/70 dark:bg-amber-950/30 p-5 rounded-2xl border border-amber-200 dark:border-amber-900/60 space-y-2">
+              <h4 className="font-bold text-xs text-amber-900 dark:text-amber-200 uppercase tracking-wider flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" /> OLX Safety Guidelines
+              </h4>
+              <ul className="space-y-1.5 text-xs text-amber-800 dark:text-amber-300">
+                <li>• Inspect the item in person before making any payment.</li>
+                <li>• Meet seller in a safe, public campus area.</li>
+                <li>• Avoid sending advance online transfers.</li>
+              </ul>
+            </div>
+
+            {/* Posted Location Map Button */}
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
+              <a
+                href={googleMapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs transition-colors cursor-pointer"
+              >
+                <Navigation2 className="w-3.5 h-3.5 text-brand-500" /> View Location on Google Maps
+              </a>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
 
-      {/* Fullscreen Media Modal */}
+      {/* MOBILE STICKY CONTACT & BUY BAR (OLX Style) */}
+      {phone && (
+        <div className="fixed bottom-0 left-0 right-0 p-3 bg-white/95 dark:bg-slate-900/95 border-t border-slate-200 dark:border-slate-800 backdrop-blur-md lg:hidden z-40 shadow-2xl">
+          <div className="flex items-center justify-between gap-3 max-w-md mx-auto">
+            <div>
+              <p className="text-[10px] text-slate-400 font-semibold uppercase">Asking Price</p>
+              <p className="text-lg font-extrabold text-slate-900 dark:text-white">
+                {post.price !== undefined && post.price !== null ? formatCurrency(post.price) : 'Contact Seller'}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 flex-1 justify-end">
+              <a
+                href={`tel:${phone}`}
+                className="py-2.5 px-4 rounded-xl bg-brand-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-brand-500/20"
+              >
+                <Phone className="w-3.5 h-3.5" /> Call
+              </a>
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="py-2.5 px-4 rounded-xl bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20"
+              >
+                <MessageSquare className="w-3.5 h-3.5" /> WhatsApp
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fullscreen Media View Modal */}
       {(selectedImage || selectedVideo) && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
           <motion.div

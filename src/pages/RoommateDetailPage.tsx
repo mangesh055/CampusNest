@@ -105,7 +105,7 @@ export default function RoommateDetailPage() {
   const phone10 = digitsOnly.length > 10 ? digitsOnly.slice(-10) : digitsOnly
   const formattedPhone = `+91 ${phone10}`
   const whatsappUrl = `https://wa.me/91${phone10}?text=${encodeURIComponent(
-    `Hi ${ownerName}, I saw your room post on CampusNest. Is it currently available?`
+    `Hi ${ownerName}, I saw your room post on FlatsNFood. Is it currently available?`
   )}`
 
   const googleMapsUrl = descObj.location
@@ -158,7 +158,9 @@ export default function RoommateDetailPage() {
                   )}>
                     {roommate.gender === 'male' ? '👨 Boys Only' : roommate.gender === 'female' ? '👩 Girls Only' : '👥 Any Gender'}
                   </span>
-                  <span className="badge badge-purple shadow-md">✓ Verified Student</span>
+                  {((roommate as any).verified || (roommate as any).profiles?.verified) && (
+                    <span className="badge badge-purple shadow-md">✓ Verified Student</span>
+                  )}
                   <span className="badge badge-green shadow-md">🟢 Active Listing</span>
                 </div>
 
@@ -190,9 +192,15 @@ export default function RoommateDetailPage() {
                     <span className="px-2.5 py-0.5 rounded-full bg-brand-100 dark:bg-brand-950/80 text-brand-700 dark:text-brand-300 font-extrabold text-[11px] uppercase tracking-wide">
                       {roommate.looking_for}
                     </span>
-                    <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                      <ShieldCheck className="w-3.5 h-3.5" /> Verified Profile
-                    </span>
+                    {((roommate as any).verified || (roommate as any).profiles?.verified) ? (
+                      <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        <ShieldCheck className="w-3.5 h-3.5" /> Verified Profile
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+                        Pending Admin Verification
+                      </span>
+                    )}
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-display font-bold text-slate-900 dark:text-white">
                     {ownerName}
@@ -367,7 +375,7 @@ export default function RoommateDetailPage() {
                 <div>
                   <div className="flex items-center gap-1.5">
                     <h3 className="font-bold text-slate-900 dark:text-white text-base leading-tight">{ownerName}</h3>
-                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                    {((roommate as any).verified || (roommate as any).profiles?.verified) && <ShieldCheck className="w-4 h-4 text-emerald-500" />}
                   </div>
                   <p className="text-xs text-brand-600 dark:text-brand-400 font-semibold mt-0.5">{roommate.college}</p>
                   <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
@@ -411,7 +419,7 @@ export default function RoommateDetailPage() {
               <div className="p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 text-[11px] text-slate-500 dark:text-slate-400 flex items-start gap-2.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                 <p>
-                  <strong className="text-slate-700 dark:text-slate-200">100% Verified Student:</strong> CampusNest guarantees direct student-to-student contact with zero brokerage fee.
+                  <strong className="text-slate-700 dark:text-slate-200">100% Verified Student:</strong> FlatsNFood guarantees direct student-to-student contact with zero brokerage fee.
                 </p>
               </div>
             </div>

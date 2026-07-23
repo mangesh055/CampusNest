@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import {
   LayoutDashboard, Home, Building2, Utensils, Users, MessageCircle,
   Bell, Heart, Search, Settings, BarChart2, QrCode, Calendar,
-  CreditCard, FileText, Shield, LogOut, ChevronRight, Star, X
+  CreditCard, FileText, Shield, LogOut, ChevronRight, Star, X, ShoppingBag
 } from 'lucide-react'
 import { cn, getInitials } from '../../lib/utils'
 import { useAuthStore } from '../../store/authStore'
@@ -38,6 +38,8 @@ const adminLinks = [
   { label: 'Users', path: '/dashboard/admin/users', icon: Users },
   { label: 'Properties', path: '/dashboard/admin/properties', icon: Building2 },
   { label: 'Messes', path: '/dashboard/admin/messes', icon: Utensils },
+  { label: 'Roommates', path: '/dashboard/admin/roommates', icon: Users },
+  { label: 'Marketplace Posts', path: '/dashboard/admin/community', icon: ShoppingBag },
   { label: 'Analytics', path: '/dashboard/admin/analytics', icon: BarChart2 },
   { label: 'Settings', path: '/dashboard/settings', icon: Settings },
 ]

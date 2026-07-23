@@ -321,7 +321,7 @@ export default function ScheduleVisitModal({ property, isOpen, onClose }: Schedu
                 const digitsOnly = rawPhone.replace(/[^0-9]/g, '')
                 const phone10 = digitsOnly.length > 10 ? digitsOnly.slice(-10) : digitsOnly
                 const formattedPhone = `+91 ${phone10}`
-                const whatsappMsg = `Hi! I have scheduled a FREE visit to inspect "${property.title}" on ${selectedDateObj.dayLabel}, ${selectedDateObj.formattedStr} at ${selectedTimeSlot} via CampusNest. Please confirm if this time slot works for you!`
+                const whatsappMsg = `Hi! I have scheduled a FREE visit to inspect "${property.title}" on ${selectedDateObj.dayLabel}, ${selectedDateObj.formattedStr} at ${selectedTimeSlot} via FlatsNFood. Please confirm if this time slot works for you!`
                 const whatsappLink = `https://wa.me/91${phone10}?text=${encodeURIComponent(whatsappMsg)}`
 
                 return (

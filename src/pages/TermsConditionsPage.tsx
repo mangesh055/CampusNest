@@ -69,7 +69,7 @@ export default function TermsConditionsPage() {
       </section>
 
       <section id="role">
-        <h2>4. ROLE OF CAMPUSNEST</h2>
+        <h2>4. ROLE OF FLATSNFOOD</h2>
         
         <h3>4.1 Platform / Intermediary Status</h3>
         <p>FlatsNFood operates as an <strong>intermediary</strong> and <strong>e-commerce marketplace entity</strong> under the IT Act, 2000 and the Consumer Protection (E-Commerce) Rules, 2020. We:</p>

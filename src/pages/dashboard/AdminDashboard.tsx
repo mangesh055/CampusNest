@@ -51,6 +51,7 @@ export default function AdminDashboard() {
   const [userSearch, setUserSearch] = useState('')
   const [messSearch, setMessSearch] = useState('')
   const [propSearch, setPropSearch] = useState('')
+  const [communitySearch, setCommunitySearch] = useState('')
 
   const [overviewStats, setOverviewStats] = useState({
     totalStudents: 0,
@@ -66,6 +67,7 @@ export default function AdminDashboard() {
     setUserSearch('')
     setMessSearch('')
     setPropSearch('')
+    setCommunitySearch('')
 
     if (currentTab === 'users') {
       fetchUsers()
@@ -271,6 +273,26 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleApproveCommunity = async (id: string, title: string) => {
+    setCommunity(prev => prev.map(p => p.id === id ? { ...p, verified: true, rejected: false } : p))
+    try {
+      await supabase.from('community_posts').update({ verified: true }).eq('id', id)
+      alert(`Approved & Verified listing: "${title}"`)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleRejectCommunity = async (id: string, title: string) => {
+    setCommunity(prev => prev.map(p => p.id === id ? { ...p, verified: false, rejected: true } : p))
+    try {
+      await supabase.from('community_posts').update({ verified: false }).eq('id', id)
+      alert(`Rejected listing: "${title}". Status set to Rejected.`)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   const handleDeleteUser = async (id: string) => {
     const confirmation = window.prompt('Type "delete" to confirm user deletion. Note: This deletes the profile data.')
     if (confirmation !== 'delete') return
@@ -339,42 +361,42 @@ export default function AdminDashboard() {
   ]
 
   const handleApprove = async (id: string, name: string) => {
-    setMesses(prev => prev.map(m => m.id === id ? { ...m, verified: true } : m))
+    setMesses(prev => prev.map(m => m.id === id ? { ...m, verified: true, rejected: false } : m))
     try {
       await supabase.from('messes').update({ verified: true }).eq('id', id)
-      alert(`Approved ${name}`)
+      alert(`Approved & Verified Mess: "${name}"`)
     } catch(e) {
-      alert(`Simulated Approval of ${name}`)
+      alert(`Approved Mess: "${name}"`)
     }
   }
 
   const handleReject = async (id: string, name: string) => {
-    setMesses(prev => prev.map(m => m.id === id ? { ...m, verified: false } : m))
+    setMesses(prev => prev.map(m => m.id === id ? { ...m, verified: false, rejected: true } : m))
     try {
       await supabase.from('messes').update({ verified: false }).eq('id', id)
-      alert(`Rejected ${name}`)
+      alert(`Rejected Mess: "${name}". Status set to Rejected.`)
     } catch(e) {
-      alert(`Simulated Rejection of ${name}`)
+      alert(`Rejected Mess: "${name}"`)
     }
   }
 
   const handleApproveProperty = async (id: string, name: string) => {
-    setProperties(prev => prev.map(p => p.id === id ? { ...p, verified: true } : p))
+    setProperties(prev => prev.map(p => p.id === id ? { ...p, verified: true, rejected: false } : p))
     try {
       await supabase.from('properties').update({ verified: true }).eq('id', id)
-      alert(`Approved Property: ${name}`)
+      alert(`Approved & Verified Property: "${name}"`)
     } catch(e) {
-      alert(`Simulated Approval of Property: ${name}`)
+      alert(`Approved Property: "${name}"`)
     }
   }
 
   const handleRejectProperty = async (id: string, name: string) => {
-    setProperties(prev => prev.map(p => p.id === id ? { ...p, verified: false } : p))
+    setProperties(prev => prev.map(p => p.id === id ? { ...p, verified: false, rejected: true } : p))
     try {
       await supabase.from('properties').update({ verified: false }).eq('id', id)
-      alert(`Rejected Property: ${name}`)
+      alert(`Rejected Property: "${name}". Status set to Rejected.`)
     } catch(e) {
-      alert(`Simulated Rejection of Property: ${name}`)
+      alert(`Rejected Property: "${name}"`)
     }
   }
 
@@ -460,7 +482,7 @@ export default function AdminDashboard() {
                   <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" dark:stroke="#334155" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" className="stroke-slate-200 dark:stroke-slate-700" />
               <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#94a3b8" />
               <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
               <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
@@ -473,7 +495,7 @@ export default function AdminDashboard() {
           <h3 className="font-display font-bold text-slate-900 dark:text-white mb-4">Monthly Revenue (₹)</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={growthData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" dark:stroke="#334155" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" className="stroke-slate-200 dark:stroke-slate-700" />
               <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#94a3b8" />
               <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" tickFormatter={(val) => `₹${val / 1000}k`} />
               <Tooltip cursor={{ fill: 'rgba(99, 102, 241, 0.1)' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
@@ -628,19 +650,23 @@ export default function AdminDashboard() {
                 <td className="py-3 text-slate-500">{mess.address || 'Pune'}</td>
                 <td className="py-3">
                   {mess.verified ? (
-                     <span className="badge bg-emerald-50 text-emerald-600">Verified</span>
+                     <span className="badge bg-emerald-50 text-emerald-600 font-bold">✓ Verified</span>
+                  ) : mess.rejected ? (
+                     <span className="badge bg-red-50 text-red-600 font-bold">✕ Rejected</span>
                   ) : (
-                     <span className="badge bg-amber-50 text-amber-600">Pending Review</span>
+                     <span className="badge bg-amber-50 text-amber-600 font-bold">Pending Review</span>
                   )}
                 </td>
                 <td className="py-3 text-right flex gap-2 justify-end">
-                  {!mess.verified ? (
+                  {mess.verified ? (
+                    <button onClick={() => handleReject(mess.id, mess.name)} className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded text-xs font-bold transition-colors">Revoke</button>
+                  ) : mess.rejected ? (
+                    <button onClick={() => handleApprove(mess.id, mess.name)} className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded text-xs font-bold transition-colors">Re-Approve</button>
+                  ) : (
                     <>
                       <button onClick={() => handleApprove(mess.id, mess.name)} className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded text-xs font-bold transition-colors">Approve</button>
                       <button onClick={() => handleReject(mess.id, mess.name)} className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded text-xs font-bold transition-colors">Reject</button>
                     </>
-                  ) : (
-                    <button onClick={() => handleReject(mess.id, mess.name)} className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded text-xs font-bold transition-colors">Revoke</button>
                   )}
                   <button onClick={() => handleDeleteMess(mess.id)} className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs font-bold transition-colors">Delete</button>
                 </td>
@@ -700,19 +726,23 @@ export default function AdminDashboard() {
                   <td className="py-3 text-slate-500">{prop.address || 'Pune'}</td>
                   <td className="py-3">
                     {prop.verified ? (
-                       <span className="badge bg-emerald-50 text-emerald-600">Verified</span>
+                       <span className="badge bg-emerald-50 text-emerald-600 font-bold">✓ Verified</span>
+                    ) : prop.rejected ? (
+                       <span className="badge bg-red-50 text-red-600 font-bold">✕ Rejected</span>
                     ) : (
-                       <span className="badge bg-amber-50 text-amber-600">Pending Review</span>
+                       <span className="badge bg-amber-50 text-amber-600 font-bold">Pending Review</span>
                     )}
                   </td>
                   <td className="py-3 text-right flex gap-2 justify-end">
-                    {!prop.verified ? (
+                    {prop.verified ? (
+                      <button onClick={() => handleRejectProperty(prop.id, prop.title)} className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded text-xs font-bold transition-colors">Revoke</button>
+                    ) : prop.rejected ? (
+                      <button onClick={() => handleApproveProperty(prop.id, prop.title)} className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded text-xs font-bold transition-colors">Re-Approve</button>
+                    ) : (
                       <>
                         <button onClick={() => handleApproveProperty(prop.id, prop.title)} className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded text-xs font-bold transition-colors">Approve</button>
                         <button onClick={() => handleRejectProperty(prop.id, prop.title)} className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded text-xs font-bold transition-colors">Reject</button>
                       </>
-                    ) : (
-                      <button onClick={() => handleRejectProperty(prop.id, prop.title)} className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded text-xs font-bold transition-colors">Revoke</button>
                     )}
                     <button onClick={() => handleDeleteProperty(prop.id)} className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs font-bold transition-colors">Delete</button>
                   </td>
@@ -771,30 +801,86 @@ export default function AdminDashboard() {
 
   const renderCommunity = () => (
     <div className="card p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="font-display font-bold text-slate-900 dark:text-white">Community Posts</h3>
-        <button onClick={fetchCommunity} className="text-sm text-brand-500 hover:underline">Refresh</button>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div>
+          <h3 className="font-display font-bold text-slate-900 dark:text-white text-lg">
+            🛒 Marketplace & Community Listings
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Approve verification, inspect details, or remove community posts
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by title, category or seller..."
+              value={communitySearch}
+              onChange={(e) => setCommunitySearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:border-brand-500"
+            />
+          </div>
+          <button onClick={fetchCommunity} className="text-sm text-brand-500 hover:underline shrink-0">Refresh</button>
+        </div>
       </div>
+
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500">
-              <th className="pb-3 font-medium">Title</th>
+              <th className="pb-3 font-medium">Post / Item Title</th>
               <th className="pb-3 font-medium">Category</th>
+              <th className="pb-3 font-medium">Author / Seller</th>
+              <th className="pb-3 font-medium">Price</th>
+              <th className="pb-3 font-medium">Status</th>
               <th className="pb-3 font-medium text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {loadingCommunity ? (
-              <tr><td colSpan={3} className="py-8 text-center text-slate-500">Loading...</td></tr>
+              <tr><td colSpan={6} className="py-8 text-center text-slate-500">Loading marketplace posts...</td></tr>
             ) : community.length === 0 ? (
-              <tr><td colSpan={3} className="py-8 text-center text-slate-500">No posts found.</td></tr>
-            ) : community.map(post => (
+              <tr><td colSpan={6} className="py-8 text-center text-slate-500">No community posts found.</td></tr>
+            ) : community.filter(post => 
+                post.title?.toLowerCase().includes(communitySearch.toLowerCase()) || 
+                post.category?.toLowerCase().includes(communitySearch.toLowerCase()) ||
+                post.full_name?.toLowerCase().includes(communitySearch.toLowerCase())
+              ).map(post => (
               <tr key={post.id}>
                 <td className="py-3 font-medium text-slate-900 dark:text-white max-w-xs truncate">{post.title}</td>
-                <td className="py-3 text-slate-500 capitalize">{post.category}</td>
-                <td className="py-3 text-right">
-                  <button onClick={() => handleDeleteCommunity(post.id)} className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs font-bold transition-colors">Delete</button>
+                <td className="py-3 text-slate-500 capitalize">
+                  <span className="badge badge-purple text-[11px]">{post.category || 'General'}</span>
+                </td>
+                <td className="py-3 text-slate-500">{post.full_name || 'Anonymous Student'}</td>
+                <td className="py-3 font-semibold text-slate-800 dark:text-slate-200">
+                  {post.price !== undefined && post.price !== null ? formatCurrency(post.price) : 'Free / Discussion'}
+                </td>
+                <td className="py-3">
+                  {post.verified ? (
+                     <span className="badge bg-emerald-50 text-emerald-600 font-bold">✓ Verified Listing</span>
+                  ) : post.rejected ? (
+                     <span className="badge bg-red-50 text-red-600 font-bold">✕ Rejected</span>
+                  ) : (
+                     <span className="badge bg-amber-50 text-amber-600 font-bold">Pending Review</span>
+                  )}
+                </td>
+                <td className="py-3 text-right flex gap-1.5 justify-end">
+                  {post.verified ? (
+                    <button onClick={() => handleRejectCommunity(post.id, post.title)} className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg text-xs font-bold transition-colors">Revoke</button>
+                  ) : post.rejected ? (
+                    <button onClick={() => handleApproveCommunity(post.id, post.title)} className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg text-xs font-bold transition-colors">Re-Approve</button>
+                  ) : (
+                    <>
+                      <button onClick={() => handleApproveCommunity(post.id, post.title)} className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg text-xs font-bold transition-colors">Approve</button>
+                      <button onClick={() => handleRejectCommunity(post.id, post.title)} className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg text-xs font-bold transition-colors">Reject</button>
+                    </>
+                  )}
+                  <Link to={`/community/${post.id}`} target="_blank" className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold transition-colors">
+                    View
+                  </Link>
+                  <button onClick={() => handleDeleteCommunity(post.id)} className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition-colors">Delete</button>
                 </td>
               </tr>
             ))}

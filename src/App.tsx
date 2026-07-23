@@ -32,6 +32,7 @@ import ProfilePage from './pages/dashboard/ProfilePage'
 // Layouts
 import PublicLayout from './components/layout/PublicLayout'
 import ProtectedRoute from './components/ProtectedRoute'
+import CompleteProfileModal from './components/CompleteProfileModal'
 
 // Types
 import { useAuthStore } from './store/authStore'
@@ -194,6 +195,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <CompleteProfileModal />
       <ScrollToTop />
       <StudentQRButton />
       <Routes>
