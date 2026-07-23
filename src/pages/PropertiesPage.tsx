@@ -82,8 +82,8 @@ export default function PropertiesPage() {
     const fortyFiveDaysAgo = new Date()
     fortyFiveDaysAgo.setDate(fortyFiveDaysAgo.getDate() - 45)
     
-    // Automatically remove properties older than 45 days from the properties tab
-    let result = properties.filter(p => !p.created_at || isNaN(new Date(p.created_at).getTime()) || new Date(p.created_at) >= fortyFiveDaysAgo)
+    // Only display properties approved by admin (verified === true) and created within the last 45 days
+    let result = properties.filter(p => p.verified === true && (!p.created_at || isNaN(new Date(p.created_at).getTime()) || new Date(p.created_at) >= fortyFiveDaysAgo))
     
     if (search) {
       const q = search.toLowerCase()

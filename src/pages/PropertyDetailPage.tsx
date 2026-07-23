@@ -101,6 +101,20 @@ export default function PropertyDetailPage() {
     )
   }
 
+  const isOwnerOrAdmin = profile?.id === property.owner_id || profile?.role === 'admin'
+  if (property.verified === false && !isOwnerOrAdmin) {
+    return (
+      <div className="min-h-screen pt-24 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-4 text-center">
+        <div className="text-5xl mb-4">⏳</div>
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2">Pending Admin Approval</h2>
+        <p className="text-sm text-slate-500 max-w-md mb-6">
+          This property request/listing is currently under review by Admin and has not yet been approved for public display on the platform.
+        </p>
+        <Link to="/properties" className="btn-primary">Back to Properties</Link>
+      </div>
+    )
+  }
+
   const dynamicReviewCount = reviewsList.length
   const dynamicRating = dynamicReviewCount > 0
     ? (reviewsList.reduce((acc, curr) => acc + curr.rating, 0) / dynamicReviewCount).toFixed(1)
@@ -186,6 +200,16 @@ export default function PropertyDetailPage() {
         <Link to="/properties" className="inline-flex items-center gap-2 text-slate-500 hover:text-brand-600 transition-colors mb-6 text-sm">
           <ChevronLeft className="w-4 h-4" /> Back to Properties
         </Link>
+
+        {property.verified === false && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 flex items-center gap-3">
+            <span className="text-xl">⏳</span>
+            <div className="text-xs sm:text-sm">
+              <p className="font-bold">Pending Admin Approval</p>
+              <p>This property listing is under review by Admin and is visible only to you and Admin until approved.</p>
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6 lg:gap-8 items-start">
           {/* Left Top: Images + Details */}

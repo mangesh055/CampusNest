@@ -48,7 +48,7 @@ export default function HomePage() {
     const load = async () => {
       try {
         const [propertyRows, messRows] = await Promise.all([fetchProperties(), fetchMesses()])
-        setProperties(propertyRows)
+        setProperties((propertyRows || []).filter((p: any) => p.verified === true))
         setMesses(messRows)
         
         const { count: propsCount } = await supabase.from('properties').select('*', { count: 'exact', head: true })

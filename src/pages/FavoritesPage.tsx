@@ -32,7 +32,7 @@ export default function FavoritesPage() {
     loadData()
   }, [])
 
-  const savedProps = properties.filter(p => favoriteProperties.includes(p.id))
+  const savedProps = properties.filter(p => favoriteProperties.includes(p.id) && p.verified === true)
   const savedMesses = messes.filter(m => favoriteMesses.includes(m.id))
 
   if (loading) {
