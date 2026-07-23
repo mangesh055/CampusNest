@@ -50,9 +50,17 @@ export const useAuthStore = create<AuthState>()(
             return
           }
 
-          // Check if profile completion flag exists in localStorage override
+          // Check auth user metadata if phone is missing in DB table
+          const authUserRes = await supabase.auth.getUser()
+          const authUser = authUserRes.data?.user
+          const authPhone = authUser?.phone || authUser?.user_metadata?.phone || ''
+
           const localCompleted = localStorage.getItem(`flatsnfood_completed_profile_${userId}`) === 'true'
-          const finalProfile = localCompleted ? { ...data, is_profile_completed: true } : data
+          const finalProfile = {
+            ...data,
+            phone: data.phone || authPhone || '',
+            is_profile_completed: localCompleted ? true : Boolean(data.is_profile_completed)
+          }
 
           set({ profile: finalProfile, initialized: true, loading: false })
           return

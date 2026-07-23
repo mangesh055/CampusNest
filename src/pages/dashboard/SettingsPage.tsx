@@ -10,8 +10,8 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications' | 'preferences'>('profile')
   
   const [formData, setFormData] = useState({
-    fullName: profile?.full_name || '',
-    phone: profile?.phone || '',
+    fullName: profile?.full_name || user?.user_metadata?.full_name || '',
+    phone: profile?.phone || user?.phone || user?.user_metadata?.phone || '',
     gender: profile?.gender || 'male',
     college: profile?.college || '',
     branch: profile?.branch || '',
@@ -45,20 +45,20 @@ export default function SettingsPage() {
 
   // Sync form state when profile changes
   useEffect(() => {
-    if (profile) {
+    if (profile || user) {
       setFormData(prev => ({
         ...prev,
-        fullName: profile.full_name || '',
-        phone: profile.phone || '',
-        gender: profile.gender || 'male',
-        college: profile.college || '',
-        branch: profile.branch || '',
-        bio: profile.bio || '',
-        emailNotifications: profile.email_notifications ?? true,
-        pushNotifications: profile.push_notifications ?? false
+        fullName: profile?.full_name || user?.user_metadata?.full_name || prev.fullName,
+        phone: profile?.phone || user?.phone || user?.user_metadata?.phone || prev.phone,
+        gender: profile?.gender || 'male',
+        college: profile?.college || '',
+        branch: profile?.branch || '',
+        bio: profile?.bio || '',
+        emailNotifications: profile?.email_notifications ?? true,
+        pushNotifications: profile?.push_notifications ?? false
       }))
     }
-  }, [profile])
+  }, [profile, user])
 
   const handleVerifyPassword = async () => {
     if (!currentPassword || !user?.email) return
@@ -334,7 +334,7 @@ export default function SettingsPage() {
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                         maxLength={10}
-                        placeholder="7517807405"
+                        placeholder="Enter 10-digit mobile number"
                         className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:border-brand-500"
                       />
                     </div>
