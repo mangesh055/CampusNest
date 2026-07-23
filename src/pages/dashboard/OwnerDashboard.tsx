@@ -1367,82 +1367,160 @@ export default function OwnerDashboard() {
                                 </div>
 
                                 {isSelected && config && (
-                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                                    <div>
-                                      <label className="text-[10px] text-slate-500 font-medium">Rent (₹/mo)</label>
-                                      <input
-                                        type="text"
-                                        inputMode="numeric"
-                                        value={config.rent === 0 ? '' : config.rent}
-                                        placeholder="0"
-                                        onFocus={(e) => e.target.select()}
-                                        onChange={(e) => {
-                                          const cleanStr = e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
-                                          const val = cleanStr === '' ? 0 : Number(cleanStr)
-                                          setSharingConfigs(prev => prev.map(c => c.sharing_type === type ? { ...c, rent: val } : c))
-                                        }}
-                                        className="input-field py-1 text-xs font-semibold"
-                                      />
+                                  <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                      <div>
+                                        <label className="text-[10px] text-slate-500 font-medium">Rent (₹/mo)</label>
+                                        <input
+                                          type="text"
+                                          inputMode="numeric"
+                                          value={config.rent === 0 ? '' : config.rent}
+                                          placeholder="0"
+                                          onFocus={(e) => e.target.select()}
+                                          onChange={(e) => {
+                                            const cleanStr = e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
+                                            const val = cleanStr === '' ? 0 : Number(cleanStr)
+                                            setSharingConfigs(prev => prev.map(c => c.sharing_type === type ? { ...c, rent: val } : c))
+                                          }}
+                                          className="input-field py-1 text-xs font-semibold"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-[10px] text-slate-500 font-medium">Deposit (₹)</label>
+                                        <input
+                                          type="text"
+                                          inputMode="numeric"
+                                          value={config.deposit === 0 ? '' : config.deposit}
+                                          placeholder="0"
+                                          onFocus={(e) => e.target.select()}
+                                          onChange={(e) => {
+                                            const cleanStr = e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
+                                            const val = cleanStr === '' ? 0 : Number(cleanStr)
+                                            setSharingConfigs(prev => prev.map(c => c.sharing_type === type ? { ...c, deposit: val } : c))
+                                          }}
+                                          className="input-field py-1 text-xs font-semibold"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-[10px] text-slate-500 font-medium">Avail. Beds</label>
+                                        <input
+                                          type="text"
+                                          inputMode="numeric"
+                                          value={config.available_beds === 0 ? '' : config.available_beds}
+                                          placeholder="0"
+                                          onFocus={(e) => e.target.select()}
+                                          onChange={(e) => {
+                                            const cleanStr = e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
+                                            const val = cleanStr === '' ? 0 : Number(cleanStr)
+                                            setSharingConfigs(prev => prev.map(c => c.sharing_type === type ? { ...c, available_beds: val } : c))
+                                          }}
+                                          className="input-field py-1 text-xs font-semibold"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-[10px] text-slate-500 font-medium">Total Beds</label>
+                                        <input
+                                          type="text"
+                                          inputMode="numeric"
+                                          value={config.total_beds === 0 ? '' : config.total_beds}
+                                          placeholder="0"
+                                          onFocus={(e) => e.target.select()}
+                                          onChange={(e) => {
+                                            const cleanStr = e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
+                                            const val = cleanStr === '' ? 0 : Number(cleanStr)
+                                            setSharingConfigs(prev => prev.map(c => c.sharing_type === type ? { ...c, total_beds: val } : c))
+                                          }}
+                                          className="input-field py-1 text-xs font-semibold"
+                                        />
+                                      </div>
                                     </div>
-                                    <div>
-                                      <label className="text-[10px] text-slate-500 font-medium">Deposit (₹)</label>
-                                      <input
-                                        type="text"
-                                        inputMode="numeric"
-                                        value={config.deposit === 0 ? '' : config.deposit}
-                                        placeholder="0"
-                                        onFocus={(e) => e.target.select()}
-                                        onChange={(e) => {
-                                          const cleanStr = e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
-                                          const val = cleanStr === '' ? 0 : Number(cleanStr)
-                                          setSharingConfigs(prev => prev.map(c => c.sharing_type === type ? { ...c, deposit: val } : c))
-                                        }}
-                                        className="input-field py-1 text-xs font-semibold"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="text-[10px] text-slate-500 font-medium">Avail. Beds</label>
-                                      <input
-                                        type="text"
-                                        inputMode="numeric"
-                                        value={config.available_beds === 0 ? '' : config.available_beds}
-                                        placeholder="0"
-                                        onFocus={(e) => e.target.select()}
-                                        onChange={(e) => {
-                                          const cleanStr = e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
-                                          const val = cleanStr === '' ? 0 : Number(cleanStr)
-                                          setSharingConfigs(prev => prev.map(c => c.sharing_type === type ? { ...c, available_beds: val } : c))
-                                        }}
-                                        className="input-field py-1 text-xs font-semibold"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="text-[10px] text-slate-500 font-medium">Total Beds</label>
-                                      <input
-                                        type="text"
-                                        inputMode="numeric"
-                                        value={config.total_beds === 0 ? '' : config.total_beds}
-                                        placeholder="0"
-                                        onFocus={(e) => e.target.select()}
-                                        onChange={(e) => {
-                                          const cleanStr = e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
-                                          const val = cleanStr === '' ? 0 : Number(cleanStr)
-                                          setSharingConfigs(prev => prev.map(c => c.sharing_type === type ? { ...c, total_beds: val } : c))
-                                        }}
-                                        className="input-field py-1 text-xs font-semibold"
-                                      />
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            )
-                          })}
-                        </div>
+
+                                     {/* Tier-specific Amenity Toggles */}
+                                     <div className="flex flex-wrap gap-2 text-[10px] pt-1">
+                                       <button
+                                         type="button"
+                                         onClick={() => setSharingConfigs(prev => prev.map(c => c.sharing_type === type ? { ...c, attached_bathroom: !c.attached_bathroom } : c))}
+                                         className={`px-2.5 py-1 rounded-full border transition-all ${config.attached_bathroom ? 'bg-purple-600 text-white border-purple-600' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}
+                                       >
+                                         🚿 Attached Bath
+                                       </button>
+                                       <button
+                                         type="button"
+                                         onClick={() => setSharingConfigs(prev => prev.map(c => c.sharing_type === type ? { ...c, ac: !c.ac } : c))}
+                                         className={`px-2.5 py-1 rounded-full border transition-all ${config.ac ? 'bg-purple-600 text-white border-purple-600' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}
+                                       >
+                                         ❄️ AC Room
+                                       </button>
+                                       <button
+                                         type="button"
+                                         onClick={() => setSharingConfigs(prev => prev.map(c => c.sharing_type === type ? { ...c, balcony: !c.balcony } : c))}
+                                         className={`px-2.5 py-1 rounded-full border transition-all ${config.balcony ? 'bg-purple-600 text-white border-purple-600' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}
+                                       >
+                                         🌅 Private Balcony
+                                       </button>
+                                       <button
+                                         type="button"
+                                         onClick={() => setSharingConfigs(prev => prev.map(c => c.sharing_type === type ? { ...c, study_desk: !c.study_desk } : c))}
+                                         className={`px-2.5 py-1 rounded-full border transition-all ${config.study_desk ? 'bg-purple-600 text-white border-purple-600' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}
+                                       >
+                                         📚 Dedicated Study Desk
+                                       </button>
+                                       <button
+                                         type="button"
+                                         onClick={() => setSharingConfigs(prev => prev.map(c => c.sharing_type === type ? { ...c, personal_wardrobe: !c.personal_wardrobe } : c))}
+                                         className={`px-2.5 py-1 rounded-full border transition-all ${config.personal_wardrobe ? 'bg-purple-600 text-white border-purple-600' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}
+                                       >
+                                         🚪 Personal Wardrobe
+                                       </button>
+                                     </div>
+
+                                     {/* Tier-Specific Photos Upload */}
+                                     <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                                       <label className="block text-[10px] font-bold text-slate-700 dark:text-slate-300">
+                                         📸 {label} Room Photos
+                                       </label>
+                                       {(config.images && config.images.length > 0) && (
+                                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                           {config.images.map((img, i) => (
+                                             <div key={i} className="relative aspect-video rounded-lg overflow-hidden group border border-slate-200 dark:border-slate-700">
+                                               <img src={img} alt={`${label} Preview ${i}`} className="w-full h-full object-cover" />
+                                               <button
+                                                 type="button"
+                                                 onClick={() => removeTierImage(type, i)}
+                                                 className="absolute top-1 right-1 bg-red-500/80 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                               >
+                                                 <X className="w-3 h-3" />
+                                               </button>
+                                             </div>
+                                           ))}
+                                         </div>
+                                       )}
+                                       <div className="flex gap-2">
+                                         <label className={`flex-1 cursor-pointer bg-purple-50/50 hover:bg-purple-100/50 dark:bg-purple-950/40 dark:hover:bg-purple-900/50 border border-dashed border-purple-300 dark:border-purple-700 rounded-lg p-2 flex flex-col items-center justify-center transition-colors ${isUploading ? 'opacity-50 cursor-wait' : ''}`}>
+                                           <Plus className="w-4 h-4 text-purple-500 mb-0.5" />
+                                           <span className="text-[10px] text-purple-700 dark:text-purple-300 font-medium">{isUploading ? 'Uploading...' : 'Upload Room Photos'}</span>
+                                           <input type="file" multiple accept="image/*" onChange={(e) => handleTierFileUpload(e, type)} disabled={isUploading} className="hidden" />
+                                         </label>
+                                         <button
+                                           type="button"
+                                           onClick={() => handleTierAddImageUrl(type)}
+                                           className="flex-[0.8] bg-purple-50/50 hover:bg-purple-100/50 dark:bg-purple-950/40 dark:hover:bg-purple-900/50 border border-dashed border-purple-300 dark:border-purple-700 rounded-lg p-2 flex flex-col items-center justify-center transition-colors"
+                                         >
+                                           <Plus className="w-4 h-4 text-purple-500 mb-0.5" />
+                                           <span className="text-[10px] text-purple-700 dark:text-purple-300 font-medium">Link</span>
+                                         </button>
+                                       </div>
+                                     </div>
+                                   </div>
+                                 )}
+                               </div>
+                             )
+                           })}
+                         </div>
 
                         {/* Hostel Warden & Curfew */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-purple-200 dark:border-purple-800/60">
                           <div>
-                            <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Warden Phone Number</label>
                             <input
                               type="text"
                               value={hostelConfig?.warden_phone || ''}
