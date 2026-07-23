@@ -150,15 +150,34 @@ export const useAuthStore = create<AuthState>()(
           .upsert(dbPayload, { onConflict: 'id' })
 
         if (upsertErr) {
-          console.error('Supabase profile upsert error:', upsertErr)
-          const { error: updateErr } = await supabase
-            .from('profiles')
-            .update(dbPayload)
-            .eq('id', currentProfile.id)
+          console.warn('Supabase profile upsert warning:', upsertErr.message)
+          
+          // If a column like 'is_profile_completed' is missing in Supabase schema, retry with basic core columns
+          const safePayload: Record<string, any> = {
+            id: currentProfile.id,
+            email: currentProfile.email || '',
+            full_name: updatedProfile.full_name || '',
+            phone: updatedProfile.phone || '',
+            gender: updatedProfile.gender || 'male',
+            role: updatedProfile.role || 'student',
+            avatar_url: updatedProfile.avatar_url || '',
+            updated_at: new Date().toISOString()
+          }
 
-          if (updateErr) {
-            console.error('Supabase profile update error:', updateErr)
-            return { success: false, error: updateErr.message }
+          const { error: fallbackErr } = await supabase
+            .from('profiles')
+            .upsert(safePayload, { onConflict: 'id' })
+
+          if (fallbackErr) {
+            const { error: updateErr } = await supabase
+              .from('profiles')
+              .update(safePayload)
+              .eq('id', currentProfile.id)
+
+            if (updateErr) {
+              console.error('Supabase profile update error:', updateErr)
+              return { success: false, error: updateErr.message }
+            }
           }
         }
 
