@@ -89,9 +89,8 @@ export default function CompleteProfileModal() {
         localStorage.setItem(`flatsnfood_completed_profile_${profile.id}`, 'true')
       }
 
-      // 4. Redirect to the target dashboard
-      const targetRole = role === 'property_owner' ? 'owner' : role === 'mess_owner' ? 'mess' : 'student'
-      navigate(`/dashboard/${targetRole}`, { replace: true })
+      // 4. Redirect to homepage
+      navigate('/', { replace: true })
     } catch (err: any) {
       setDismissed(false)
       setError(err.message || 'An unexpected error occurred. Please try again.')

@@ -41,12 +41,12 @@ export default function AuthPage() {
         const [
           { count: propsCount },
           { count: messesCount },
-          { count: studentsCount },
+          { count: profilesCount },
           { data: reviews }
         ] = await Promise.all([
           supabase.from('properties').select('*', { count: 'exact', head: true }),
           supabase.from('messes').select('*', { count: 'exact', head: true }),
-          supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
+          supabase.from('profiles').select('*', { count: 'exact', head: true }),
           supabase.from('reviews').select('rating')
         ])
 
@@ -59,10 +59,14 @@ export default function AuthPage() {
           }
         }
 
+        const validProps = propsCount !== null && propsCount !== undefined ? propsCount : 0
+        const validMesses = messesCount !== null && messesCount !== undefined ? messesCount : 0
+        const validStudents = profilesCount !== null && profilesCount !== undefined ? profilesCount : 0
+
         setStats({
-          properties: propsCount ? `${propsCount}+` : '1,200+',
-          messes: messesCount ? `${messesCount}+` : '400+',
-          students: studentsCount ? `${studentsCount}+` : '5,000+',
+          properties: `${validProps}+`,
+          messes: `${validMesses}+`,
+          students: `${validStudents}+`,
           rating: avgRating.toString()
         })
       } catch (error) {
