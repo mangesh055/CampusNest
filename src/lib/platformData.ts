@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import type { CommunityPost, Mess, MessPlan, Property, Review, RoommateProfile } from '../types'
+import { mockPosts } from '../data/mockData'
 
 const cache = {
   properties: null as Property[] | null,
@@ -10,6 +11,10 @@ const cache = {
   roommatesPromise: null as Promise<RoommateProfile[]> | null,
   posts: null as CommunityPost[] | null,
   postsPromise: null as Promise<CommunityPost[]> | null,
+}
+
+export function getCommunityCache(): CommunityPost[] {
+  return cache.posts && cache.posts.length > 0 ? cache.posts : (mockPosts as any[])
 }
 
 export function invalidatePlatformCache() {
@@ -88,20 +93,30 @@ export async function fetchRoommateProfiles(forceRefresh = false) {
 
 export async function fetchCommunityPosts(forceRefresh = false) {
   if (forceRefresh) cache.postsPromise = null
-  if (cache.posts && !forceRefresh) return cache.posts
+  if (cache.posts && cache.posts.length > 0 && !forceRefresh) return cache.posts
 
   if (!cache.postsPromise) {
     cache.postsPromise = (async () => {
-      const { data, error } = await supabase
-        .from('community_posts')
-        .select('*')
-        .order('created_at', { ascending: false })
-      if (error) throw error
-      cache.posts = (data || []) as CommunityPost[]
-      return cache.posts
+      try {
+        const { data, error } = await supabase
+          .from('community_posts')
+          .select('*')
+          .order('created_at', { ascending: false })
+
+        if (!error && data && data.length > 0) {
+          cache.posts = data as CommunityPost[]
+        } else {
+          cache.posts = mockPosts as any[]
+        }
+        return cache.posts
+      } catch (err) {
+        cache.posts = mockPosts as any[]
+        return cache.posts
+      }
     })().catch((err: any) => {
       cache.postsPromise = null
-      throw err
+      cache.posts = mockPosts as any[]
+      return mockPosts as any[]
     })
   }
   return cache.postsPromise as Promise<CommunityPost[]>

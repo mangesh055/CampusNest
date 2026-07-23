@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/authStore'
 import { useNavigate } from 'react-router-dom'
 import type { CommunityPost } from '../types'
 import { cn, formatCurrency } from '../lib/utils'
-import { fetchCommunityComments, fetchCommunityPosts, invalidatePlatformCache } from '../lib/platformData'
+import { fetchCommunityComments, fetchCommunityPosts, getCommunityCache, invalidatePlatformCache } from '../lib/platformData'
 import { supabase } from '../lib/supabase'
 
 const categoryConfig = {
@@ -24,8 +24,8 @@ export default function CommunityPage() {
   const { profile } = useAuthStore()
   const navigate = useNavigate()
 
-  // State
-  const [posts, setPosts] = useState<any[]>([])
+  // State initialized from instant cache to prevent white screens or delay on navigate back
+  const [posts, setPosts] = useState<any[]>(() => getCommunityCache())
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [showModal, setShowModal] = useState(false)
@@ -84,21 +84,24 @@ export default function CommunityPage() {
   }, [showModal])
 
   useEffect(() => {
+    let isMounted = true
     const load = async () => {
       try {
         const postRows = await fetchCommunityPosts()
-        const merged = (postRows || []).map((post: any) => ({
-          ...post,
-          profiles: { id: post.author_id, full_name: post.full_name, email: post.email }
-        }))
-        setPosts(merged)
+        if (isMounted && postRows) {
+          const merged = postRows.map((post: any) => ({
+            ...post,
+            profiles: { id: post.author_id, full_name: post.full_name || 'Campus Student', email: post.email }
+          }))
+          setPosts(merged)
+        }
       } catch (error) {
-        console.error('Failed to load community data from Supabase:', error)
-        setPosts([])
+        console.error('Failed to load community data:', error)
       }
     }
 
     load()
+    return () => { isMounted = false }
   }, [])
 
   const handleCreatePost = (e: React.FormEvent) => {
