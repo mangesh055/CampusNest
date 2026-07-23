@@ -117,7 +117,10 @@ function DashboardRedirect() {
 import { supabase } from './lib/supabase'
 
 export default function App() {
-  const [darkMode, setDarkMode] = useState(false)
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('theme')
+    return saved === 'dark'
+  })
 
   const { setUser, setSession, fetchProfile, setLoading } = useAuthStore()
 
