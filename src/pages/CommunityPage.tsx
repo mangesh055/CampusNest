@@ -293,7 +293,7 @@ export default function CommunityPage() {
                   <motion.div
                     layout
                     key={post.id}
-                    onClick={() => navigate(`/community/${post.id}`)}
+                    onClick={() => navigate(`/community/${post.id}`, { state: { post } })}
                     className="card p-3 sm:p-4 border-slate-200 hover:border-slate-300 transition-all dark:border-slate-800 cursor-pointer hover:shadow-md flex flex-col h-full"
                   >
                     {/* Post Meta */}

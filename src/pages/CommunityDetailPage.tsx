@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   ArrowLeft, Phone, MessageSquare, MapPin, Tag, Calendar, ShieldCheck, 
@@ -8,12 +8,16 @@ import {
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { cn, formatCurrency, getInitials } from '../lib/utils'
+import { fetchCommunityPosts } from '../lib/platformData'
 
 export default function CommunityDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [post, setPost] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const routeLocation = useLocation()
+  const statePost = routeLocation.state?.post
+
+  const [post, setPost] = useState<any>(statePost || null)
+  const [loading, setLoading] = useState(!statePost)
   const [favorited, setFavorited] = useState(false)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
@@ -21,23 +25,45 @@ export default function CommunityDetailPage() {
 
   useEffect(() => {
     window.scrollTo(0, 0)
+    let isMounted = true
+
     const load = async () => {
+      // Check cache first for instant load
       try {
-        const { data, error } = await supabase
+        const cachedPosts = await fetchCommunityPosts()
+        const found = cachedPosts.find((p: any) => String(p.id) === String(id))
+        if (found && isMounted) {
+          setPost(found)
+          setLoading(false)
+          return
+        }
+      } catch (e) {}
+
+      // Direct Supabase query with timeout fallback
+      try {
+        const fetchPromise = supabase
           .from('community_posts')
           .select('*')
           .eq('id', id)
           .single()
-        
-        if (error) throw error
-        setPost(data)
+
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout loading post details')), 3500)
+        )
+
+        const res: any = await Promise.race([fetchPromise, timeoutPromise])
+        if (res?.data && isMounted) {
+          setPost(res.data)
+        }
       } catch (err) {
         console.error('Failed to load community post details:', err)
       } finally {
-        setLoading(false)
+        if (isMounted) setLoading(false)
       }
     }
+
     load()
+    return () => { isMounted = false }
   }, [id])
 
   if (loading) {
