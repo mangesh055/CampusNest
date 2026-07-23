@@ -73,8 +73,9 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
             <Building2 className="w-4 h-4 text-white" />
           </div>
           <span className="text-lg font-display font-bold">
-            <span className="gradient-text">Campus</span>
-            <span className="text-slate-900 dark:text-white">Nest</span>
+            <span className="text-slate-900 dark:text-white">Flats</span>
+            <span className="gradient-text">N</span>
+            <span className="text-slate-900 dark:text-white">Food</span>
           </span>
         </Link>
         {onClose && (

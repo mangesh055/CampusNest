@@ -165,7 +165,8 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
               <Building2 className="w-5 h-5 text-white" />
             </div>
             <span className="text-xl font-display font-bold">
-              <span className="gradient-text">FlatsN</span>
+              <span className="text-slate-900 dark:text-white">Flats</span>
+              <span className="gradient-text">N</span>
               <span className="text-slate-900 dark:text-white">Food</span>
             </span>
           </Link>

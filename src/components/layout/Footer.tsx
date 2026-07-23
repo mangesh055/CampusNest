@@ -63,9 +63,9 @@ export default function Footer() {
           <div className="col-span-2 md:col-span-2 lg:col-span-1">
             <h4 className="text-white font-semibold mb-4">Contact Us</h4>
             <ul className="space-y-3 text-sm">
-              <li className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-brand-400 flex-shrink-0" />
-                <a href="tel:+918999295362" className="hover:text-white transition-colors">+91 8999 295 362 / 7517 807 405</a>
+              <li className="flex items-start gap-2">
+                <Phone className="w-4 h-4 text-brand-400 flex-shrink-0 mt-0.5" />
+                <a href="tel:+918999295362" className="hover:text-white transition-colors tracking-wide">+91 8999295362 / 7517807405</a>
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-brand-400 flex-shrink-0" />

@@ -299,7 +299,7 @@ export default function TermsConditionsPage() {
         <p>For questions about these Terms:</p>
         <ul>
           <li><strong>Email:</strong> legal@flatsnfoods.in</li>
-          <li><strong>Phone:</strong> +91 8999 295 362 / 7517 807 405</li>
+          <li><strong>Phone:</strong> +91 8999295362 / 7517807405</li>
           <li><strong>Address:</strong> [Registered Office Address]</li>
         </ul>
       </section>

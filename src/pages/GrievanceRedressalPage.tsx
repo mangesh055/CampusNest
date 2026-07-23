@@ -79,7 +79,7 @@ export default function GrievanceRedressalPage() {
               </tr>
               <tr className="border-b dark:border-slate-700">
                 <td className="px-4 py-3 font-semibold bg-slate-50 dark:bg-slate-800">Phone</td>
-                <td className="px-4 py-3">+91 8999 295 362 / 7517 807 405</td>
+                <td className="px-4 py-3">+91 8999295362 / 7517807405</td>
               </tr>
               <tr className="border-b dark:border-slate-700">
                 <td className="px-4 py-3 font-semibold bg-slate-50 dark:bg-slate-800">Postal Address</td>
@@ -363,7 +363,7 @@ export default function GrievanceRedressalPage() {
           <li><strong>Grievance Officer Email:</strong> support.flatsnfoods@gmail.com</li>
           <li><strong>Escalations:</strong> support.flatsnfoods@gmail.com</li>
           <li><strong>General Support:</strong> support.flatsnfoods@gmail.com</li>
-          <li><strong>Phone:</strong> +91 8999 295 362 / 7517 807 405</li>
+          <li><strong>Phone:</strong> +91 8999295362 / 7517807405</li>
           <li><strong>Address:</strong> [Registered Office Address]</li>
         </ul>
       </section>
