@@ -36,14 +36,14 @@ export default function MessCard({ mess, index = 0 }: MessCardProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.05 }}
-      whileHover={{ y: -8, scale: 1.01 }}
-      whileTap={{ scale: 0.98 }}
+      initial={{ opacity: 0, y: 24, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1], delay: index * 0.05 }}
+      whileHover={{ y: -8, scale: 1.015, transition: { type: 'spring', stiffness: 350, damping: 22 } }}
+      whileTap={{ scale: 0.985 }}
       className="h-full"
     >
-      <Link to={`/mess/${mess.id}`} className="card-property group flex flex-col h-full p-2 transition-all duration-300 hover:shadow-xl hover:shadow-brand-500/10 border border-transparent hover:border-brand-500/20">
+      <Link to={`/mess/${mess.id}`} className="card-property card-shine group flex flex-col h-full p-2 transition-all duration-300 hover:shadow-2xl hover:shadow-brand-500/15 border border-transparent hover:border-brand-500/30">
         {/* Image */}
         <div className="relative overflow-hidden h-40 sm:h-48 rounded-xl shrink-0">
           <img
@@ -54,39 +54,46 @@ export default function MessCard({ mess, index = 0 }: MessCardProps) {
           />
           {/* Slideshow Dots */}
           {mess.photos && mess.photos.length > 1 && (
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10 bg-black/20 p-1 rounded-full backdrop-blur-sm">
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10 bg-black/30 p-1 rounded-full backdrop-blur-md">
               {mess.photos.map((_, i) => (
                 <div
                   key={i}
                   className={cn("w-1.5 h-1.5 rounded-full transition-all duration-300",
-                    i === currentImageIndex ? "bg-white scale-125" : "bg-white/50"
+                    i === currentImageIndex ? "bg-white scale-125 shadow-sm" : "bg-white/50"
                   )}
                 />
               ))}
             </div>
           )}
           {/* Status Badge */}
-          <div className="absolute top-3 left-3 flex gap-2">
-            <span className={cn('badge shadow-sm text-[10px]', statusCfg.color)}>
-              {statusCfg.dot} {statusCfg.label}
+          <div className="absolute top-3 left-3 flex gap-2 z-10">
+            <span className={cn('badge shadow-sm text-[10px] items-center gap-1.5', statusCfg.color)}>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-current"></span>
+              </span>
+              {statusCfg.label}
             </span>
             {mess.featured && (
-              <span className="badge badge-orange text-[10px] shadow-sm">⭐ Featured</span>
+              <span className="badge badge-orange text-[10px] shadow-sm animate-badge-pulse">⭐ Featured</span>
             )}
           </div>
           {/* Favorite */}
-          <button
+          <motion.button
+            whileHover={{ scale: 1.15 }}
+            whileTap={{ scale: 0.85 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 17 }}
             onClick={(e) => { e.preventDefault(); toggleMessFavorite(mess.id) }}
             className={cn(
-              'absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-sm',
-              favorited ? 'bg-red-500 text-white' : 'bg-white/90 text-slate-600 hover:bg-white hover:text-red-500'
+              'absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-300 shadow-md backdrop-blur-sm z-10',
+              favorited ? 'bg-red-500 text-white shadow-red-500/30' : 'bg-white/90 dark:bg-slate-900/90 text-slate-600 dark:text-slate-300 hover:bg-white hover:text-red-500'
             )}
           >
-            <Heart className={cn('w-4 h-4', favorited && 'fill-current')} />
-          </button>
+            <Heart className={cn('w-4 h-4 transition-transform duration-200', favorited && 'fill-current scale-110')} />
+          </motion.button>
           {/* Verified */}
           {mess.verified && (
-            <div className="absolute bottom-3 right-3 badge badge-green text-[10px] shadow-sm">
+            <div className="absolute bottom-3 right-3 badge badge-green text-[10px] shadow-sm z-10">
               ✓ Verified
             </div>
           )}

@@ -81,15 +81,15 @@ export default function PropertiesPage() {
     fortyFiveDaysAgo.setDate(fortyFiveDaysAgo.getDate() - 45)
     
     // Automatically remove properties older than 45 days from the properties tab
-    let result = properties.filter(p => new Date(p.created_at) >= fortyFiveDaysAgo)
+    let result = properties.filter(p => !p.created_at || isNaN(new Date(p.created_at).getTime()) || new Date(p.created_at) >= fortyFiveDaysAgo)
     
     if (search) {
       const q = search.toLowerCase()
       result = result.filter(p => {
-        const matchesDirect = p.title.toLowerCase().includes(q) || 
-                              p.address.toLowerCase().includes(q) || 
-                              p.city.toLowerCase().includes(q) ||
-                              p.property_type.toLowerCase().includes(q)
+        const matchesDirect = (p.title || '').toLowerCase().includes(q) || 
+                              (p.address || '').toLowerCase().includes(q) || 
+                              (p.city || '').toLowerCase().includes(q) ||
+                              (p.property_type || '').toLowerCase().includes(q)
         if (matchesDirect) return true
 
         // Keyword search matching

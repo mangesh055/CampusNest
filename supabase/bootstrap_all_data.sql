@@ -48,8 +48,13 @@ CREATE TABLE IF NOT EXISTS public.properties (
   rating numeric DEFAULT 5.0,
   review_count integer DEFAULT 0,
   images text[],
+  video_url text,
   amenities jsonb,
   google_maps_url text,
+  sharing_configs jsonb DEFAULT '[]'::jsonb,
+  flat_config jsonb DEFAULT '{}'::jsonb,
+  hostel_config jsonb DEFAULT '{}'::jsonb,
+  pg_config jsonb DEFAULT '{}'::jsonb,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );

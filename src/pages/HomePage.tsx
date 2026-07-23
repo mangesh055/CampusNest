@@ -92,108 +92,132 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-grid opacity-10" />
         </div>
 
-        {/* Floating Elements */}
-        <motion.div
-          animate={{ y: [0, -15, 0] }}
-          transition={{ duration: 4, repeat: Infinity }}
-          className="absolute top-24 left-10 lg:left-24 hidden lg:block"
-        >
-          <div className="glass rounded-2xl p-3.5 text-white shadow-xl border border-white/10">
+        {/* Floating Elements with Out-of-Sync Bobbing */}
+        <div className="absolute top-24 left-10 lg:left-24 hidden lg:block animate-float-left z-10">
+          <div className="glass rounded-2xl p-3.5 text-white shadow-2xl border border-white/15 backdrop-blur-md">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center">🏠</div>
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/25 flex items-center justify-center text-lg">🏠</div>
               <div>
                 <p className="text-xs font-semibold">New Listing!</p>
-                <p className="text-[10px] opacity-70">Sunshine PG, Kothrud</p>
+                <p className="text-[10px] opacity-75">Sunshine PG, Kothrud</p>
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
 
-        <motion.div
-          animate={{ y: [0, 15, 0] }}
-          transition={{ duration: 4, repeat: Infinity, delay: 2 }}
-          className="absolute top-32 right-10 lg:right-24 hidden lg:block"
-        >
-          <div className="glass rounded-2xl p-3.5 text-white shadow-xl border border-white/10">
+        <div className="absolute top-32 right-10 lg:right-24 hidden lg:block animate-float-right z-10">
+          <div className="glass rounded-2xl p-3.5 text-white shadow-2xl border border-white/15 backdrop-blur-md">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center">✅</div>
+              <div className="w-9 h-9 rounded-xl bg-amber-500/25 flex items-center justify-center text-lg">✅</div>
               <div>
                 <p className="text-xs font-semibold">Meal Attended!</p>
-                <p className="text-[10px] opacity-70">Maa Ki Rasoi - Lunch</p>
+                <p className="text-[10px] opacity-75">Maa Ki Rasoi - Lunch</p>
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Hero Content */}
         <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className={cn(
-              "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs sm:text-sm font-medium mb-4",
-              searchTab === 'mess' 
-                ? "bg-accent-500/20 border-accent-500/30 text-accent-300" 
-                : "bg-brand-500/20 border-brand-500/30 text-brand-300"
-            )}>
-              <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className={cn(
+                "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs sm:text-sm font-medium mb-4 shadow-sm backdrop-blur-md",
+                searchTab === 'mess' 
+                  ? "bg-accent-500/20 border-accent-500/30 text-accent-300" 
+                  : "bg-brand-500/20 border-brand-500/30 text-brand-300"
+              )}
+            >
+              <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 animate-pulse" />
               {searchTab === 'mess' ? "India's #1 Digital Mess Platform" : "India's #1 Smart Student Housing Platform"}
-            </div>
+            </motion.div>
 
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-serif italic font-bold text-white leading-tight mb-3 sm:mb-4 tracking-tight">
+            <motion.h1 
+              initial={{ opacity: 0, y: 25 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.65, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="text-3xl sm:text-5xl lg:text-6xl font-serif italic font-bold text-white leading-tight mb-3 sm:mb-4 tracking-tight"
+            >
               Find Your Perfect
               <br />
               {searchTab === 'mess' ? (
-                <span className="gradient-text-orange font-pacifico not-italic font-normal text-[1.05em] inline-block mt-1">Daily Meals</span>
+                <span className="shimmer-text-orange font-pacifico not-italic font-normal text-[1.05em] inline-block mt-1">Daily Meals</span>
               ) : (
-                <span className="gradient-text font-pacifico not-italic font-normal text-[1.05em] inline-block mt-1">Campus Home</span>
+                <span className="shimmer-text font-pacifico not-italic font-normal text-[1.05em] inline-block mt-1">Campus Home</span>
               )}
-            </h1>
+            </motion.h1>
 
-            <p className="text-slate-300 text-xs sm:text-base max-w-xl mx-auto mb-6 leading-relaxed">
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="text-slate-300 text-xs sm:text-base max-w-xl mx-auto mb-6 leading-relaxed"
+            >
               {searchTab === 'mess' ? (
                 "Discover verified messes, tiffin services & meal plans near your college."
               ) : (
                 "Discover PGs, hostels, flats & digital mess services near your college."
               )}
-            </p>
+            </motion.p>
 
-            {/* Search Tabs */}
-            <div className="flex justify-center gap-2 mb-3 max-w-[240px] mx-auto">
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
+            {/* Search Tabs with Sliding Active Indicator Pill */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.38 }}
+              className="relative flex justify-center gap-1.5 mb-4 max-w-[260px] mx-auto p-1 bg-black/40 rounded-2xl border border-white/15 backdrop-blur-md"
+            >
+              <button
                 type="button"
                 onClick={() => handleTabChange('property')}
                 className={cn(
-                  "flex-1 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 border",
-                  searchTab === 'property'
-                    ? "bg-brand-500 text-white border-brand-500 shadow-md shadow-brand-500/25"
-                    : "bg-black/30 hover:bg-black/45 text-white/90 border-white/10"
+                  "relative z-10 flex-1 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer",
+                  searchTab === 'property' ? "text-white" : "text-white/70 hover:text-white"
                 )}
               >
-                🏠 Housing
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
+                {searchTab === 'property' && (
+                  <motion.div
+                    layoutId="activeHeroTabPill"
+                    className="absolute inset-0 bg-brand-500 rounded-xl shadow-md"
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10">🏠 Housing</span>
+              </button>
+              <button
                 type="button"
                 onClick={() => handleTabChange('mess')}
                 className={cn(
-                  "flex-1 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 border",
-                  searchTab === 'mess'
-                    ? "bg-accent-500 text-white border-accent-500 shadow-md shadow-accent-500/25"
-                    : "bg-black/30 hover:bg-black/45 text-white/90 border-white/10"
+                  "relative z-10 flex-1 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer",
+                  searchTab === 'mess' ? "text-white" : "text-white/70 hover:text-white"
                 )}
               >
-                🍽️ Mess
-              </motion.button>
-            </div>
+                {searchTab === 'mess' && (
+                  <motion.div
+                    layoutId="activeHeroTabPill"
+                    className="absolute inset-0 bg-accent-500 rounded-xl shadow-md"
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10">🍽️ Mess</span>
+              </button>
+            </motion.div>
 
             {/* Ultra-Compact Single-Row Search Bar */}
-            <form onSubmit={handleSearch} className="max-w-lg mx-auto">
+            <motion.form 
+              initial={{ opacity: 0, y: 20, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
+              onSubmit={handleSearch} 
+              className="max-w-lg mx-auto"
+            >
               <div className="flex items-center gap-1 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md p-1 sm:p-1.5 rounded-full shadow-lg border border-white/30 dark:border-slate-700/60">
                 <div className="flex items-center gap-1.5 flex-1 min-w-0 pl-2.5 sm:pl-3 pr-1">
                   <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-500 dark:text-brand-400 flex-shrink-0" />
@@ -230,7 +254,7 @@ export default function HomePage() {
                   <span className="hidden sm:inline">Search</span>
                 </button>
               </div>
-            </form>
+            </motion.form>
 
             {/* Quick Tags */}
             <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
@@ -465,8 +489,8 @@ export default function HomePage() {
               Join 5,000+ students already using FlatsNFood across India
             </p>
             <div className="flex flex-row gap-3 justify-center">
-              <Link to="/auth?tab=register" className="btn-accent text-sm sm:text-base px-5 sm:px-8">
-                Get Started Free <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Link to="/auth?tab=register" className="btn-accent btn-light-sweep group text-sm sm:text-base px-5 sm:px-8 inline-flex items-center gap-2">
+                Get Started Free <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1.5 transition-transform duration-200" />
               </Link>
               <Link to={searchTab === 'mess' ? "/mess" : "/properties"} className="px-5 sm:px-8 py-2.5 sm:py-3 rounded-xl border-2 border-white/30 text-white text-sm sm:text-base font-semibold hover:bg-white/10 transition-all inline-flex items-center gap-2">
                 {searchTab === 'mess' ? "Browse Mess Services" : "Browse Properties"}

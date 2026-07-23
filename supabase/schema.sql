@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 CREATE TABLE IF NOT EXISTS public.properties (
   id text PRIMARY KEY,
   owner_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+  owner_name text,
   title text NOT NULL,
   description text,
   property_type text,
@@ -45,7 +46,13 @@ CREATE TABLE IF NOT EXISTS public.properties (
   rating numeric DEFAULT 5.0,
   review_count integer DEFAULT 0,
   images text[],
+  video_url text,
+  google_maps_url text,
   amenities jsonb,
+  sharing_configs jsonb DEFAULT '[]'::jsonb,
+  flat_config jsonb DEFAULT '{}'::jsonb,
+  hostel_config jsonb DEFAULT '{}'::jsonb,
+  pg_config jsonb DEFAULT '{}'::jsonb,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -160,3 +167,37 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- ============================================================
+-- PROPERTY VISITS TABLE & POLICIES
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.property_visits (
+  id text PRIMARY KEY,
+  property_id text NOT NULL,
+  property_title text NOT NULL,
+  property_image text,
+  owner_id text NOT NULL,
+  student_id text NOT NULL,
+  student_name text NOT NULL,
+  student_phone text NOT NULL,
+  visit_date text NOT NULL,
+  day_label text NOT NULL,
+  time_slot text NOT NULL,
+  status text DEFAULT 'pending',
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE public.property_visits ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "property_visits_select_policy" ON public.property_visits;
+CREATE POLICY "property_visits_select_policy" ON public.property_visits FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "property_visits_insert_policy" ON public.property_visits;
+CREATE POLICY "property_visits_insert_policy" ON public.property_visits FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "property_visits_update_policy" ON public.property_visits;
+CREATE POLICY "property_visits_update_policy" ON public.property_visits FOR UPDATE USING (true);
+
+DROP POLICY IF EXISTS "property_visits_delete_policy" ON public.property_visits;
+CREATE POLICY "property_visits_delete_policy" ON public.property_visits FOR DELETE USING (true);

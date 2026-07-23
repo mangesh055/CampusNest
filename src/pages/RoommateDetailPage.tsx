@@ -67,15 +67,20 @@ export default function RoommateDetailPage() {
           <ArrowLeft className="w-4 h-4" /> Back to listings
         </button>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white dark:bg-slate-900 rounded-3xl shadow-card overflow-hidden">
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="bg-white dark:bg-slate-900 rounded-3xl shadow-card overflow-hidden transform-gpu"
+        >
           
           {(descObj.images?.length || 0) > 0 && (
-            <div className="h-48 sm:h-64 w-full bg-slate-200 dark:bg-slate-800 relative cursor-pointer" onClick={() => setSelectedImage(descObj.images?.[0] || null)}>
-              <img src={descObj.images?.[0]} alt="Room" className="w-full h-full object-cover" />
+            <div className="h-52 sm:h-72 w-full bg-slate-200 dark:bg-slate-800 relative cursor-pointer overflow-hidden" onClick={() => setSelectedImage(descObj.images?.[0] || null)}>
+              <img src={descObj.images?.[0]} alt="Room" className="w-full h-full object-cover transform-gpu" decoding="async" />
             </div>
           )}
           
-          <div className="p-6 md:p-10">
+          <div className="p-5 sm:p-8 md:p-10">
             {!(descObj.images?.length || 0) && (
               <div className="flex justify-between items-start mb-6">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-brand-500 to-indigo-600 flex items-center justify-center text-white font-bold text-3xl shadow-lg">
@@ -86,85 +91,83 @@ export default function RoommateDetailPage() {
 
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
               <div>
-                <h1 className="text-3xl font-display font-bold text-slate-900 dark:text-white mb-2">
+                <h1 className="text-2xl sm:text-3xl font-display font-bold text-slate-900 dark:text-white mb-1.5">
                   {(roommate as any).full_name || 'Anonymous Student'}
                 </h1>
-                <p className="text-sm font-semibold text-brand-600 dark:text-brand-400">{roommate.college} • {roommate.branch}</p>
+                <p className="text-xs sm:text-sm font-semibold text-brand-600 dark:text-brand-400">{roommate.college} • {roommate.branch}</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
-              <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <p className="text-xs text-slate-400 font-semibold uppercase mb-1">Rent</p>
-                <p className="text-lg font-bold text-slate-800 dark:text-slate-200">{formatCurrency(roommate.budget_min)}</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
+              <div className="bg-slate-50 dark:bg-slate-800/50 p-3.5 sm:p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                <p className="text-[10px] sm:text-xs text-slate-400 font-semibold uppercase mb-0.5">Rent</p>
+                <p className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-200">{formatCurrency(roommate.budget_min)}</p>
               </div>
-              <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <p className="text-xs text-slate-400 font-semibold uppercase mb-1">Deposit</p>
-                <p className="text-lg font-bold text-slate-800 dark:text-slate-200">{descObj.deposit ? formatCurrency(descObj.deposit) : 'N/A'}</p>
+              <div className="bg-slate-50 dark:bg-slate-800/50 p-3.5 sm:p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                <p className="text-[10px] sm:text-xs text-slate-400 font-semibold uppercase mb-0.5">Deposit</p>
+                <p className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-200">{descObj.deposit ? formatCurrency(descObj.deposit) : 'N/A'}</p>
               </div>
-              <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <p className="text-xs text-slate-400 font-semibold uppercase mb-1">Roommates</p>
-                <p className="text-lg font-bold text-slate-800 dark:text-slate-200">{descObj.total_roommates}</p>
+              <div className="bg-slate-50 dark:bg-slate-800/50 p-3.5 sm:p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                <p className="text-[10px] sm:text-xs text-slate-400 font-semibold uppercase mb-0.5">Roommates</p>
+                <p className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-200">{descObj.total_roommates}</p>
               </div>
-              <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <p className="text-xs text-slate-400 font-semibold uppercase mb-1">Type</p>
-                <p className="text-lg font-bold text-slate-800 dark:text-slate-200 capitalize">{roommate.looking_for}</p>
+              <div className="bg-slate-50 dark:bg-slate-800/50 p-3.5 sm:p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                <p className="text-[10px] sm:text-xs text-slate-400 font-semibold uppercase mb-0.5">Type</p>
+                <p className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-200 capitalize">{roommate.looking_for}</p>
               </div>
             </div>
 
             {descObj.location && (
-              <div className="mb-10">
-                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-brand-500" /> Location Details
+              <div className="mb-8">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-2.5 flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-brand-500 shrink-0" /> Location Details
                 </h3>
-                <div className="text-sm text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-3.5 sm:p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                   {descObj.location}
                 </div>
               </div>
             )}
 
-            <div className="mb-10">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-3">About the Room</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-line">
+            <div className="mb-8">
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-2.5">About the Room</h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-line">
                 {descObj.text}
               </p>
             </div>
 
             {(descObj.images?.length > 0 || descObj.video_url) && (
-              <div className="mb-10">
-                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center justify-between">
+              <div className="mb-8">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-3 flex items-center justify-between">
                   <span>📸 Media Gallery</span>
                   <span className="text-xs font-normal text-slate-400">
                     {descObj.images?.length || 0} images {descObj.video_url && '• 1 video'}
                   </span>
                 </h3>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-2.5">
                   {descObj.video_url && (
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
+                    <div
                       onClick={() => setSelectedVideo(descObj.video_url!)}
-                      className="relative rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 cursor-pointer group bg-black shrink-0 shadow-sm border border-slate-200 dark:border-slate-700"
+                      className="relative rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 cursor-pointer group bg-black shrink-0 shadow-sm border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform duration-150 transform-gpu"
                     >
-                      <video src={descObj.video_url} className="w-full h-full object-cover opacity-80 transition-transform duration-300 group-hover:scale-105" preload="metadata" />
+                      <video src={descObj.video_url} className="w-full h-full object-cover opacity-80" preload="metadata" />
                       <div className="absolute inset-0 bg-slate-900/20 group-hover:bg-slate-900/40 transition-all duration-200 flex items-center justify-center">
-                        <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                          <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[12px] border-l-white border-b-[8px] border-b-transparent ml-1" />
+                        <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                          <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-white border-b-[6px] border-b-transparent ml-1" />
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   )}
                   {descObj.images?.map((photo: string, i: number) => (
-                    <motion.div
+                    <div
                       key={i}
-                      whileHover={{ scale: 1.05 }}
                       onClick={() => setSelectedImage(photo)}
-                      className="relative rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 cursor-pointer group shrink-0 shadow-sm border border-slate-200 dark:border-slate-700"
+                      className="relative rounded-2xl overflow-hidden w-24 h-24 sm:w-28 sm:h-28 cursor-pointer group shrink-0 shadow-sm border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform duration-150 transform-gpu"
                     >
-                      <img src={photo} alt={`Room photo ${i + 1}`} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                      <img src={photo} alt={`Room photo ${i + 1}`} className="w-full h-full object-cover transform-gpu" decoding="async" />
                       <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/20 transition-all duration-200 flex items-center justify-center">
-                        <ExternalLink className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <ExternalLink className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               </div>

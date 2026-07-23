@@ -37,9 +37,55 @@ export interface Profile {
   updated_at: string
 }
 
+export interface RoomSharingConfig {
+  sharing_type: '1_sharing' | '2_sharing' | '3_sharing' | '4_sharing' | 'dormitory'
+  rent: number
+  deposit: number
+  available_beds: number
+  total_beds: number
+  attached_bathroom?: boolean
+  ac?: boolean
+  balcony?: boolean
+  study_desk?: boolean
+  personal_wardrobe?: boolean
+  images?: string[]
+  video_url?: string
+}
+
+export interface FlatConfig {
+  bhk_type: '1rk' | '1bhk' | '2bhk' | '3bhk' | '4bhk'
+  furnishing: 'fully_furnished' | 'semi_furnished' | 'unfurnished'
+  maintenance_charges: number
+  maintenance_type: 'included' | 'extra'
+  tenant_preference: 'students' | 'bachelor_boys' | 'bachelor_girls' | 'family' | 'any'
+  parking_type: 'covered_car_bike' | 'bike_only' | 'open' | 'none'
+  floor_number?: number
+  total_floors?: number
+  balconies?: number
+  bathrooms?: number
+}
+
+export interface HostelConfig {
+  category_configs: RoomSharingConfig[]
+  warden_phone?: string
+  curfew_time: 'no_curfew' | '21:30' | '22:00' | '22:30' | '23:00'
+  mess_option: 'included' | 'extra_charge' | 'not_available'
+  meals_offered?: ('breakfast' | 'lunch' | 'evening_snacks' | 'dinner')[]
+}
+
+export interface PGConfig {
+  sharing_configs: RoomSharingConfig[]
+  food_option: 'included' | 'extra_charge' | 'not_available'
+  food_type?: 'veg' | 'non_veg' | 'both'
+  curfew_time: 'no_curfew' | '21:30' | '22:00' | '22:30' | '23:00'
+  housekeeping: 'daily' | 'alternate_days' | 'weekly'
+  laundry: 'free_washing_machine' | 'paid_per_load' | 'none'
+}
+
 export interface Property {
   id: string
   owner_id: string
+  owner_name?: string
   title: string
   description: string
   property_type: PropertyType
@@ -67,6 +113,10 @@ export interface Property {
   video_url?: string
   amenities: PropertyAmenity
   google_maps_url?: string
+  sharing_configs?: RoomSharingConfig[]
+  flat_config?: FlatConfig
+  hostel_config?: HostelConfig
+  pg_config?: PGConfig
   created_at: string
   updated_at: string
   profiles?: Profile

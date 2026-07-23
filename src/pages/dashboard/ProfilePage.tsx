@@ -1,29 +1,60 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { User, Mail, Phone, MapPin, Camera, Save, Shield, Calendar, BookOpen } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Camera, Save, Shield, Calendar, BookOpen, CheckCircle2, AlertCircle } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { getInitials } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
 import { uploadToCloudinary } from '../../utils/cloudinary'
 
 export default function ProfilePage() {
-  const { profile, fetchProfile } = useAuthStore()
+  const { profile, updateProfile, fetchProfile } = useAuthStore()
   
   const [formData, setFormData] = useState({
     full_name: profile?.full_name || '',
     phone: profile?.phone || '',
-    course: 'B.Tech Computer Science', // Mock additional data
-    year: '3rd Year',
-    bio: 'Student at University. Looking for a quiet PG and good vegetarian mess.',
+    course: profile?.college || 'B.Tech Computer Science',
+    year: profile?.branch || '3rd Year',
+    bio: profile?.bio || 'Student at University. Looking for a quiet PG and good vegetarian mess.',
     address: '123 Campus Road, City'
   })
 
   const [isEditing, setIsEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [statusMsg, setStatusMsg] = useState({ type: '', text: '' })
 
-  const handleSave = () => {
-    // In a real app, this would call supabase to update the profile table
-    setIsEditing(false)
-    alert('Profile updated successfully! (Simulated)')
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        full_name: profile.full_name || '',
+        phone: profile.phone || '',
+        course: profile.college || 'B.Tech Computer Science',
+        year: profile.branch || '3rd Year',
+        bio: profile.bio || 'Student at University. Looking for a quiet PG and good vegetarian mess.',
+        address: '123 Campus Road, City'
+      })
+    }
+  }, [profile])
+
+  const handleSave = async () => {
+    setSaving(true)
+    setStatusMsg({ type: '', text: '' })
+
+    const result = await updateProfile({
+      full_name: formData.full_name,
+      phone: formData.phone,
+      college: formData.course,
+      branch: formData.year,
+      bio: formData.bio
+    })
+
+    setSaving(false)
+    if (result?.success) {
+      setIsEditing(false)
+      setStatusMsg({ type: 'success', text: '✓ Profile updated and saved to database successfully!' })
+      setTimeout(() => setStatusMsg({ type: '', text: '' }), 4000)
+    } else {
+      setStatusMsg({ type: 'error', text: result?.error || 'Failed to save profile changes' })
+    }
   }
 
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
@@ -37,15 +68,13 @@ export default function ProfilePage() {
     try {
       const publicUrl = await uploadToCloudinary(file)
 
-      const { error: updateError } = await supabase.from('profiles').update({
-        avatar_url: publicUrl
-      }).eq('id', profile.id)
-
-      if (updateError) throw updateError
-      
-      await fetchProfile(profile.id)
+      const result = await updateProfile({ avatar_url: publicUrl })
+      if (result.success) {
+        setStatusMsg({ type: 'success', text: 'Profile picture updated successfully!' })
+        setTimeout(() => setStatusMsg({ type: '', text: '' }), 3000)
+      }
     } catch (error: any) {
-      alert('Failed to upload profile picture: ' + error.message)
+      setStatusMsg({ type: 'error', text: 'Failed to upload profile picture: ' + error.message })
     } finally {
       setUploadingAvatar(false)
     }
@@ -59,6 +88,17 @@ export default function ProfilePage() {
         <h1 className="text-2xl font-display font-bold text-slate-900 dark:text-white">My Profile</h1>
         <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Manage your personal information and public profile</p>
       </div>
+
+      {statusMsg.text && (
+        <div className={`p-4 rounded-2xl border text-sm font-medium flex items-center gap-2 ${
+          statusMsg.type === 'success'
+            ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
+            : 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200'
+        }`}>
+          {statusMsg.type === 'success' ? <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" /> : <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />}
+          <span>{statusMsg.text}</span>
+        </div>
+      )}
 
       <div className="grid md:grid-cols-3 gap-6">
         {/* Left Column - Avatar & Quick Info */}
@@ -95,7 +135,7 @@ export default function ProfilePage() {
                 className="hidden" 
               />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">{formData.full_name}</h2>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">{profile.full_name || 'User'}</h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm mb-3">{profile.email}</p>
             <span className="badge badge-purple uppercase tracking-wider text-xs px-3 py-1">
               {profile.role.replace('_', ' ')}
@@ -119,9 +159,16 @@ export default function ProfilePage() {
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">Personal Information</h3>
               <button 
                 onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+                disabled={saving}
                 className={`btn-${isEditing ? 'primary' : 'secondary'} py-2 px-4 text-sm flex items-center gap-2`}
               >
-                {isEditing ? <><Save className="w-4 h-4" /> Save Changes</> : 'Edit Profile'}
+                {saving ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : isEditing ? (
+                  <><Save className="w-4 h-4" /> Save Changes</>
+                ) : (
+                  'Edit Profile'
+                )}
               </button>
             </div>
 
@@ -139,7 +186,7 @@ export default function ProfilePage() {
                   ) : (
                     <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
                       <User className="w-4 h-4 text-slate-400" />
-                      <span className="text-slate-900 dark:text-white font-medium text-sm">{formData.full_name}</span>
+                      <span className="text-slate-900 dark:text-white font-medium text-sm">{profile.full_name || 'Not set'}</span>
                     </div>
                   )}
                 </div>
@@ -156,7 +203,7 @@ export default function ProfilePage() {
                   ) : (
                     <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
                       <Phone className="w-4 h-4 text-slate-400" />
-                      <span className="text-slate-900 dark:text-white font-medium text-sm">{formData.phone || 'Not provided'}</span>
+                      <span className="text-slate-900 dark:text-white font-medium text-sm">{profile.phone || 'Not provided'}</span>
                     </div>
                   )}
                 </div>
@@ -176,29 +223,25 @@ export default function ProfilePage() {
                     ) : (
                       <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
                         <BookOpen className="w-4 h-4 text-slate-400" />
-                        <span className="text-slate-900 dark:text-white font-medium text-sm">{formData.course}</span>
+                        <span className="text-slate-900 dark:text-white font-medium text-sm">{profile.college || formData.course}</span>
                       </div>
                     )}
                   </div>
                   
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Year of Study</label>
+                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Year of Study / Branch</label>
                     {isEditing ? (
-                      <select 
+                      <input 
+                        type="text"
                         className="input-field"
                         value={formData.year}
                         onChange={e => setFormData({...formData, year: e.target.value})}
-                      >
-                        <option>1st Year</option>
-                        <option>2nd Year</option>
-                        <option>3rd Year</option>
-                        <option>4th Year</option>
-                        <option>Postgraduate</option>
-                      </select>
+                        placeholder="e.g. 3rd Year / CS"
+                      />
                     ) : (
                       <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
                         <Calendar className="w-4 h-4 text-slate-400" />
-                        <span className="text-slate-900 dark:text-white font-medium text-sm">{formData.year}</span>
+                        <span className="text-slate-900 dark:text-white font-medium text-sm">{profile.branch || formData.year}</span>
                       </div>
                     )}
                   </div>
@@ -233,7 +276,7 @@ export default function ProfilePage() {
                   />
                 ) : (
                   <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800 min-h-[100px]">
-                    <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">{formData.bio}</p>
+                    <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">{profile.bio || formData.bio}</p>
                   </div>
                 )}
               </div>

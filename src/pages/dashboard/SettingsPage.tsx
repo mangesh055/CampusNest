@@ -6,7 +6,7 @@ import { supabase } from '../../lib/supabase'
 import { uploadToCloudinary } from '../../utils/cloudinary'
 
 export default function SettingsPage() {
-  const { profile, user, fetchProfile } = useAuthStore()
+  const { profile, user, fetchProfile, updateProfile } = useAuthStore()
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications' | 'preferences'>('profile')
   
   const [formData, setFormData] = useState({
@@ -104,21 +104,18 @@ export default function SettingsPage() {
       }
 
       if (profile) {
-        const { error: profileError } = await supabase.from('profiles').update({
+        const result = await updateProfile({
           full_name: formData.fullName,
           phone: formData.phone,
           email_notifications: formData.emailNotifications,
           push_notifications: formData.pushNotifications,
-          updated_at: new Date().toISOString()
-        }).eq('id', profile.id)
-        
-        if (profileError) throw profileError
-        await fetchProfile(profile.id)
+        })
+        if (!result.success) throw new Error(result.error || 'Failed to update profile')
       }
 
       setMessage({ type: 'success', text: 'Profile updated successfully!' })
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to update profile.' })
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Failed to update profile.' })
     } finally {
       setLoading(false)
     }

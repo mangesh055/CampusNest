@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { cn, getInitials } from '../../lib/utils'
 import { useAuthStore } from '../../store/authStore'
-import StudentPropertyRequestModal from '../StudentPropertyRequestModal'
+import { useVisitStore } from '../../store/visitStore'
 
 const studentLinks = [
   { label: 'Overview', path: '/dashboard/student', icon: LayoutDashboard },
@@ -18,12 +18,6 @@ const studentLinks = [
   { label: 'Request Property', path: '/dashboard/student/add-property', icon: Building2 },
   { label: 'Favorites', path: '/favorites', icon: Heart },
   { label: 'Reviews', path: '/dashboard/student/reviews', icon: Star },
-  { label: 'Settings', path: '/dashboard/settings', icon: Settings },
-]
-
-const ownerLinks = [
-  { label: 'Overview', path: '/dashboard/owner', icon: LayoutDashboard },
-  { label: 'My Listings', path: '/dashboard/owner/listings', icon: Building2 },
   { label: 'Settings', path: '/dashboard/settings', icon: Settings },
 ]
 
@@ -51,6 +45,15 @@ const adminLinks = [
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const location = useLocation()
   const { profile, signOut } = useAuthStore()
+  const visits = useVisitStore(state => state.visits)
+  const pendingVisitsCount = visits.filter(v => v.status === 'pending').length
+
+  const ownerLinks = [
+    { label: 'Overview', path: '/dashboard/owner', icon: LayoutDashboard },
+    { label: 'Visit Requests', path: '/dashboard/owner/visits', icon: Calendar, badge: pendingVisitsCount > 0 ? pendingVisitsCount : undefined },
+    { label: 'My Listings', path: '/dashboard/owner/listings', icon: Building2 },
+    { label: 'Settings', path: '/dashboard/settings', icon: Settings },
+  ]
 
   const links = profile?.role === 'student' ? studentLinks
     : profile?.role === 'property_owner' ? ownerLinks
@@ -116,7 +119,12 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                 >
                   <link.icon className={cn('w-4 h-4', isActive ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400')} />
                   <span className="text-sm">{link.label}</span>
-                  {isActive && (
+                  {link.badge !== undefined && (
+                    <span className="ml-auto bg-amber-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-xs animate-pulse">
+                      {link.badge}
+                    </span>
+                  )}
+                  {isActive && link.badge === undefined && (
                     <ChevronRight className="w-3 h-3 ml-auto text-brand-500" />
                   )}
                 </Link>

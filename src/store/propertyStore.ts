@@ -44,11 +44,15 @@ export const usePropertyStore = create<PropertyState>()(
       let { error } = await supabase.from('properties').insert([created])
       
       // Fallback if columns haven't been added to the database yet
-      if (error && (error.message.includes('google_maps_url') || error.message.includes('video_url'))) {
-        console.warn('New columns missing in DB, retrying without them...')
+      if (error && (error.message.includes('google_maps_url') || error.message.includes('video_url') || error.message.includes('sharing_configs') || error.message.includes('flat_config') || error.message.includes('hostel_config') || error.message.includes('pg_config'))) {
+        console.warn('New dynamic property columns missing in DB, retrying without them...')
         const fallbackCreated = { ...created }
         delete fallbackCreated.google_maps_url
         delete fallbackCreated.video_url
+        delete fallbackCreated.sharing_configs
+        delete fallbackCreated.flat_config
+        delete fallbackCreated.hostel_config
+        delete fallbackCreated.pg_config
         const retryResult = await supabase.from('properties').insert([fallbackCreated])
         error = retryResult.error
       }
@@ -65,11 +69,15 @@ export const usePropertyStore = create<PropertyState>()(
       let { error } = await supabase.from('properties').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id)
       
       // Fallback if columns haven't been added to the database yet
-      if (error && (error.message.includes('google_maps_url') || error.message.includes('video_url'))) {
-        console.warn('New columns missing in DB, retrying update without them...')
+      if (error && (error.message.includes('google_maps_url') || error.message.includes('video_url') || error.message.includes('sharing_configs') || error.message.includes('flat_config') || error.message.includes('hostel_config') || error.message.includes('pg_config'))) {
+        console.warn('New dynamic property columns missing in DB, retrying update without them...')
         const fallbackUpdates = { ...updates }
         delete fallbackUpdates.google_maps_url
         delete fallbackUpdates.video_url
+        delete fallbackUpdates.sharing_configs
+        delete fallbackUpdates.flat_config
+        delete fallbackUpdates.hostel_config
+        delete fallbackUpdates.pg_config
         const retryResult = await supabase.from('properties').update({ ...fallbackUpdates, updated_at: new Date().toISOString() }).eq('id', id)
         error = retryResult.error
       }
