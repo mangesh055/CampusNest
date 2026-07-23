@@ -357,7 +357,8 @@ export default function PropertyDetailPage() {
               )}
 
               {/* MULTI-SHARING TIERS DISPLAY (for PG & Hostel) */}
-              {property.sharing_configs && property.sharing_configs.length > 0 && (
+              {/* Multi-Tier Sharing Room Categories (For PG & Hostel Only) */}
+              {property.property_type !== 'flat' && property.sharing_configs && property.sharing_configs.length > 0 && (
                 <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
                   {/* Header */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
@@ -470,7 +471,7 @@ export default function PropertyDetailPage() {
               )}
 
               {/* FLAT CONFIGURATION DISPLAY */}
-              {property.property_type === 'flat' && (property.flat_config || property.flat_details) && (
+              {property.property_type === 'flat' && (
                 <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
                   <h3 className="font-display font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                     <span>🏠</span> Flat Specifications & Maintenance
