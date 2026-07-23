@@ -139,7 +139,7 @@ export default function StudentPropertyRequestView() {
       return
     }
 
-    const propertyData = {
+    const propertyData: any = {
       id: 'prop-' + Date.now(),
       owner_id: profile.id, // Track who submitted the request
       title: formData.title || 'Cozy Shared PG Room',
@@ -167,7 +167,15 @@ export default function StudentPropertyRequestView() {
       featured: false,
     }
 
-    const { error } = await supabase.from('properties').insert([propertyData])
+    let { error } = await supabase.from('properties').insert([propertyData])
+
+    // Fallback if is_student_request column is missing in DB schema
+    if (error && (error.message.includes('is_student_request') || error.message.includes('column'))) {
+      const fallbackData = { ...propertyData }
+      delete fallbackData.is_student_request
+      const retryResult = await supabase.from('properties').insert([fallbackData])
+      error = retryResult.error
+    }
 
     if (error) {
       alert('Failed to submit property request: ' + error.message)

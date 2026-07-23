@@ -20,7 +20,18 @@ export const usePropertyStore = create<PropertyState>()(
     loading: false,
     loadProperties: async () => {
       set({ loading: true })
-      const { data, error } = await supabase.from('properties').select('*').order('created_at', { ascending: false })
+      let { data, error } = await supabase
+        .from('properties')
+        .select('*, profiles:profiles(role, full_name, email)')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        // Fallback without join if relationship error
+        const retry = await supabase.from('properties').select('*').order('created_at', { ascending: false })
+        data = retry.data
+        error = retry.error
+      }
+
       if (error) {
         console.error('Failed to load properties from Supabase:', error)
         set({ properties: [], loading: false })

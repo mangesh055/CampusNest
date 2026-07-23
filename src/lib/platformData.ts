@@ -34,10 +34,17 @@ export async function fetchProperties(forceRefresh = false) {
 
   if (!cache.propertiesPromise) {
     cache.propertiesPromise = (async () => {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('properties')
-        .select('*')
+        .select('*, profiles:profiles(role, full_name, email)')
         .order('created_at', { ascending: false })
+
+      if (error) {
+        const retry = await supabase.from('properties').select('*').order('created_at', { ascending: false })
+        data = retry.data
+        error = retry.error
+      }
+
       if (error) throw error
       cache.properties = (data || []) as Property[]
       return cache.properties
