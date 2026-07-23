@@ -11,6 +11,8 @@ import { useAuthStore } from '../../store/authStore'
 import { useNotificationStore } from '../../store/notificationStore'
 import { supabase } from '../../lib/supabase'
 
+import logoImg from '../../assets/logo.jpeg'
+
 const navLinks = [
   { label: 'Home', path: '/', icon: Home },
   { label: 'Properties', path: '/properties', icon: Building2 },
@@ -57,7 +59,7 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
     const newStatus = myMess.status === 'open' ? 'closed' : 'open'
     const updated = { ...myMess, status: newStatus }
     setMyMess(updated)
-    
+
     try {
       await supabase.from('messes').update({ status: newStatus }).eq('id', myMess.id)
     } catch (e) {
@@ -76,19 +78,19 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
           const closingTimeStr = parts[1].trim()
           const timeRegex = /(\d{1,2}):(\d{2})\s*(AM|PM)/i
           const match = closingTimeStr.match(timeRegex)
-          
+
           if (match) {
             let hours = parseInt(match[1])
             const minutes = parseInt(match[2])
             const period = match[3].toUpperCase()
-            
+
             if (period === 'PM' && hours !== 12) hours += 12
             if (period === 'AM' && hours === 12) hours = 0
-            
+
             const now = new Date()
             const currentHours = now.getHours()
             const currentMinutes = now.getMinutes()
-            
+
             if (currentHours > hours || (currentHours === hours && currentMinutes >= minutes)) {
               setMyMess((prev: any) => prev ? { ...prev, status: 'closed' } : prev)
               await supabase.from('messes').update({ status: 'closed' }).eq('id', myMess.id)
@@ -111,7 +113,7 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
 
     const handleScroll = () => {
       setScrolled(window.scrollY > 20)
-      
+
       // Close dropdowns when scrolling more than 15px
       if (Math.abs(window.scrollY - lastScrollY) > 15) {
         setMenuOpen(false)
@@ -119,7 +121,7 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
         lastScrollY = window.scrollY
       }
     }
-    
+
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [init])
@@ -160,10 +162,12 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-glow group-hover:scale-110 transition-transform">
-              <Building2 className="w-5 h-5 text-white" />
-            </div>
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <img 
+              src={logoImg} 
+              alt="FlatsNFood Logo" 
+              className="w-9 h-9 object-contain rounded-xl group-hover:scale-105 transition-transform" 
+            />
             <span className="text-xl font-display font-bold">
               <span className="text-slate-900 dark:text-white">Flats</span>
               <span className="gradient-text">N</span>
@@ -208,8 +212,8 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
                       onClick={() => { if (myMess.status !== 'open') toggleMessStatus() }}
                       className={cn(
                         'px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all',
-                        myMess.status === 'open' 
-                          ? 'bg-white dark:bg-slate-700 text-emerald-600 shadow-sm' 
+                        myMess.status === 'open'
+                          ? 'bg-white dark:bg-slate-700 text-emerald-600 shadow-sm'
                           : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                       )}
                     >
@@ -219,8 +223,8 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
                       onClick={() => { if (myMess.status === 'closed') return; toggleMessStatus() }}
                       className={cn(
                         'px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all',
-                        myMess.status === 'closed' 
-                          ? 'bg-white dark:bg-slate-700 text-red-600 shadow-sm' 
+                        myMess.status === 'closed'
+                          ? 'bg-white dark:bg-slate-700 text-red-600 shadow-sm'
                           : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                       )}
                     >

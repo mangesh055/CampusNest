@@ -10,6 +10,8 @@ import { cn, getInitials } from '../../lib/utils'
 import { useAuthStore } from '../../store/authStore'
 import { useVisitStore } from '../../store/visitStore'
 
+import logoImg from '../../assets/logo.jpeg'
+
 const studentLinks = [
   { label: 'Overview', path: '/dashboard/student', icon: LayoutDashboard },
   { label: 'My Subscription', path: '/dashboard/student/subscription', icon: CreditCard },
@@ -59,8 +61,8 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
 
   const links = profile?.role === 'student' ? studentLinks
     : profile?.role === 'property_owner' ? ownerLinks
-    : profile?.role === 'mess_owner' ? messOwnerLinks
-    : adminLinks
+      : profile?.role === 'mess_owner' ? messOwnerLinks
+        : adminLinks
 
   const roleLabel = profile?.role?.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())
 
@@ -79,7 +81,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
           </span>
         </Link>
         {onClose && (
-          <button 
+          <button
             onClick={onClose}
             className="md:hidden p-2 -mr-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none"
           >
