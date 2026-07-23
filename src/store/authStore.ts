@@ -130,8 +130,7 @@ export const useAuthStore = create<AuthState>()(
 
       // 3. Upsert to Supabase Database `profiles` table
       try {
-        const payload: any = {
-          ...updatedProfile,
+        const dbPayload: Record<string, any> = {
           id: currentProfile.id,
           email: currentProfile.email || '',
           full_name: updatedProfile.full_name || '',
@@ -142,26 +141,24 @@ export const useAuthStore = create<AuthState>()(
           college: updatedProfile.college || '',
           branch: updatedProfile.branch || '',
           bio: updatedProfile.bio || '',
-          email_notifications: updatedProfile.email_notifications ?? true,
-          push_notifications: updatedProfile.push_notifications ?? false,
           is_profile_completed: Boolean(updatedProfile.is_profile_completed),
           updated_at: new Date().toISOString()
         }
 
         const { error: upsertErr } = await supabase
           .from('profiles')
-          .upsert(payload, { onConflict: 'id' })
+          .upsert(dbPayload, { onConflict: 'id' })
 
         if (upsertErr) {
-          console.warn('Supabase profile upsert warning:', upsertErr.message)
-          // Fallback to update query if upsert fails
-          try {
-            await supabase
-              .from('profiles')
-              .update(payload)
-              .eq('id', currentProfile.id)
-          } catch {
-            // Ignore fallback error
+          console.error('Supabase profile upsert error:', upsertErr)
+          const { error: updateErr } = await supabase
+            .from('profiles')
+            .update(dbPayload)
+            .eq('id', currentProfile.id)
+
+          if (updateErr) {
+            console.error('Supabase profile update error:', updateErr)
+            return { success: false, error: updateErr.message }
           }
         }
 

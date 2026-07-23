@@ -106,21 +106,14 @@ export default function SettingsPage() {
         return
       }
 
-      if (activeTab === 'profile') {
-        const cleanPhone = formData.phone.trim().replace(/\D/g, '')
-        if (cleanPhone && cleanPhone.length !== 10) {
-          throw new Error('Phone number must be exactly 10 digits.')
-        }
-      }
-
-      if (activeTab === 'preferences' && profile?.role === 'student') {
-        if (formData.emergencyContact && !/^[0-9]{10}$/.test(formData.emergencyContact)) {
-          throw new Error('Emergency contact must be exactly 10 digits.')
-        }
-      }
-
       if (profile) {
-        const cleanPhone = formData.phone.trim().replace(/\D/g, '')
+        const rawDigits = formData.phone.trim().replace(/\D/g, '')
+        const cleanPhone = rawDigits ? rawDigits.slice(-10) : ''
+        
+        if (rawDigits && cleanPhone.length !== 10) {
+          throw new Error('Phone number must contain a valid 10-digit mobile number.')
+        }
+
         const result = await updateProfile({
           full_name: formData.fullName.trim(),
           phone: cleanPhone,
