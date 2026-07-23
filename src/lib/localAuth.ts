@@ -1,6 +1,6 @@
 import type { Session, User } from '@supabase/supabase-js'
 import type { Profile, UserRole } from '../types'
-
+//bbfa
 const LOCAL_AUTH_STORAGE_KEY = 'flatsnfoods-local-auth'
 
 interface LocalAuthAccount {
