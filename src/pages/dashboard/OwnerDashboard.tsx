@@ -1371,49 +1371,65 @@ export default function OwnerDashboard() {
                                     <div>
                                       <label className="text-[10px] text-slate-500 font-medium">Rent (₹/mo)</label>
                                       <input
-                                        type="number"
-                                        value={config.rent}
+                                        type="text"
+                                        inputMode="numeric"
+                                        value={config.rent === 0 ? '' : config.rent}
+                                        placeholder="0"
+                                        onFocus={(e) => e.target.select()}
                                         onChange={(e) => {
-                                          const val = Number(e.target.value)
+                                          const cleanStr = e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
+                                          const val = cleanStr === '' ? 0 : Number(cleanStr)
                                           setSharingConfigs(prev => prev.map(c => c.sharing_type === type ? { ...c, rent: val } : c))
                                         }}
-                                        className="input-field py-1 text-xs"
+                                        className="input-field py-1 text-xs font-semibold"
                                       />
                                     </div>
                                     <div>
                                       <label className="text-[10px] text-slate-500 font-medium">Deposit (₹)</label>
                                       <input
-                                        type="number"
-                                        value={config.deposit}
+                                        type="text"
+                                        inputMode="numeric"
+                                        value={config.deposit === 0 ? '' : config.deposit}
+                                        placeholder="0"
+                                        onFocus={(e) => e.target.select()}
                                         onChange={(e) => {
-                                          const val = Number(e.target.value)
+                                          const cleanStr = e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
+                                          const val = cleanStr === '' ? 0 : Number(cleanStr)
                                           setSharingConfigs(prev => prev.map(c => c.sharing_type === type ? { ...c, deposit: val } : c))
                                         }}
-                                        className="input-field py-1 text-xs"
+                                        className="input-field py-1 text-xs font-semibold"
                                       />
                                     </div>
                                     <div>
                                       <label className="text-[10px] text-slate-500 font-medium">Avail. Beds</label>
                                       <input
-                                        type="number"
-                                        value={config.available_beds}
+                                        type="text"
+                                        inputMode="numeric"
+                                        value={config.available_beds === 0 ? '' : config.available_beds}
+                                        placeholder="0"
+                                        onFocus={(e) => e.target.select()}
                                         onChange={(e) => {
-                                          const val = Number(e.target.value)
+                                          const cleanStr = e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
+                                          const val = cleanStr === '' ? 0 : Number(cleanStr)
                                           setSharingConfigs(prev => prev.map(c => c.sharing_type === type ? { ...c, available_beds: val } : c))
                                         }}
-                                        className="input-field py-1 text-xs"
+                                        className="input-field py-1 text-xs font-semibold"
                                       />
                                     </div>
                                     <div>
                                       <label className="text-[10px] text-slate-500 font-medium">Total Beds</label>
                                       <input
-                                        type="number"
-                                        value={config.total_beds}
+                                        type="text"
+                                        inputMode="numeric"
+                                        value={config.total_beds === 0 ? '' : config.total_beds}
+                                        placeholder="0"
+                                        onFocus={(e) => e.target.select()}
                                         onChange={(e) => {
-                                          const val = Number(e.target.value)
+                                          const cleanStr = e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
+                                          const val = cleanStr === '' ? 0 : Number(cleanStr)
                                           setSharingConfigs(prev => prev.map(c => c.sharing_type === type ? { ...c, total_beds: val } : c))
                                         }}
-                                        className="input-field py-1 text-xs"
+                                        className="input-field py-1 text-xs font-semibold"
                                       />
                                     </div>
                                   </div>
