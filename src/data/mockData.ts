@@ -1,5 +1,6 @@
 import type { Property, Mess, MessPlan, Review, RoommateProfile, CommunityPost, Profile } from '../types'
 
+//ndwjen
 export const mockProperties: Property[] = [
   {
     id: '1',
