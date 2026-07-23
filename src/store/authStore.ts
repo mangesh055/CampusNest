@@ -131,6 +131,7 @@ export const useAuthStore = create<AuthState>()(
       // 3. Upsert to Supabase Database `profiles` table
       try {
         const payload: any = {
+          ...updatedProfile,
           id: currentProfile.id,
           email: currentProfile.email || '',
           full_name: updatedProfile.full_name || '',
@@ -138,6 +139,11 @@ export const useAuthStore = create<AuthState>()(
           gender: updatedProfile.gender || 'male',
           role: updatedProfile.role || 'student',
           avatar_url: updatedProfile.avatar_url || '',
+          college: updatedProfile.college || '',
+          branch: updatedProfile.branch || '',
+          bio: updatedProfile.bio || '',
+          email_notifications: updatedProfile.email_notifications ?? true,
+          push_notifications: updatedProfile.push_notifications ?? false,
           is_profile_completed: Boolean(updatedProfile.is_profile_completed),
           updated_at: new Date().toISOString()
         }

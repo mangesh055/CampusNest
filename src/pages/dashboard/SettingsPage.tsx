@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { User, Lock, Bell, Moon, Sun, CreditCard, ShieldCheck, Save, Phone, Camera, X } from 'lucide-react'
+import { User, Lock, Bell, CreditCard, Save, Phone, Camera, X, GraduationCap, FileText, CheckCircle2 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { supabase } from '../../lib/supabase'
 import { uploadToCloudinary } from '../../utils/cloudinary'
@@ -12,7 +12,10 @@ export default function SettingsPage() {
   const [formData, setFormData] = useState({
     fullName: profile?.full_name || '',
     phone: profile?.phone || '',
-    upiId: '',
+    gender: profile?.gender || 'male',
+    college: profile?.college || '',
+    branch: profile?.branch || '',
+    bio: profile?.bio || '',
     emergencyContact: '',
     dietaryPreference: 'none',
     emailNotifications: profile?.email_notifications ?? true,
@@ -33,14 +36,26 @@ export default function SettingsPage() {
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const cameraInputRef = React.useRef<HTMLInputElement>(null)
 
-  React.useEffect(() => {
+  // Fetch fresh profile from DB on mount
+  useEffect(() => {
+    if (user?.id) {
+      void fetchProfile(user.id)
+    }
+  }, [user?.id, fetchProfile])
+
+  // Sync form state when profile changes
+  useEffect(() => {
     if (profile) {
       setFormData(prev => ({
         ...prev,
         fullName: profile.full_name || '',
         phone: profile.phone || '',
-        emailNotifications: profile.email_notifications ?? prev.emailNotifications,
-        pushNotifications: profile.push_notifications ?? prev.pushNotifications
+        gender: profile.gender || 'male',
+        college: profile.college || '',
+        branch: profile.branch || '',
+        bio: profile.bio || '',
+        emailNotifications: profile.email_notifications ?? true,
+        pushNotifications: profile.push_notifications ?? false
       }))
     }
   }, [profile])
@@ -92,7 +107,8 @@ export default function SettingsPage() {
       }
 
       if (activeTab === 'profile') {
-        if (formData.phone && !/^[0-9]{10}$/.test(formData.phone)) {
+        const cleanPhone = formData.phone.trim().replace(/\D/g, '')
+        if (cleanPhone && cleanPhone.length !== 10) {
           throw new Error('Phone number must be exactly 10 digits.')
         }
       }
@@ -104,16 +120,25 @@ export default function SettingsPage() {
       }
 
       if (profile) {
+        const cleanPhone = formData.phone.trim().replace(/\D/g, '')
         const result = await updateProfile({
-          full_name: formData.fullName,
-          phone: formData.phone,
+          full_name: formData.fullName.trim(),
+          phone: cleanPhone,
+          gender: formData.gender as any,
+          college: formData.college.trim(),
+          branch: formData.branch.trim(),
+          bio: formData.bio.trim(),
           email_notifications: formData.emailNotifications,
           push_notifications: formData.pushNotifications,
         })
+
         if (!result.success) throw new Error(result.error || 'Failed to update profile')
+        
+        // Refresh profile state from Supabase DB
+        await fetchProfile(profile.id)
       }
 
-      setMessage({ type: 'success', text: 'Profile updated successfully!' })
+      setMessage({ type: 'success', text: 'Profile details saved and updated successfully!' })
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Failed to update profile.' })
     } finally {
@@ -129,7 +154,7 @@ export default function SettingsPage() {
     setMessage({ type: '', text: '' })
     
     try {
-      const publicUrl = await uploadToCloudinary(file);
+      const publicUrl = await uploadToCloudinary(file)
 
       const { error: updateError } = await supabase.from('profiles').update({
         avatar_url: publicUrl
@@ -153,10 +178,7 @@ export default function SettingsPage() {
     setMessage({ type: '', text: '' })
     
     try {
-      // With Cloudinary from the frontend, we just remove the reference from the database.
-      // Physical deletion requires backend authentication.
-
-      const { error } = await supabase.from('profiles').update({ avatar_url: null }).eq('id', profile.id)
+      const { error } = await supabase.from('profiles').update({ avatar_url: '' }).eq('id', profile.id)
       if (error) throw error
 
       await fetchProfile(profile.id)
@@ -172,15 +194,15 @@ export default function SettingsPage() {
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-display font-bold text-slate-900 dark:text-white">Account Settings</h1>
-        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Manage your profile, security, and application preferences</p>
+        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Manage your profile details, security, and preferences</p>
       </div>
 
       <div className="grid md:grid-cols-4 gap-6">
-        {/* Sidebar */}
+        {/* Navigation Sidebar */}
         <div className="md:col-span-1 space-y-2">
           <button
             onClick={() => setActiveTab('profile')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all cursor-pointer ${
               activeTab === 'profile' ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/20 dark:text-brand-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
             }`}
           >
@@ -188,7 +210,7 @@ export default function SettingsPage() {
           </button>
           <button
             onClick={() => setActiveTab('security')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all cursor-pointer ${
               activeTab === 'security' ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/20 dark:text-brand-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
             }`}
           >
@@ -196,7 +218,7 @@ export default function SettingsPage() {
           </button>
           <button
             onClick={() => setActiveTab('notifications')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all cursor-pointer ${
               activeTab === 'notifications' ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/20 dark:text-brand-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
             }`}
           >
@@ -205,7 +227,7 @@ export default function SettingsPage() {
           {profile?.role === 'student' && (
             <button
               onClick={() => setActiveTab('preferences')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all cursor-pointer ${
                 activeTab === 'preferences' ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/20 dark:text-brand-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
               }`}
             >
@@ -214,24 +236,31 @@ export default function SettingsPage() {
           )}
         </div>
 
-        {/* Content Area */}
+        {/* Form Content Area */}
         <div className="md:col-span-3">
           <motion.div
             key={activeTab}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="card p-6"
+            className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm"
           >
             {message.text && (
-              <div className={`p-4 mb-6 rounded-2xl text-sm font-bold ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-red-50 text-red-700 dark:bg-red-500/20 dark:text-red-400'}`}>
-                {message.text}
+              <div className={`p-4 mb-6 rounded-2xl text-sm font-bold flex items-center gap-2 ${
+                message.type === 'success' 
+                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-200' 
+                  : 'bg-red-50 text-red-700 dark:bg-red-500/20 dark:text-red-400 border border-red-200'
+              }`}>
+                {message.type === 'success' && <CheckCircle2 className="w-4 h-4 shrink-0" />}
+                <span>{message.text}</span>
               </div>
             )}
 
+            {/* TAB 1: PROFILE INFO */}
             {activeTab === 'profile' && (
               <div className="space-y-6">
+                {/* Avatar Upload */}
                 <div className="flex items-center gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
-                  <div className="relative">
+                  <div className="relative shrink-0">
                     {profile?.avatar_url ? (
                       <>
                         <img src={profile.avatar_url} alt="Avatar" className="w-16 h-16 rounded-full object-cover shadow-md border-2 border-white dark:border-slate-800" />
@@ -252,7 +281,7 @@ export default function SettingsPage() {
                     <button
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploadingAvatar}
-                      className="absolute bottom-0 right-0 bg-brand-500 text-white rounded-full p-1 shadow-md border-2 border-white dark:border-slate-900 hover:bg-brand-600 transition-colors"
+                      className="absolute bottom-0 right-0 bg-brand-500 text-white rounded-full p-1 shadow-md border-2 border-white dark:border-slate-900 hover:bg-brand-600 transition-colors cursor-pointer"
                       title="Upload Photo"
                     >
                       <Camera className="w-3 h-3" />
@@ -264,79 +293,120 @@ export default function SettingsPage() {
                       ref={fileInputRef} 
                       onChange={handleAvatarUpload} 
                       accept="image/*" 
-                      capture="user"
                       className="hidden" 
                     />
-                    <input 
-                      type="file" 
-                      ref={cameraInputRef} 
-                      onChange={handleAvatarUpload} 
-                      accept="image/*" 
-                      capture="user"
-                      className="hidden" 
-                    />
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploadingAvatar}
-                        className="btn-secondary py-1.5 px-3 text-xs"
-                      >
-                        {uploadingAvatar ? 'Uploading...' : 'Upload File'}
-                      </button>
-                    </div>
-                    <p className="text-[10px] text-slate-500 mt-2">JPG, GIF or PNG. Max size of 800K</p>
+                    <button 
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingAvatar}
+                      className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 transition-colors cursor-pointer"
+                    >
+                      {uploadingAvatar ? 'Uploading...' : 'Change Profile Picture'}
+                    </button>
+                    <p className="text-[10px] text-slate-400 mt-1">JPG or PNG image file</p>
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-400 uppercase">Full Name</label>
+                <div className="grid md:grid-cols-2 gap-5">
+                  {/* Full Name */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Full Name</label>
                     <input
                       type="text"
                       value={formData.fullName}
                       onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                      className="input-field"
+                      placeholder="Rahul Sharma"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-brand-500"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-400 uppercase">Email Address</label>
+
+                  {/* Email (Read-Only) */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Email Address (Verified)</label>
                     <input
                       type="email"
                       disabled
-                      value={user?.email || ''}
-                      className="input-field opacity-70 cursor-not-allowed"
+                      value={user?.email || profile?.email || ''}
+                      className="w-full bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-mono text-slate-500 cursor-not-allowed"
                     />
-                    <p className="text-[10px] text-slate-500">Email cannot be changed.</p>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-400 uppercase">Phone Number</label>
+
+                  {/* Phone Number */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Phone Number</label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <input
                         type="tel"
                         value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        className="input-field pl-10"
-                        placeholder="9876543210"
-                        pattern="[0-9]{10}"
-                        title="Please enter a 10 digit mobile number"
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                        maxLength={10}
+                        placeholder="7517807405"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:border-brand-500"
                       />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-400 uppercase">Role</label>
-                    <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 font-semibold text-slate-600 dark:text-slate-300 capitalize">
-                      {profile?.role?.replace('_', ' ')}
-                    </div>
+
+                  {/* Gender Selector */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Gender</label>
+                    <select
+                      value={formData.gender}
+                      onChange={(e) => setFormData({ ...formData, gender: e.target.value as any })}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-brand-500"
+                    >
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
                   </div>
+
+                  {/* College / Institution */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">College / Institution</label>
+                    <input
+                      type="text"
+                      value={formData.college}
+                      onChange={(e) => setFormData({ ...formData, college: e.target.value })}
+                      placeholder="VIT Pune / MIT World Peace University"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
+
+                  {/* Branch / Stream */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Branch / Specialization</label>
+                    <input
+                      type="text"
+                      value={formData.branch}
+                      onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
+                      placeholder="Computer Engineering / Business"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
+                </div>
+
+                {/* About / Bio */}
+                <div className="space-y-1.5 pt-2">
+                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Short Bio / About Yourself</label>
+                  <textarea
+                    rows={3}
+                    value={formData.bio}
+                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                    placeholder="Tell us a little bit about yourself..."
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:border-brand-500"
+                  />
                 </div>
               </div>
             )}
 
+            {/* TAB 2: SECURITY */}
             {activeTab === 'security' && (
               <div className="space-y-6">
                 <div className="space-y-4">
-                  <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2"><Lock className="w-4 h-4" /> Change Password</h3>
+                  <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-brand-500" /> Change Password
+                  </h3>
                   
                   {!isPasswordVerified ? (
                     <div className="space-y-2 max-w-md">
@@ -347,12 +417,12 @@ export default function SettingsPage() {
                           value={currentPassword}
                           onChange={(e) => setCurrentPassword(e.target.value)}
                           placeholder="••••••••" 
-                          className="input-field flex-1" 
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-brand-500" 
                         />
                         <button 
                           onClick={handleVerifyPassword}
                           disabled={!currentPassword || verifyingPassword}
-                          className="btn-secondary whitespace-nowrap"
+                          className="px-4 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-colors disabled:opacity-50 cursor-pointer"
                         >
                           {verifyingPassword ? 'Verifying...' : 'Verify'}
                         </button>
@@ -361,7 +431,7 @@ export default function SettingsPage() {
                   ) : (
                     <>
                       <div className="space-y-2 max-w-md">
-                        <label className="text-xs font-bold text-slate-400 uppercase text-brand-500">Current Password Verified ✓</label>
+                        <label className="text-xs font-bold text-emerald-600 uppercase">Current Password Verified ✓</label>
                       </div>
                       <div className="space-y-2 max-w-md">
                         <label className="text-xs font-bold text-slate-400 uppercase">New Password</label>
@@ -370,7 +440,7 @@ export default function SettingsPage() {
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
                           placeholder="••••••••" 
-                          className="input-field" 
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-brand-500" 
                         />
                       </div>
                       <div className="space-y-2 max-w-md">
@@ -380,23 +450,22 @@ export default function SettingsPage() {
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           placeholder="••••••••" 
-                          className="input-field" 
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-brand-500" 
                         />
                       </div>
                     </>
                   )}
                 </div>
-                
-
               </div>
             )}
 
+            {/* TAB 3: NOTIFICATIONS */}
             {activeTab === 'notifications' && (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700">
                   <div>
                     <h4 className="font-bold text-slate-800 dark:text-white">Email Notifications</h4>
-                    <p className="text-xs text-slate-500 mt-1">Receive updates and alerts via email.</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Receive account updates and alerts via email.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input 
@@ -412,7 +481,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700">
                   <div>
                     <h4 className="font-bold text-slate-800 dark:text-white">Push Notifications</h4>
-                    <p className="text-xs text-slate-500 mt-1">Receive real-time alerts on this browser.</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Receive real-time alerts in your browser.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input 
@@ -427,8 +496,7 @@ export default function SettingsPage() {
               </div>
             )}
 
-
-
+            {/* TAB 4: PREFERENCES (STUDENT) */}
             {activeTab === 'preferences' && profile?.role === 'student' && (
               <div className="space-y-6">
                 <div className="space-y-2 max-w-md">
@@ -436,7 +504,7 @@ export default function SettingsPage() {
                   <select
                     value={formData.dietaryPreference}
                     onChange={(e) => setFormData({ ...formData, dietaryPreference: e.target.value })}
-                    className="input-field"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-brand-500"
                   >
                     <option value="none">None / Standard</option>
                     <option value="vegetarian">Vegetarian</option>
@@ -446,32 +514,33 @@ export default function SettingsPage() {
                   </select>
                 </div>
                 <div className="space-y-2 max-w-md">
-                  <label className="text-xs font-bold text-slate-400 uppercase">Emergency Contact</label>
+                  <label className="text-xs font-bold text-slate-400 uppercase">Emergency Contact Number</label>
                   <input
                     type="tel"
                     value={formData.emergencyContact}
-                    onChange={(e) => setFormData({ ...formData, emergencyContact: e.target.value })}
-                    className="input-field"
+                    onChange={(e) => setFormData({ ...formData, emergencyContact: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:border-brand-500"
                     placeholder="Parent / Guardian 10-digit Phone"
-                    pattern="[0-9]{10}"
-                    title="Please enter a 10 digit mobile number"
+                    maxLength={10}
                   />
                 </div>
               </div>
             )}
 
+            {/* SUBMIT BUTTON */}
             <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex justify-end">
               <button
+                type="button"
                 onClick={handleSave}
                 disabled={loading}
-                className="btn-primary py-2.5 px-6 gap-2"
+                className="py-3 px-6 rounded-2xl bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-bold text-xs shadow-lg shadow-red-500/25 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
               >
                 {loading ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <Save className="w-4 h-4" />
                 )}
-                {loading ? 'Saving...' : 'Save Changes'}
+                <span>{loading ? 'Saving Changes...' : 'Save Profile Changes'}</span>
               </button>
             </div>
           </motion.div>
