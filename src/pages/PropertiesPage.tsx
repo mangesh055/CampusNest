@@ -46,7 +46,9 @@ export default function PropertiesPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [amenityFilters, setAmenityFilters] = useState<Record<string, boolean>>(() => {
     const ac = searchParams.get('ac') === 'true'
-    return ac ? { ac: true } : {}
+    const initial: Record<string, boolean> = {}
+    if (ac) initial.ac = true
+    return initial
   })
   const [availableOnly, setAvailableOnly] = useState(false)
 

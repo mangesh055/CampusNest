@@ -349,6 +349,8 @@ export default function OwnerDashboard() {
       property.pg_config || {
         curfew_time: 'no_curfew',
         food_option: 'included',
+        housekeeping: 'daily',
+        laundry: 'none',
         sharing_configs: [],
       }
     )
@@ -438,6 +440,7 @@ export default function OwnerDashboard() {
     setEditingId(null)
     setFormStep(1)
     setFormData({
+      owner_name: '',
       title: '',
       description: '',
       property_type: 'pg',

@@ -118,6 +118,8 @@ export interface Property {
   flat_config?: FlatConfig
   hostel_config?: HostelConfig
   pg_config?: PGConfig
+  flat_details?: any
+  hostel_details?: any
   created_at: string
   updated_at: string
   profiles?: Profile

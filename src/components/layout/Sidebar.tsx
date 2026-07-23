@@ -124,12 +124,12 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                 >
                   <link.icon className={cn('w-4 h-4', isActive ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400')} />
                   <span className="text-sm">{link.label}</span>
-                  {link.badge !== undefined && (
+                  {(link as any).badge !== undefined && (
                     <span className="ml-auto bg-amber-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-xs animate-pulse">
-                      {link.badge}
+                      {(link as any).badge}
                     </span>
                   )}
-                  {isActive && link.badge === undefined && (
+                  {isActive && (link as any).badge === undefined && (
                     <ChevronRight className="w-3 h-3 ml-auto text-brand-500" />
                   )}
                 </Link>
