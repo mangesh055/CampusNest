@@ -194,15 +194,6 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
 
           {/* Right Section */}
           <div className="flex items-center gap-2">
-            {/* Dark Mode Toggle */}
-            <button
-              onClick={toggleDarkMode}
-              className="btn-ghost p-2 rounded-xl hover:scale-110 hover:rotate-12 active:scale-95 transition-all duration-200"
-              aria-label="Toggle dark mode"
-            >
-              {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
-
             {profile ? (
               <>
                 {/* Mess Status Toggle (Only for mess owners) */}
@@ -305,6 +296,19 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
                           <Link to="/dashboard/settings" className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors">
                             <Settings className="w-4 h-4" /> Settings
                           </Link>
+                          <button
+                            type="button"
+                            onClick={toggleDarkMode}
+                            className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              {darkMode ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-indigo-500" />}
+                              <span>Theme Mode</span>
+                            </div>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                              {darkMode ? 'Dark' : 'Light'}
+                            </span>
+                          </button>
                           {profile.role === 'admin' && (
                             <Link to="/dashboard/admin" className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors">
                               <Shield className="w-4 h-4" /> Admin Panel
@@ -366,6 +370,16 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
                   {label}
                 </Link>
               ))}
+              <button
+                type="button"
+                onClick={toggleDarkMode}
+                className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors mb-1"
+              >
+                <div className="flex items-center gap-3">
+                  {darkMode ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-indigo-500" />}
+                  <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
+                </div>
+              </button>
             </div>
           </motion.div>
         )}
