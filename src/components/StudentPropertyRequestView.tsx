@@ -162,6 +162,7 @@ export default function StudentPropertyRequestView() {
       video_url: formData.video_url,
       amenities: formData.amenities,
       verified: false,
+      is_student_request: true,
       availability: true,
       featured: false,
     }

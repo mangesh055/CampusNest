@@ -101,14 +101,15 @@ export default function PropertyDetailPage() {
     )
   }
 
+  const isStudentPost = (property as any).is_student_request === true || property.profiles?.role === 'student'
   const isOwnerOrAdmin = profile?.id === property.owner_id || profile?.role === 'admin'
-  if (property.verified === false && !isOwnerOrAdmin) {
+  if (isStudentPost && property.verified !== true && !isOwnerOrAdmin) {
     return (
       <div className="min-h-screen pt-24 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-4 text-center">
         <div className="text-5xl mb-4">⏳</div>
         <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2">Pending Admin Approval</h2>
         <p className="text-sm text-slate-500 max-w-md mb-6">
-          This property request/listing is currently under review by Admin and has not yet been approved for public display on the platform.
+          This student property request is currently under review by Admin and has not yet been approved for public display on the platform.
         </p>
         <Link to="/properties" className="btn-primary">Back to Properties</Link>
       </div>
@@ -201,12 +202,12 @@ export default function PropertyDetailPage() {
           <ChevronLeft className="w-4 h-4" /> Back to Properties
         </Link>
 
-        {property.verified === false && (
+        {isStudentPost && property.verified !== true && (
           <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 flex items-center gap-3">
             <span className="text-xl">⏳</span>
             <div className="text-xs sm:text-sm">
               <p className="font-bold">Pending Admin Approval</p>
-              <p>This property listing is under review by Admin and is visible only to you and Admin until approved.</p>
+              <p>This student property request is under review by Admin and is visible only to you and Admin until approved.</p>
             </div>
           </div>
         )}

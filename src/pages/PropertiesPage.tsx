@@ -82,8 +82,13 @@ export default function PropertiesPage() {
     const fortyFiveDaysAgo = new Date()
     fortyFiveDaysAgo.setDate(fortyFiveDaysAgo.getDate() - 45)
     
-    // Only display properties approved by admin (verified === true) and created within the last 45 days
-    let result = properties.filter(p => p.verified === true && (!p.created_at || isNaN(new Date(p.created_at).getTime()) || new Date(p.created_at) >= fortyFiveDaysAgo))
+    // Filter out unapproved student property requests until admin approves them. Regular owner listings & approved posts remain visible.
+    let result = properties.filter(p => {
+      const isStudentPost = (p as any).is_student_request === true || p.profiles?.role === 'student'
+      if (isStudentPost && !p.verified) return false
+      if (p.created_at && !isNaN(new Date(p.created_at).getTime()) && new Date(p.created_at) < fortyFiveDaysAgo) return false
+      return true
+    })
     
     if (search) {
       const q = search.toLowerCase()
