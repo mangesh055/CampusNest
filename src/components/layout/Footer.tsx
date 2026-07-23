@@ -1,6 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { Building2, Mail, Phone } from 'lucide-react'
+import { Mail, Phone } from 'lucide-react'
+import logoImg from '../../assets/logo.jpeg'
 
 const Instagram = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
@@ -13,10 +14,12 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-4 lg:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
-                <Building2 className="w-5 h-5 text-white" />
-              </div>
+            <div className="flex items-center gap-2.5 mb-4">
+              <img 
+                src={logoImg} 
+                alt="FlatsNFood Logo" 
+                className="w-9 h-9 object-contain rounded-xl" 
+              />
               <span className="text-xl font-display font-bold text-white">
                 FlatsN<span className="gradient-text">Food</span>
               </span>

@@ -70,10 +70,12 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     <aside className="w-64 h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col">
       {/* Logo */}
       <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
-            <Building2 className="w-4 h-4 text-white" />
-          </div>
+        <Link to="/" className="flex items-center gap-2.5">
+          <img 
+            src={logoImg} 
+            alt="FlatsNFood Logo" 
+            className="w-9 h-9 object-contain rounded-xl" 
+          />
           <span className="text-lg font-display font-bold">
             <span className="text-slate-900 dark:text-white">Flats</span>
             <span className="gradient-text">N</span>

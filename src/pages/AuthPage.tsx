@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
-import { Building2, CheckCircle2, ShieldCheck, LogIn, UserPlus } from 'lucide-react'
+import { CheckCircle2, ShieldCheck, LogIn, UserPlus } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import type { UserRole } from '../types'
+import logoImg from '../assets/logo.jpeg'
 
 const roles: { value: UserRole; label: string; icon: string; desc: string }[] = [
   { value: 'student', label: 'Student', icon: '🎓', desc: 'Find PGs, messes & roommates near college' },
@@ -114,9 +115,11 @@ export default function AuthPage() {
           className="relative z-10"
         >
           <Link to="/" className="flex items-center gap-3 mb-12">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-glow">
-              <Building2 className="w-6 h-6 text-white" />
-            </div>
+            <img 
+              src={logoImg} 
+              alt="FlatsNFood Logo" 
+              className="w-11 h-11 object-contain rounded-2xl shadow-glow" 
+            />
             <span className="text-2xl font-display font-bold text-white">FlatsNFood</span>
           </Link>
 
