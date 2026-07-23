@@ -1543,15 +1543,15 @@ export default function OwnerDashboard() {
                               <input
                                 type="number"
                                 placeholder="Floor"
-                                value={flatConfig.floor_number || 1}
-                                onChange={(e) => setFlatConfig({ ...flatConfig, floor_number: Number(e.target.value) })}
+                                value={flatConfig?.floor_number ?? 1}
+                                onChange={(e) => setFlatConfig((prev) => ({ ...prev, floor_number: Number(e.target.value) }))}
                                 className="input-field py-1 text-xs"
                               />
                               <input
                                 type="number"
                                 placeholder="Total"
-                                value={flatConfig.total_floors || 1}
-                                onChange={(e) => setFlatConfig({ ...flatConfig, total_floors: Number(e.target.value) })}
+                                value={flatConfig?.total_floors ?? 1}
+                                onChange={(e) => setFlatConfig((prev) => ({ ...prev, total_floors: Number(e.target.value) }))}
                                 className="input-field py-1 text-xs"
                               />
                             </div>
