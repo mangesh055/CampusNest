@@ -271,14 +271,14 @@ export default function PropertyDetailPage() {
 
               <p className="text-slate-600 dark:text-slate-400 leading-relaxed mb-6">{property.description}</p>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 mb-6">
-                <div>
-                  <p className="text-xs text-slate-500 mb-1">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 mb-6">
+                <div className="min-w-0">
+                  <p className="text-xs text-slate-500 mb-1 whitespace-nowrap truncate">
                     {(property.property_type === 'pg' || property.property_type === 'hostel') && property.sharing_configs?.length
                       ? 'Rent Range'
                       : 'Monthly Rent'}
                   </p>
-                  <p className="text-lg font-bold text-slate-900 dark:text-white">
+                  <p className="text-xs sm:text-base md:text-lg font-bold text-slate-900 dark:text-white whitespace-nowrap truncate">
                     {(() => {
                       if ((property.property_type === 'pg' || property.property_type === 'hostel') && property.sharing_configs?.length) {
                         const rents = property.sharing_configs.map(c => c.rent)
@@ -288,26 +288,26 @@ export default function PropertyDetailPage() {
                       }
                       return formatCurrency(property.rent)
                     })()}
-                    {(property.property_type === 'pg' || property.property_type === 'hostel') && <span className="text-xs font-normal text-slate-400"> /head</span>}
+                    {(property.property_type === 'pg' || property.property_type === 'hostel') && <span className="text-[10px] sm:text-xs font-normal text-slate-400"> /head</span>}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs text-slate-500 mb-1">Security Deposit</p>
-                  <p className="text-lg font-bold text-slate-900 dark:text-white">{formatCurrency(property.deposit)}</p>
+                <div className="min-w-0">
+                  <p className="text-xs text-slate-500 mb-1 whitespace-nowrap truncate">Security Deposit</p>
+                  <p className="text-xs sm:text-base md:text-lg font-bold text-slate-900 dark:text-white whitespace-nowrap truncate">{formatCurrency(property.deposit)}</p>
                 </div>
-                <div>
-                  <p className="text-xs text-slate-500 mb-1">
+                <div className="min-w-0">
+                  <p className="text-xs text-slate-500 mb-1 whitespace-nowrap truncate">
                     {(property.property_type === 'pg' || property.property_type === 'hostel') ? 'Total Beds Left' : 'Available Rooms'}
                   </p>
-                  <p className="text-lg font-bold text-slate-900 dark:text-white">
+                  <p className="text-xs sm:text-base md:text-lg font-bold text-slate-900 dark:text-white whitespace-nowrap truncate">
                     {(property.property_type === 'pg' || property.property_type === 'hostel') && property.sharing_configs?.length
                       ? `${property.sharing_configs.reduce((acc, c) => acc + (c.available_beds || 0), 0)} beds`
                       : (property.available_rooms ?? 'N/A')}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs text-slate-500 mb-1">Status</p>
-                  <span className={cn('badge', property.availability ? 'badge-green' : 'badge-red')}>
+                <div className="min-w-0">
+                  <p className="text-xs text-slate-500 mb-1 whitespace-nowrap truncate">Status</p>
+                  <span className={cn('badge text-[10px] sm:text-xs', property.availability ? 'badge-green' : 'badge-red')}>
                     {property.availability ? '✓ Available' : 'Full'}
                   </span>
                 </div>

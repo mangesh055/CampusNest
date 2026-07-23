@@ -171,13 +171,13 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group">
+          <Link to="/" className="flex items-center gap-1.5 sm:gap-2.5 group shrink-0">
             <img 
               src={logoImg} 
               alt="FlatsNFood Logo" 
-              className="w-9 h-9 object-contain rounded-xl group-hover:scale-105 transition-transform" 
+              className="w-8 h-8 sm:w-9 sm:h-9 object-contain rounded-xl group-hover:scale-105 transition-transform" 
             />
-            <span className="text-xl font-display font-bold">
+            <span className="text-base sm:text-xl font-display font-bold whitespace-nowrap">
               <span className="text-slate-900 dark:text-white">Flats</span>
               <span className="gradient-text">N</span>
               <span className="text-slate-900 dark:text-white">Food</span>
