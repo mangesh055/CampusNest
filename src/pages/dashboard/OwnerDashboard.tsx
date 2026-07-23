@@ -141,7 +141,11 @@ export default function OwnerDashboard() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    let cleanVal = value
+    if (name === 'rent' || name === 'deposit' || name === 'total_rooms' || name === 'available_rooms') {
+      cleanVal = value.replace(/^0+(?=\d)/, '')
+    }
+    setFormData(prev => ({ ...prev, [name]: cleanVal }))
   }
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1143,9 +1147,11 @@ export default function OwnerDashboard() {
                                         <label className="text-[10px] text-slate-500 font-medium">Rent (₹/head)</label>
                                         <input
                                           type="number"
-                                          value={config.rent}
+                                          value={config.rent === 0 ? '' : config.rent}
+                                          placeholder="0"
                                           onChange={(e) => {
-                                            const val = Number(e.target.value)
+                                            const raw = e.target.value.replace(/^0+(?=\d)/, '')
+                                            const val = raw === '' ? 0 : Number(raw)
                                             setSharingConfigs(prev => prev.map(c => c.sharing_type === type ? { ...c, rent: val } : c))
                                           }}
                                           className="input-field py-1 text-xs"
@@ -1155,9 +1161,11 @@ export default function OwnerDashboard() {
                                         <label className="text-[10px] text-slate-500 font-medium">Deposit (₹/head)</label>
                                         <input
                                           type="number"
-                                          value={config.deposit}
+                                          value={config.deposit === 0 ? '' : config.deposit}
+                                          placeholder="0"
                                           onChange={(e) => {
-                                            const val = Number(e.target.value)
+                                            const raw = e.target.value.replace(/^0+(?=\d)/, '')
+                                            const val = raw === '' ? 0 : Number(raw)
                                             setSharingConfigs(prev => prev.map(c => c.sharing_type === type ? { ...c, deposit: val } : c))
                                           }}
                                           className="input-field py-1 text-xs"
@@ -1167,9 +1175,11 @@ export default function OwnerDashboard() {
                                         <label className="text-[10px] text-slate-500 font-medium">Avail. Beds</label>
                                         <input
                                           type="number"
-                                          value={config.available_beds}
+                                          value={config.available_beds === 0 ? '' : config.available_beds}
+                                          placeholder="0"
                                           onChange={(e) => {
-                                            const val = Number(e.target.value)
+                                            const raw = e.target.value.replace(/^0+(?=\d)/, '')
+                                            const val = raw === '' ? 0 : Number(raw)
                                             setSharingConfigs(prev => prev.map(c => c.sharing_type === type ? { ...c, available_beds: val } : c))
                                           }}
                                           className="input-field py-1 text-xs"
@@ -1179,9 +1189,11 @@ export default function OwnerDashboard() {
                                         <label className="text-[10px] text-slate-500 font-medium">Total Beds</label>
                                         <input
                                           type="number"
-                                          value={config.total_beds}
+                                          value={config.total_beds === 0 ? '' : config.total_beds}
+                                          placeholder="0"
                                           onChange={(e) => {
-                                            const val = Number(e.target.value)
+                                            const raw = e.target.value.replace(/^0+(?=\d)/, '')
+                                            const val = raw === '' ? 0 : Number(raw)
                                             setSharingConfigs(prev => prev.map(c => c.sharing_type === type ? { ...c, total_beds: val } : c))
                                           }}
                                           className="input-field py-1 text-xs"
@@ -1448,14 +1460,18 @@ export default function OwnerDashboard() {
                           <div>
                             <label className="block text-[11px] font-bold text-slate-800 dark:text-slate-200 mb-1">Monthly Rent (₹) *</label>
                             <input
-                              type="number" name="rent" required value={formData.rent} onChange={handleInputChange}
+                              type="number" name="rent" required
+                              value={formData.rent === '0' ? '' : formData.rent}
+                              onChange={handleInputChange}
                               placeholder="e.g. 18000" className="input-field py-1.5 text-xs font-semibold"
                             />
                           </div>
                           <div>
                             <label className="block text-[11px] font-bold text-slate-800 dark:text-slate-200 mb-1">Security Deposit (₹) *</label>
                             <input
-                              type="number" name="deposit" required value={formData.deposit} onChange={handleInputChange}
+                              type="number" name="deposit" required
+                              value={formData.deposit === '0' ? '' : formData.deposit}
+                              onChange={handleInputChange}
                               placeholder="e.g. 36000" className="input-field py-1.5 text-xs font-semibold"
                             />
                           </div>
