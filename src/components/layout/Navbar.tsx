@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -30,6 +30,7 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const profileRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
   const navigate = useNavigate()
   const { profile, signOut } = useAuthStore()
@@ -109,22 +110,30 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
 
   useEffect(() => {
     init()
-    let lastScrollY = window.scrollY
-
     const handleScroll = () => {
       setScrolled(window.scrollY > 20)
-
-      // Close dropdowns when scrolling more than 15px
-      if (Math.abs(window.scrollY - lastScrollY) > 15) {
-        setMenuOpen(false)
-        setProfileOpen(false)
-        lastScrollY = window.scrollY
-      }
+      if (profileOpen) setProfileOpen(false)
+      if (menuOpen) setMenuOpen(false)
     }
 
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [init])
+  }, [init, profileOpen, menuOpen])
+
+  // Click outside to close profile dropdown
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false)
+      }
+    }
+    if (profileOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [profileOpen])
 
   useEffect(() => {
     setMenuOpen(false)
@@ -245,7 +254,7 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
                 )}
 
                 {/* Profile Dropdown */}
-                <div className="relative">
+                <div className="relative" ref={profileRef}>
                   <button
                     onClick={() => setProfileOpen(!profileOpen)}
                     className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
@@ -281,7 +290,7 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
                         </div>
                         <div className="p-2">
                           {profile.role !== 'admin' && (
-                            <Link to={getDashboardPath()} className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors">
+                            <Link to={getDashboardPath()} onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors">
                               <LayoutDashboard className="w-4 h-4" /> Dashboard
                             </Link>
                           )}
@@ -290,15 +299,18 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
                               <QrCode className="w-4 h-4" /> Scan QR
                             </Link>
                           )}
-                          <Link to="/dashboard/profile" className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors">
+                          <Link to="/dashboard/profile" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors">
                             <User className="w-4 h-4" /> Profile
                           </Link>
-                          <Link to="/dashboard/settings" className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors">
+                          <Link to="/dashboard/settings" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors">
                             <Settings className="w-4 h-4" /> Settings
                           </Link>
                           <button
                             type="button"
-                            onClick={toggleDarkMode}
+                            onClick={() => {
+                              toggleDarkMode()
+                              setProfileOpen(false)
+                            }}
                             className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors"
                           >
                             <div className="flex items-center gap-3">
@@ -310,12 +322,15 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
                             </span>
                           </button>
                           {profile.role === 'admin' && (
-                            <Link to="/dashboard/admin" className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors">
+                            <Link to="/dashboard/admin" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 transition-colors">
                               <Shield className="w-4 h-4" /> Admin Panel
                             </Link>
                           )}
                           <button
-                            onClick={handleSignOut}
+                            onClick={() => {
+                              setProfileOpen(false)
+                              handleSignOut()
+                            }}
                             className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-sm text-red-600 dark:text-red-400 transition-colors mt-1"
                           >
                             <LogOut className="w-4 h-4" /> Sign Out
