@@ -118,8 +118,7 @@ import { supabase } from './lib/supabase'
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem('theme') === 'dark' ||
-      (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    return localStorage.getItem('theme') === 'dark'
   })
 
   const { setUser, setSession, fetchProfile, setLoading } = useAuthStore()
